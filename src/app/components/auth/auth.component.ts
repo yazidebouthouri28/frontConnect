@@ -74,6 +74,7 @@ export class AuthComponent implements OnInit, OnDestroy {
     { email: 'farah@gmail.com', password: 'farah12', role: 'user', name: 'Farah Explorer' },
     { email: 'yazide@gmail.com', password: 'yazide12', role: 'user', name: 'Yazide Adventurer' },
     { email: 'fedi@gmail.com', password: 'fedi12', role: 'user', name: 'Fedi User' },
+    { email: 'salma@gmail.com', password: 'salma12', role: 'user', name: 'Salma User' },
   ];
 
   constructor(private router: Router) { }
