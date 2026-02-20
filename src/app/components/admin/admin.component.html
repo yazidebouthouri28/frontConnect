@@ -1,0 +1,124 @@
+<div class="min-h-screen bg-cream-beige">
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-forest-green min-h-screen p-6">
+      <h2 class="text-2xl font-bold text-cream-beige mb-8">🔐 Admin Panel</h2>
+      <nav class="space-y-2">
+        <button
+          *ngFor="let item of menuItems"
+          [class.bg-olive-green]="activeSection === item.id"
+          (click)="activeSection = item.id"
+          class="w-full text-left px-4 py-2 rounded text-cream-beige hover:bg-olive-green transition-colors">
+          {{item.icon}} {{item.label}}
+        </button>
+      </nav>
+      <div class="mt-8">
+        <a routerLink="/" class="text-sage-green hover:text-cream-beige">← Back to Site</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8">
+
+      <!-- Dashboard Stats -->
+      <div *ngIf="activeSection === 'dashboard'">
+        <h1 class="text-4xl font-bold text-forest-green mb-8">Dashboard Overview</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-xl p-6 shadow-md">
+            <h3 class="text-olive-green text-sm mb-2">Total Users</h3>
+            <p class="text-3xl font-bold text-forest-green">12,345</p>
+            <p class="text-sm text-olive-green mt-2">↑ 12% from last month</p>
+          </div>
+          <div class="bg-white rounded-xl p-6 shadow-md">
+            <h3 class="text-olive-green text-sm mb-2">Active Bookings</h3>
+            <p class="text-3xl font-bold text-forest-green">456</p>
+            <p class="text-sm text-olive-green mt-2">↑ 8% from last week</p>
+          </div>
+          <div class="bg-white rounded-xl p-6 shadow-md">
+            <h3 class="text-olive-green text-sm mb-2">Total Revenue</h3>
+            <p class="text-3xl font-bold text-forest-green">$89,450</p>
+            <p class="text-sm text-olive-green mt-2">↑ 23% from last month</p>
+          </div>
+          <div class="bg-white rounded-xl p-6 shadow-md">
+            <h3 class="text-olive-green text-sm mb-2">Campsites</h3>
+            <p class="text-3xl font-bold text-forest-green">523</p>
+            <p class="text-sm text-olive-green mt-2">↑ 15 new this month</p>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <h2 class="text-2xl font-bold text-forest-green mb-4">Recent Activity</h2>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center pb-3 border-b border-sage-green/20">
+              <div>
+                <p class="font-medium text-forest-green">New booking at Pine Valley</p>
+                <p class="text-sm text-olive-green">2 minutes ago</p>
+              </div>
+              <span class="text-green-500 font-bold">+$135</span>
+            </div>
+            <div class="flex justify-between items-center pb-3 border-b border-sage-green/20">
+              <div>
+                <p class="font-medium text-forest-green">User review submitted</p>
+                <p class="text-sm text-olive-green">15 minutes ago</p>
+              </div>
+              <span class="text-blue-500">★ 4.8</span>
+            </div>
+            <div class="flex justify-between items-center pb-3 border-b border-sage-green/20">
+              <div>
+                <p class="font-medium text-forest-green">New campsite added</p>
+                <p class="text-sm text-olive-green">1 hour ago</p>
+              </div>
+              <span class="text-forest-green font-bold">New</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campsites Management -->
+      <div *ngIf="activeSection === 'campsites'">
+        <h1 class="text-4xl font-bold text-forest-green mb-8">Manage Campsites</h1>
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <button class="mb-4 bg-forest-green text-cream-beige px-6 py-2 rounded-lg hover:bg-olive-green">
+            + Add New Campsite
+          </button>
+          <p class="text-olive-green">Campsite management interface would go here</p>
+        </div>
+      </div>
+
+      <!-- Users Management -->
+      <div *ngIf="activeSection === 'users'">
+        <h1 class="text-4xl font-bold text-forest-green mb-8">Manage Users</h1>
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <p class="text-olive-green">User management interface would go here</p>
+        </div>
+      </div>
+
+      <!-- Orders Management -->
+      <div *ngIf="activeSection === 'orders'">
+        <h1 class="text-4xl font-bold text-forest-green mb-8">Manage Orders</h1>
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <p class="text-olive-green">Order management interface would go here</p>
+        </div>
+      </div>
+
+      <!-- Moderation -->
+      <div *ngIf="activeSection === 'moderation'">
+        <h1 class="text-4xl font-bold text-forest-green mb-8">Content Moderation</h1>
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <p class="text-olive-green">Moderation tools would go here</p>
+        </div>
+      </div>
+
+      <!-- Sponsors -->
+      <div *ngIf="activeSection === 'sponsors'">
+        <h1 class="text-4xl font-bold text-forest-green mb-8">Sponsor Management</h1>
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <p class="text-olive-green">Sponsor management interface would go here</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>

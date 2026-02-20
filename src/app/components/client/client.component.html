@@ -1,0 +1,324 @@
+<div class="min-h-screen bg-cream-beige">
+  <!-- Header -->
+  <div class="bg-forest-green text-cream-beige py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <h1 class="text-3xl font-bold mb-2">👤 My Account</h1>
+      <p class="text-sage-green">Manage your orders, wallet, and profile</p>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+
+      <!-- Sidebar Navigation -->
+      <aside class="lg:w-64 flex-shrink-0">
+        <div class="bg-white rounded-xl shadow-lg p-6 sticky top-8">
+          <div class="flex items-center gap-3 mb-6 pb-6 border-b border-sage-green/20">
+            <div class="w-16 h-16 bg-forest-green rounded-full flex items-center justify-center text-2xl">👤</div>
+            <div>
+              <p class="font-bold text-forest-green">{{customerName}}</p>
+              <p class="text-sm text-olive-green">{{customerEmail}}</p>
+            </div>
+          </div>
+          <nav class="space-y-2">
+            <button *ngFor="let item of menuItems"
+                    (click)="activeTab = item.id"
+                    [class.bg-forest-green]="activeTab === item.id"
+                    [class.text-cream-beige]="activeTab === item.id"
+                    [class.text-forest-green]="activeTab !== item.id"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-sage-green/20 transition-colors flex items-center gap-3">
+              <span class="text-xl">{{item.icon}}</span>
+              <span>{{item.label}}</span>
+              <span *ngIf="item.badge" class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{item.badge}}</span>
+            </button>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1">
+
+        <!-- ==================== WALLET ==================== -->
+        <div *ngIf="activeTab === 'wallet'">
+          <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-forest-green mb-6">💰 My Wallet</h2>
+
+            <div class="bg-gradient-to-r from-forest-green to-olive-green rounded-xl p-8 text-cream-beige mb-8">
+              <p class="text-sage-green mb-2">Available Balance</p>
+              <p class="text-5xl font-bold mb-4">${{walletBalance.toFixed(2)}}</p>
+              <p class="text-sage-green">💎 {{loyaltyPoints}} Loyalty Points</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <button (click)="showAddFundsModal = true" class="bg-forest-green text-cream-beige py-4 rounded-lg hover:bg-olive-green transition-colors flex items-center justify-center gap-2">
+                <span class="text-2xl">➕</span><span>Add Funds</span>
+              </button>
+              <button (click)="showWithdrawModal = true" class="bg-white border-2 border-forest-green text-forest-green py-4 rounded-lg hover:bg-sage-green/20 transition-colors flex items-center justify-center gap-2">
+                <span class="text-2xl">💸</span><span>Withdraw</span>
+              </button>
+              <button (click)="showTransferModal = true" class="bg-white border-2 border-forest-green text-forest-green py-4 rounded-lg hover:bg-sage-green/20 transition-colors flex items-center justify-center gap-2">
+                <span class="text-2xl">🔄</span><span>Transfer</span>
+              </button>
+            </div>
+
+            <h3 class="text-xl font-bold text-forest-green mb-4">📜 Transaction History</h3>
+            <div class="space-y-3">
+              <div *ngFor="let tx of walletTransactions"
+                   class="flex justify-between items-center p-4 border border-sage-green/20 rounded-lg hover:bg-sage-green/5 transition-colors">
+                <div class="flex items-center gap-4">
+                  <div [class]="isCredit(tx.type) ? 'bg-green-100' : 'bg-red-100'"
+                       class="w-12 h-12 rounded-full flex items-center justify-center text-2xl">
+                    {{isCredit(tx.type) ? '➕' : '➖'}}
+                  </div>
+                  <div>
+                    <p class="font-medium text-forest-green">{{tx.description}}</p>
+                    <p class="text-sm text-olive-green">{{formatDate(tx.createdAt)}}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p [class]="isCredit(tx.type) ? 'text-green-600' : 'text-red-600'" class="text-xl font-bold">
+                    {{isCredit(tx.type) ? '+' : '-'}}${{tx.amount.toFixed(2)}}
+                  </p>
+                  <span [class]="getStatusBadge(tx.status)" class="text-xs px-2 py-1 rounded-full">{{tx.status}}</span>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="walletTransactions.length === 0" class="text-center py-12 bg-sage-green/5 rounded-lg">
+              <p class="text-4xl mb-2">💳</p>
+              <p class="text-olive-green">No transactions yet</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== ORDERS ==================== -->
+        <div *ngIf="activeTab === 'orders'">
+          <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-forest-green mb-6">📦 My Orders</h2>
+            <div class="flex gap-2 mb-6 flex-wrap">
+              <button *ngFor="let status of orderStatuses"
+                      (click)="selectedOrderStatus = status"
+                      [class.bg-forest-green]="selectedOrderStatus === status"
+                      [class.text-cream-beige]="selectedOrderStatus === status"
+                      [class.bg-white]="selectedOrderStatus !== status"
+                      [class.text-forest-green]="selectedOrderStatus !== status"
+                      class="px-4 py-2 rounded-lg border border-sage-green transition-colors">
+                {{status}}
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <div *ngFor="let order of filteredOrders"
+                   class="border border-sage-green/20 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                <div class="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 class="text-lg font-bold text-forest-green">Order #{{order.id}}</h3>
+                    <p class="text-sm text-olive-green">Placed on {{formatDate(order.createdAt)}}</p>
+                    <p *ngIf="order.trackingNumber" class="text-sm text-olive-green mt-1">📍 Tracking: {{order.trackingNumber}}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-2xl font-bold text-forest-green">${{order.totalAmount.toFixed(2)}}</p>
+                    <span [class]="getOrderStatusBadge(order.status)" class="inline-block px-3 py-1 rounded-full text-xs font-medium mt-2">{{order.status}}</span>
+                  </div>
+                </div>
+                <div class="bg-sage-green/5 rounded-lg p-4 mb-4">
+                  <div *ngFor="let item of order.items" class="flex justify-between items-center py-2">
+                    <div class="flex items-center gap-3">
+                      <div class="w-16 h-16 bg-sage-green/20 rounded-lg flex items-center justify-center text-2xl">📦</div>
+                      <div>
+                        <p class="font-medium text-forest-green">{{item.productName}}</p>
+                        <p class="text-sm text-olive-green">Qty: {{item.quantity}}</p>
+                        <span *ngIf="item.type === 'RENTAL'" class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">📅 {{item.rentalDays}} days rental</span>
+                      </div>
+                    </div>
+                    <p class="font-bold text-forest-green">${{item.price.toFixed(2)}}</p>
+                  </div>
+                </div>
+                <div class="flex gap-3 flex-wrap">
+                  <button *ngIf="order.status === 'SHIPPED'" (click)="trackOrder(order)" class="bg-forest-green text-cream-beige px-4 py-2 rounded-lg hover:bg-olive-green transition-colors">📍 Track Package</button>
+                  <button *ngIf="order.status === 'DELIVERED'" class="bg-forest-green text-cream-beige px-4 py-2 rounded-lg hover:bg-olive-green transition-colors">⭐ Leave Review</button>
+                  <button *ngIf="order.status === 'PENDING'" (click)="cancelOrder(order)" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">❌ Cancel Order</button>
+                  <button (click)="downloadInvoice(order)" class="bg-white border border-forest-green text-forest-green px-4 py-2 rounded-lg hover:bg-sage-green/20 transition-colors">📄 Download Invoice</button>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="filteredOrders.length === 0" class="text-center py-12 bg-sage-green/5 rounded-lg">
+              <p class="text-4xl mb-2">📦</p>
+              <p class="text-olive-green mb-4">No orders found</p>
+              <a routerLink="/marketplace" class="inline-block bg-forest-green text-cream-beige px-6 py-3 rounded-lg hover:bg-olive-green">Start Shopping</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== CART ==================== -->
+        <div *ngIf="activeTab === 'cart'">
+          <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-forest-green mb-6">🛒 Shopping Cart</h2>
+
+            <div *ngIf="cartItems.length > 0" class="space-y-4 mb-8">
+              <div *ngFor="let item of cartItems; let i = index"
+                   class="flex gap-4 p-4 border border-sage-green/20 rounded-lg">
+                <img [src]="item.image" [alt]="item.productName" class="w-24 h-24 object-cover rounded-lg">
+                <div class="flex-1">
+                  <h3 class="font-bold text-forest-green">{{item.productName}}</h3>
+                  <p class="text-olive-green text-sm mb-2">{{item.type === 'RENTAL' ? '📅 Rental: ' + item.rentalDays + ' days' : '🛍️ Purchase'}}</p>
+                  <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                      <button (click)="updateQuantity(i, -1)" class="w-8 h-8 bg-sage-green/20 rounded-lg hover:bg-sage-green/40">-</button>
+                      <span class="font-bold text-forest-green w-8 text-center">{{item.quantity}}</span>
+                      <button (click)="updateQuantity(i, 1)" class="w-8 h-8 bg-sage-green/20 rounded-lg hover:bg-sage-green/40">+</button>
+                    </div>
+                    <p class="font-bold text-forest-green">${{(item.price * item.quantity).toFixed(2)}}</p>
+                  </div>
+                </div>
+                <button (click)="removeFromCart(i)" class="text-red-500 hover:text-red-700">🗑️</button>
+              </div>
+            </div>
+
+            <div *ngIf="cartItems.length > 0" class="bg-sage-green/10 rounded-lg p-6 mb-6">
+              <div class="space-y-3">
+                <div class="flex justify-between"><span class="text-olive-green">Subtotal:</span><span class="font-bold text-forest-green">${{cartSubtotal.toFixed(2)}}</span></div>
+                <div class="flex justify-between"><span class="text-olive-green">Shipping:</span><span class="font-bold text-forest-green">${{shippingCost.toFixed(2)}}</span></div>
+                <div class="flex justify-between"><span class="text-olive-green">Tax (10%):</span><span class="font-bold text-forest-green">${{cartTax.toFixed(2)}}</span></div>
+                <div class="border-t border-sage-green/20 pt-3 flex justify-between items-center">
+                  <span class="text-xl font-bold text-forest-green">Total:</span>
+                  <span class="text-3xl font-bold text-forest-green">${{cartTotal.toFixed(2)}}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-olive-green">💎 Points to earn:</span>
+                  <span class="font-bold text-purple-600">{{Math.floor(cartTotal)}} points</span>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="cartItems.length > 0" class="mb-6">
+              <h3 class="font-bold text-forest-green mb-4">💳 Payment Method</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button (click)="selectedPaymentMethod = 'wallet'"
+                        [class.border-forest-green]="selectedPaymentMethod === 'wallet'"
+                        [class.bg-forest-green]="selectedPaymentMethod === 'wallet'"
+                        [class.text-cream-beige]="selectedPaymentMethod === 'wallet'"
+                        class="p-4 border-2 rounded-lg transition-colors">
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl">💰</span>
+                    <div class="text-left">
+                      <p class="font-bold">CampConnect Wallet</p>
+                      <p class="text-sm">Balance: ${{walletBalance.toFixed(2)}}</p>
+                    </div>
+                  </div>
+                </button>
+                <button (click)="selectedPaymentMethod = 'card'"
+                        [class.border-forest-green]="selectedPaymentMethod === 'card'"
+                        [class.bg-forest-green]="selectedPaymentMethod === 'card'"
+                        [class.text-cream-beige]="selectedPaymentMethod === 'card'"
+                        class="p-4 border-2 rounded-lg transition-colors">
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl">💳</span>
+                    <div class="text-left">
+                      <p class="font-bold">Credit/Debit Card</p>
+                      <p class="text-sm">Secure payment</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="cartItems.length > 0" class="flex gap-4">
+              <button (click)="checkout()"
+                      [disabled]="selectedPaymentMethod === 'wallet' && walletBalance < cartTotal"
+                      class="flex-1 bg-forest-green text-cream-beige py-4 rounded-lg hover:bg-olive-green transition-colors font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                {{selectedPaymentMethod === 'wallet' && walletBalance < cartTotal ? '⚠️ Insufficient Balance' : '✅ Proceed to Checkout'}}
+              </button>
+              <button (click)="clearCart()" class="px-6 bg-red-500 text-white py-4 rounded-lg hover:bg-red-600 transition-colors">🗑️ Clear Cart</button>
+            </div>
+
+            <div *ngIf="cartItems.length === 0" class="text-center py-12 bg-sage-green/5 rounded-lg">
+              <p class="text-4xl mb-2">🛒</p>
+              <p class="text-olive-green mb-4">Your cart is empty</p>
+              <a routerLink="/marketplace" class="inline-block bg-forest-green text-cream-beige px-6 py-3 rounded-lg hover:bg-olive-green">Continue Shopping</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PROFILE ==================== -->
+        <div *ngIf="activeTab === 'profile'">
+          <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-forest-green mb-6">⚙️ Profile Settings</h2>
+            <form class="space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-forest-green mb-2">Full Name</label>
+                  <input type="text" [(ngModel)]="customerName" name="name" class="w-full px-4 py-2 border border-sage-green rounded-lg">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-forest-green mb-2">Email</label>
+                  <input type="email" [(ngModel)]="customerEmail" name="email" class="w-full px-4 py-2 border border-sage-green rounded-lg">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-forest-green mb-2">Phone</label>
+                  <input type="tel" [(ngModel)]="customerPhone" name="phone" class="w-full px-4 py-2 border border-sage-green rounded-lg">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-forest-green mb-2">Country</label>
+                  <input type="text" [(ngModel)]="customerCountry" name="country" class="w-full px-4 py-2 border border-sage-green rounded-lg">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-forest-green mb-2">Shipping Address</label>
+                <textarea [(ngModel)]="customerAddress" name="address" rows="3" class="w-full px-4 py-2 border border-sage-green rounded-lg"></textarea>
+              </div>
+              <button type="button" (click)="saveProfile()" class="bg-forest-green text-cream-beige px-6 py-3 rounded-lg hover:bg-olive-green">💾 Save Changes</button>
+            </form>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+<!-- ADD FUNDS MODAL -->
+<div *ngIf="showAddFundsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="showAddFundsModal = false">
+  <div class="bg-white rounded-xl max-w-md w-full p-6" (click)="$event.stopPropagation()">
+    <h2 class="text-2xl font-bold text-forest-green mb-4">➕ Add Funds to Wallet</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-forest-green mb-2">Amount</label>
+        <input type="number" [(ngModel)]="addFundsAmount" min="10" step="10" class="w-full px-4 py-2 border border-sage-green rounded-lg">
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <button *ngFor="let amount of [50, 100, 200]" (click)="addFundsAmount = amount"
+                class="bg-sage-green/20 text-forest-green py-2 rounded-lg hover:bg-sage-green/40">${{amount}}</button>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-forest-green mb-2">Payment Method</label>
+        <select [(ngModel)]="fundingSource" class="w-full px-4 py-2 border border-sage-green rounded-lg">
+          <option value="card">💳 Credit/Debit Card</option>
+          <option value="bank">🏦 Bank Transfer</option>
+          <option value="paypal">🅿️ PayPal</option>
+        </select>
+      </div>
+      <div class="flex gap-4">
+        <button (click)="confirmAddFunds()" class="flex-1 bg-forest-green text-cream-beige py-3 rounded-lg hover:bg-olive-green">✅ Add Funds</button>
+        <button (click)="showAddFundsModal = false" class="px-6 bg-gray-300 text-forest-green py-3 rounded-lg hover:bg-gray-400">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT SUCCESS MODAL -->
+<div *ngIf="showCheckoutSuccess" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl max-w-md w-full p-8 text-center">
+    <div class="text-6xl mb-4">✅</div>
+    <h2 class="text-2xl font-bold text-forest-green mb-4">Order Placed Successfully!</h2>
+    <p class="text-olive-green mb-6">Your order #{{latestOrderId}} has been confirmed</p>
+    <div class="bg-sage-green/10 rounded-lg p-4 mb-6">
+      <p class="text-sm text-olive-green mb-2">Earned Rewards:</p>
+      <p class="text-2xl font-bold text-purple-600">+{{lastEarnedPoints}} Points</p>
+    </div>
+    <div class="flex gap-4">
+      <button (click)="showCheckoutSuccess = false; activeTab = 'orders'" class="flex-1 bg-forest-green text-cream-beige py-3 rounded-lg hover:bg-olive-green">View Orders</button>
+      <button (click)="showCheckoutSuccess = false" routerLink="/marketplace" class="flex-1 bg-white border border-forest-green text-forest-green py-3 rounded-lg hover:bg-sage-green/20">Continue Shopping</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,16 @@
+{
+  "routes": {
+    "/": {},
+    "/admin": {},
+    "/auth/login": {},
+    "/auth/register": {},
+    "/campsites": {},
+    "/client": {},
+    "/community": {},
+    "/dashboard": {},
+    "/events": {},
+    "/map": {},
+    "/marketplace": {},
+    "/seller": {}
+  }
+}
