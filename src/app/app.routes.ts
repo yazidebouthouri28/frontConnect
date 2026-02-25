@@ -5,7 +5,7 @@ export const routes: Routes = [
     path: '',
     loadComponent: () => import('./components/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'home' },
+      { path: '', pathMatch: 'full', redirectTo: '/login' },
       { path: 'home', loadComponent: () => import('./components/home-page/home-page.component').then(m => m.HomePageComponent), data: { section: 'home' } },
       { path: 'campsites', loadComponent: () => import('./components/home-page/home-page.component').then(m => m.HomePageComponent), data: { section: 'campsites' } },
       { path: 'events', loadComponent: () => import('./components/home-page/home-page.component').then(m => m.HomePageComponent), data: { section: 'events' } },
@@ -34,5 +34,5 @@ export const routes: Routes = [
     path: 'preferences',
     loadComponent: () => import('./components/user-preferences/user-preferences.component').then(m => m.UserPreferencesComponent),
   },
-  { path: '**', redirectTo: 'home' },
+  { path: '**', redirectTo: '/login' },
 ];
