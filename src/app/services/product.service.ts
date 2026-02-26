@@ -1,87 +1,97 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map, of } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { Product, CreateProductDto } from '../models/api.models';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+export const API_BASE = 'http://localhost:8089/api';
 
-@Injectable({
-  providedIn: 'root'
-})
+const unwrap = (res: any) => res?.data?.content || res?.data || res || [];
+const unwrapOne = (res: any) => res?.data || res;
+
+@Injectable({ providedIn: 'root' })
 export class ProductService {
-  private apiUrl = `${environment.apiUrl}/products`;
+  private url = `${API_BASE}/products`;
+  private adminUrl = `${API_BASE}/admin/products`;
 
   constructor(private http: HttpClient) {}
 
-  private extractData<T>(response: ApiResponse<T>): T {
-    return response.data ?? ([] as any);
+  // ── Admin ──────────────────────────────────────────────
+  getAllAdmin(page = 0, size = 50): Observable<any[]> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<any>(this.adminUrl, { params }).pipe(map(unwrap));
   }
 
-  getAll(params?: {
-    search?: string;
-    categoryId?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    isActive?: boolean;
-    isFeatured?: boolean;
-    rentalAvailable?: boolean;
-    page?: number;
-    limit?: number;
-  }): Observable<Product[]> {
-    let httpParams = new HttpParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          httpParams = httpParams.set(key, value.toString());
-        }
-      });
-    }
-    return this.http.get<ApiResponse<Product[]>>(this.apiUrl, { params: httpParams })
-      .pipe(map(res => this.extractData(res)));
+  getPending(page = 0, size = 20): Observable<any[]> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<any>(`${this.adminUrl}/pending`, { params }).pipe(map(unwrap));
   }
 
-  getById(id: string): Observable<Product> {
-    return this.http.get<ApiResponse<Product>>(`${this.apiUrl}/${id}`)
-      .pipe(map(res => this.extractData(res)));
+  approve(id: string): Observable<any> {
+    return this.http.post<any>(`${this.adminUrl}/${id}/approve`, {}).pipe(map(unwrapOne));
   }
 
-  create(product: CreateProductDto): Observable<Product> {
-    return this.http.post<ApiResponse<Product>>(this.apiUrl, product)
-      .pipe(map(res => this.extractData(res)));
+  reject(id: string, reason: string): Observable<any> {
+    const params = new HttpParams().set('reason', reason);
+    return this.http.post<any>(`${this.adminUrl}/${id}/reject`, null, { params }).pipe(map(unwrapOne));
   }
 
-  update(id: string, product: Partial<CreateProductDto>): Observable<Product> {
-    return this.http.put<ApiResponse<Product>>(`${this.apiUrl}/${id}`, product)
-      .pipe(map(res => this.extractData(res)));
+  toggleFeatured(id: string): Observable<any> {
+    return this.http.post<any>(`${this.adminUrl}/${id}/feature`, {}).pipe(map(unwrapOne));
   }
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`)
-      .pipe(map(() => undefined));
+  deleteAdmin(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.adminUrl}/${id}`);
   }
 
-  search(query: string): Observable<Product[]> {
-    return this.http.get<ApiResponse<Product[]>>(`${this.apiUrl}/search`, {
-      params: { q: query }
-    }).pipe(map(res => this.extractData(res)));
+  // ── Public / Seller ────────────────────────────────────
+  /** GET /api/products — used by marketplace, accepts optional filters */
+  getAll(filters?: { isActive?: boolean; categoryId?: string }): Observable<any[]> {
+    let params = new HttpParams();
+    if (filters?.isActive !== undefined) params = params.set('isActive', String(filters.isActive));
+    if (filters?.categoryId) params = params.set('categoryId', filters.categoryId);
+    return this.http.get<any>(this.url, { params }).pipe(map(unwrap));
   }
 
-  getByCategory(categoryId: string): Observable<Product[]> {
-    return this.http.get<ApiResponse<Product[]>>(`${this.apiUrl}/category/${categoryId}`)
-      .pipe(map(res => this.extractData(res)));
+  getActive(): Observable<any[]> {
+    return this.http.get<any>(`${this.url}/active`).pipe(map(unwrap));
   }
 
-  getFeatured(): Observable<Product[]> {
-    return this.getAll({ isFeatured: true, isActive: true });
+  getFeatured(): Observable<any[]> {
+    return this.http.get<any>(`${this.url}/featured`).pipe(map(unwrap));
   }
 
-  getMyProducts(): Observable<Product[]> {
-    return this.http.get<ApiResponse<Product[]>>(`${this.apiUrl}/my-products`)
-      .pipe(map(res => this.extractData(res)));
+  getRentals(): Observable<any[]> {
+    return this.http.get<any>(`${this.url}/rental`).pipe(map(unwrap));
+  }
+
+  /** GET /api/products/search?q=term */
+  search(term: string): Observable<any[]> {
+    const params = new HttpParams().set('q', term);
+    return this.http.get<any>(`${this.url}/search`, { params }).pipe(map(unwrap));
+  }
+
+  /** GET /api/products/{id} */
+  getById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.url}/${id}`).pipe(map(unwrapOne));
+  }
+
+  /** POST /api/products — seller creates product */
+  create(data: any): Observable<any> {
+    return this.http.post<any>(this.url, data).pipe(map(unwrapOne));
+  }
+
+  /** PUT /api/products/{id} */
+  update(id: string, data: any): Observable<any> {
+    return this.http.put<any>(`${this.url}/${id}`, data).pipe(map(unwrapOne));
+  }
+
+  /** DELETE /api/products/{id} */
+  delete(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.url}/${id}`);
+  }
+
+  // alias used by admin component
+  getMyProducts(): Observable<any[]> {
+    return this.getAll();
   }
 }

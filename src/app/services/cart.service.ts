@@ -1,233 +1,175 @@
 import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, tap, catchError, map } from 'rxjs';
+import { BehaviorSubject, Observable, of, catchError, tap, map } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
-import { CartItem, Cart } from '../models/api.models';
-import { AuthService } from './auth.service';
+import { Cart, CartItem } from '../models/api.models';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+const LOCAL_CART_KEY = 'local_cart';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class CartService {
-  private apiUrl = `${environment.apiUrl}/cart`;
-  private cartItems: CartItem[] = [];
-  private cartSubject = new BehaviorSubject<CartItem[]>([]);
+
+  private apiUrl    = `${environment.apiUrl}/cart`;
   private isBrowser: boolean;
 
-  cart$ = this.cartSubject.asObservable();
+  private cartSubject = new BehaviorSubject<CartItem[]>([]);
+  cart$  = this.cartSubject.asObservable();
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
-    this.loadCart();
+    this.loadLocalCart();
   }
 
-  private loadCart(): void {
-    if (this.authService.isAuthenticated()) {
-      this.fetchCartFromServer();
+  // ── localStorage helpers ──────────────────────────────────────────────────
+
+  private loadLocalCart(): void {
+    if (!this.isBrowser) return;
+    try {
+      const raw = localStorage.getItem(LOCAL_CART_KEY);
+      if (raw) this.cartSubject.next(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }
+
+  private saveLocalCart(items: CartItem[]): void {
+    if (!this.isBrowser) return;
+    try { localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(items)); } catch { /* ignore */ }
+  }
+
+  private clearLocalCart(): void {
+    if (!this.isBrowser) return;
+    try { localStorage.removeItem(LOCAL_CART_KEY); } catch { /* ignore */ }
+  }
+
+  private isLoggedIn(): boolean {
+    if (!this.isBrowser) return false;
+    try { return !!localStorage.getItem('auth_token'); } catch { return false; }
+  }
+
+  // ── Cart state ────────────────────────────────────────────────────────────
+
+  getItems():    CartItem[] { return this.cartSubject.value; }
+  getItemCount(): number    { return this.cartSubject.value.reduce((s, i) => s + i.quantity, 0); }
+  getSubtotal():  number    { return this.cartSubject.value.reduce((s, i) => s + i.price * i.quantity, 0); }
+
+  addItem(item: CartItem): void {
+    const current = [...this.cartSubject.value];
+    const idx = current.findIndex(i => i.productId === item.productId && i.type === item.type);
+    if (idx >= 0) {
+      current[idx] = { ...current[idx], quantity: current[idx].quantity + item.quantity };
     } else {
-      this.loadFromStorage();
+      current.push(item);
+    }
+    this.cartSubject.next(current);
+    this.saveLocalCart(current);
+
+    if (this.isLoggedIn()) {
+      this.http.post(`${this.apiUrl}/items`, item).pipe(
+        catchError(e => { console.warn('Cart add failed silently:', e.status); return of(null); })
+      ).subscribe();
     }
   }
 
-  private extractCart(response: ApiResponse<Cart>): Cart | null {
-    return response?.data ?? null;
+  removeItem(productId: string, type: 'PURCHASE' | 'RENTAL' = 'PURCHASE'): void {
+    const current = this.cartSubject.value.filter(
+      i => !(i.productId === productId && i.type === type)
+    );
+    this.cartSubject.next(current);
+    this.saveLocalCart(current);
+
+    if (this.isLoggedIn()) {
+      this.http.delete(`${this.apiUrl}/items/${productId}`).pipe(
+        catchError(e => { console.warn('Cart remove failed silently:', e.status); return of(null); })
+      ).subscribe();
+    }
   }
 
-  private fetchCartFromServer(): void {
-    this.http.get<ApiResponse<Cart>>(this.apiUrl).pipe(
-      map(res => this.extractCart(res)),
-      catchError(() => of(null))
-    ).subscribe(cart => {
-      if (cart?.items) {
-        this.cartItems = cart.items;
-        this.cartSubject.next([...this.cartItems]);
+  updateQuantity(productId: string, quantity: number, type: 'PURCHASE' | 'RENTAL' = 'PURCHASE'): void {
+    if (quantity <= 0) { this.removeItem(productId, type); return; }
+    const current = this.cartSubject.value.map(i =>
+      i.productId === productId && i.type === type ? { ...i, quantity } : i
+    );
+    this.cartSubject.next(current);
+    this.saveLocalCart(current);
+  }
+
+  clearCart(): void {
+    this.cartSubject.next([]);
+    this.clearLocalCart();
+    if (this.isLoggedIn()) {
+      this.http.delete(`${this.apiUrl}`).pipe(
+        catchError(e => { console.warn('Cart clear failed silently:', e.status); return of(null); })
+      ).subscribe();
+    }
+  }
+
+  // ── Called after login — NO /cart/sync endpoint ───────────────────────────
+
+  /**
+   * After login: fetch the server cart, merge with local cart, update state.
+   * If the server cart endpoint fails (404/500), silently keep the local cart.
+   * ✅ Never calls /cart/sync — that endpoint doesn't exist in the backend.
+   */
+  syncCartAfterLogin(): void {
+    if (!this.isLoggedIn()) return;
+
+    const localItems = [...this.cartSubject.value];
+
+    this.http.get<any>(`${this.apiUrl}`).pipe(
+      catchError(e => {
+        console.warn(`Cart fetch after login failed (${e.status}) — keeping local cart`);
+        return of(null);
+      })
+    ).subscribe(response => {
+      if (response === null) return;  // server unavailable — keep local cart
+
+      const serverItems: CartItem[] =
+        response?.items          ??   // { items: [...] }
+        response?.data?.items    ??   // { success, data: { items: [...] } }
+        [];
+
+      // Merge: server wins for existing items, add local-only items on top
+      const merged = [...serverItems];
+      for (const local of localItems) {
+        const exists = merged.find(s => s.productId === local.productId && s.type === local.type);
+        if (!exists) merged.push(local);
       }
+
+      this.cartSubject.next(merged);
+      this.saveLocalCart(merged);
+
+      // Push local-only items to server
+      const newItems = localItems.filter(
+        l => !serverItems.find(s => s.productId === l.productId && s.type === l.type)
+      );
+      for (const item of newItems) {
+        this.http.post(`${this.apiUrl}/items`, item).pipe(
+          catchError(e => { console.warn('Cart push failed silently:', e.status); return of(null); })
+        ).subscribe();
+      }
+
+      this.clearLocalCart();
     });
   }
 
-  addToCart(item: CartItem): Observable<any> {
-    if (this.authService.isAuthenticated()) {
-      return this.http.post<ApiResponse<Cart>>(`${this.apiUrl}/add`, {
-        productId: item.productId,
-        quantity: item.quantity,
-        type: item.type,
-        rentalDays: item.rentalDays
-      }).pipe(
-        map(res => this.extractCart(res)),
-        tap(cart => {
-          if (cart?.items) {
-            this.cartItems = cart.items;
-            this.cartSubject.next([...this.cartItems]);
-          }
-        }),
-        catchError(error => {
-          // Fallback to local storage
-          this.addToLocalCart(item);
-          return of(null);
-        })
-      );
-    } else {
-      this.addToLocalCart(item);
-      return of(null);
-    }
-  }
+  // ── Fetch for cart page ───────────────────────────────────────────────────
 
-  private addToLocalCart(item: CartItem): void {
-    const existing = this.cartItems.find(
-      i => i.productId === item.productId && i.type === item.type
+  fetchCart(): Observable<CartItem[]> {
+    if (!this.isLoggedIn()) return of(this.cartSubject.value);
+
+    return this.http.get<any>(`${this.apiUrl}`).pipe(
+      map(response => {
+        const items: CartItem[] = response?.items ?? response?.data?.items ?? [];
+        this.cartSubject.next(items);
+        return items;
+      }),
+      catchError(e => {
+        console.warn(`fetchCart failed (${e.status}) — returning local cart`);
+        return of(this.cartSubject.value);
+      })
     );
-
-    if (existing) {
-      existing.quantity += item.quantity;
-    } else {
-      this.cartItems.push(item);
-    }
-
-    this.updateCart();
-  }
-
-  removeFromCart(productId: string): Observable<any> {
-    if (this.authService.isAuthenticated()) {
-      return this.http.delete<ApiResponse<Cart>>(`${this.apiUrl}/remove/${productId}`).pipe(
-        map(res => this.extractCart(res)),
-        tap(cart => {
-          if (cart?.items) {
-            this.cartItems = cart.items;
-            this.cartSubject.next([...this.cartItems]);
-          }
-        }),
-        catchError(() => {
-          this.removeFromLocalCart(productId);
-          return of(null);
-        })
-      );
-    } else {
-      this.removeFromLocalCart(productId);
-      return of(null);
-    }
-  }
-
-  private removeFromLocalCart(productId: string): void {
-    this.cartItems = this.cartItems.filter(i => i.productId !== productId);
-    this.updateCart();
-  }
-
-  updateQuantity(productId: string, quantity: number): Observable<any> {
-    if (quantity <= 0) {
-      return this.removeFromCart(productId);
-    }
-
-    if (this.authService.isAuthenticated()) {
-      return this.http.patch<ApiResponse<Cart>>(`${this.apiUrl}/update`, { productId, quantity }).pipe(
-        map(res => this.extractCart(res)),
-        tap(cart => {
-          if (cart?.items) {
-            this.cartItems = cart.items;
-            this.cartSubject.next([...this.cartItems]);
-          }
-        }),
-        catchError(() => {
-          this.updateLocalQuantity(productId, quantity);
-          return of(null);
-        })
-      );
-    } else {
-      this.updateLocalQuantity(productId, quantity);
-      return of(null);
-    }
-  }
-
-  private updateLocalQuantity(productId: string, quantity: number): void {
-    const item = this.cartItems.find(i => i.productId === productId);
-    if (item) {
-      item.quantity = quantity;
-      this.updateCart();
-    }
-  }
-
-  clearCart(): Observable<any> {
-    if (this.authService.isAuthenticated()) {
-      return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/clear`).pipe(
-        tap(() => {
-          this.cartItems = [];
-          this.cartSubject.next([]);
-          this.saveToStorage();
-        }),
-        catchError(() => {
-          this.cartItems = [];
-          this.updateCart();
-          return of(null);
-        })
-      );
-    } else {
-      this.cartItems = [];
-      this.updateCart();
-      return of(null);
-    }
-  }
-
-  getCartCount(): number {
-    return this.cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  }
-
-  getCartItems(): CartItem[] {
-    return [...this.cartItems];
-  }
-
-  getSubtotal(): number {
-    return this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  }
-
-  private updateCart(): void {
-    this.cartSubject.next([...this.cartItems]);
-    this.saveToStorage();
-  }
-
-  private saveToStorage(): void {
-    if (this.isBrowser) {
-      localStorage.setItem('cart', JSON.stringify(this.cartItems));
-    }
-  }
-
-  private loadFromStorage(): void {
-    if (this.isBrowser) {
-      const saved = localStorage.getItem('cart');
-      if (saved) {
-        try {
-          this.cartItems = JSON.parse(saved);
-          this.cartSubject.next([...this.cartItems]);
-        } catch {
-          this.cartItems = [];
-        }
-      }
-    }
-  }
-
-  syncCartAfterLogin(): void {
-    if (this.cartItems.length > 0) {
-      // Sync local cart to server
-      this.http.post<ApiResponse<Cart>>(`${this.apiUrl}/sync`, { items: this.cartItems }).pipe(
-        map(res => this.extractCart(res)),
-        catchError(() => of(null))
-      ).subscribe(cart => {
-        if (cart?.items) {
-          this.cartItems = cart.items;
-          this.cartSubject.next([...this.cartItems]);
-        }
-      });
-    } else {
-      this.fetchCartFromServer();
-    }
   }
 }

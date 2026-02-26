@@ -9,7 +9,7 @@ import { WarehouseService } from '../../services/warehouse.service';
 import { OrderService } from '../../services/order.service';
 import { RentalService } from '../../services/rental.service';
 import { AuthService } from '../../services/auth.service';
-import { 
+import {
   Product, Category, Inventory, StockMovement, Warehouse, Order, Rental,
   CreateProductDto, CreateCategoryDto, CreateStockMovementDto, CreateWarehouseDto
 } from '../../models/api.models';
@@ -110,15 +110,16 @@ export class SellerComponent implements OnInit {
 
   loadProducts() {
     this.productService.getMyProducts().subscribe({
-      next: (products) => {
+      next: (products: any) => {
+
         this.products = products;
         this.updateStats();
         this.isLoading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         // Fallback to all products if my-products fails
         this.productService.getAll().subscribe({
-          next: (products) => {
+          next: (products: any) => {
             this.products = products;
             this.updateStats();
             this.isLoading = false;
@@ -158,13 +159,13 @@ export class SellerComponent implements OnInit {
 
   loadOrders() {
     this.orderService.getSellerOrders().subscribe({
-      next: (orders) => {
+      next: (orders: any) => {
         this.orders = orders;
         this.updateStats();
       },
       error: () => {
         this.orderService.getAll().subscribe({
-          next: (orders) => {
+          next: (orders: any) => {
             this.orders = orders;
             this.updateStats();
           },

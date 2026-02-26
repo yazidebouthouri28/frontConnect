@@ -1,54 +1,50 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { Category, CreateCategoryDto } from '../models/api.models';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { API_BASE } from './product.service';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+const unwrap = (res: any) => res?.data?.content || res?.data || res || [];
+const unwrapOne = (res: any) => res?.data || res;
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class CategoryService {
-  private apiUrl = `${environment.apiUrl}/categories`;
+  // Both public and admin routes exist — use admin for write operations
+  private url = `${API_BASE}/categories`;
+  private adminUrl = `${API_BASE}/admin/categories`;
 
   constructor(private http: HttpClient) {}
 
-  private extractData<T>(response: ApiResponse<T>): T {
-    return response.data ?? ([] as any);
+  /** GET /api/categories */
+  getAll(): Observable<any[]> {
+    return this.http.get<any>(this.url).pipe(map(unwrap));
   }
 
-  getAll(): Observable<Category[]> {
-    return this.http.get<ApiResponse<Category[]>>(this.apiUrl)
-      .pipe(map(res => this.extractData(res)));
+  getById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.url}/${id}`).pipe(map(unwrapOne));
   }
 
-  getById(id: string): Observable<Category> {
-    return this.http.get<ApiResponse<Category>>(`${this.apiUrl}/${id}`)
-      .pipe(map(res => this.extractData(res)));
+  getByName(name: string): Observable<any> {
+    return this.http.get<any>(`${this.url}/name/${name}`).pipe(map(unwrapOne));
   }
 
-  create(category: CreateCategoryDto): Observable<Category> {
-    return this.http.post<ApiResponse<Category>>(this.apiUrl, category)
-      .pipe(map(res => this.extractData(res)));
+  /** POST /api/admin/categories */
+  create(data: { name: string; description?: string; icon?: string }): Observable<any> {
+    return this.http.post<any>(this.adminUrl, data).pipe(map(unwrapOne));
   }
 
-  update(id: string, category: Partial<CreateCategoryDto>): Observable<Category> {
-    return this.http.put<ApiResponse<Category>>(`${this.apiUrl}/${id}`, category)
-      .pipe(map(res => this.extractData(res)));
+  /** PUT /api/admin/categories/{id} */
+  update(id: string, data: { name: string; description?: string; icon?: string }): Observable<any> {
+    return this.http.put<any>(`${this.adminUrl}/${id}`, data).pipe(map(unwrapOne));
   }
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`)
-      .pipe(map(() => undefined));
+  /** DELETE /api/admin/categories/{id} */
+  delete(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.adminUrl}/${id}`);
   }
 
-  getSubcategories(parentId: string): Observable<Category[]> {
-    return this.http.get<ApiResponse<Category[]>>(`${this.apiUrl}/${parentId}/subcategories`)
-      .pipe(map(res => this.extractData(res)));
+  /** PATCH /api/categories/{id}/product-count */
+  updateProductCount(id: string): Observable<any> {
+    return this.http.patch<any>(`${this.url}/${id}/product-count`, {}).pipe(map(unwrapOne));
   }
 }

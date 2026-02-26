@@ -1,27 +1,23 @@
 import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, catchError, of, map } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, map } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
 import { User, LoginRequest, RegisterRequest, AuthResponse } from '../models/api.models';
 
-// Backend wraps responses in this format
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+type UserRole = User['role'];
+const VALID_ROLES: UserRole[] = ['CLIENT', 'SELLER', 'ORGANIZER', 'CAMPER', 'SPONSOR', 'ADMIN', 'USER' as any];
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
+
   private apiUrl = `${environment.apiUrl}/auth`;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
-  private tokenKey = 'auth_token';
-  private userKey = 'current_user';
-  private isBrowser: boolean;
 
+  readonly tokenKey = 'auth_token';
+  readonly userKey  = 'current_user';
+
+  private isBrowser: boolean;
   currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(
@@ -32,150 +28,146 @@ export class AuthService {
     this.loadStoredUser();
   }
 
+  // ── SSR-safe localStorage ─────────────────────────────────────────────────
+
+  private storageGet(key: string): string | null {
+    if (!this.isBrowser) return null;
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+  private storageSet(key: string, value: string): void {
+    if (!this.isBrowser) return;
+    try { localStorage.setItem(key, value); } catch {}
+  }
+  private storageRemove(key: string): void {
+    if (!this.isBrowser) return;
+    try { localStorage.removeItem(key); } catch {}
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
   private loadStoredUser(): void {
-    if (this.isBrowser) {
-      const token = localStorage.getItem(this.tokenKey);
-      const userJson = localStorage.getItem(this.userKey);
-      if (token && userJson) {
-        try {
-          const user = JSON.parse(userJson);
-          this.currentUserSubject.next(user);
-        } catch {
-          this.logout();
-        }
-      }
+    const token    = this.storageGet(this.tokenKey);
+    const userJson = this.storageGet(this.userKey);
+    if (token && userJson) {
+      try { this.currentUserSubject.next(JSON.parse(userJson) as User); }
+      catch { this.logout(); }
     }
   }
 
+  // ── Auth calls ────────────────────────────────────────────────────────────
+
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    // Backend expects emailOrUsername instead of email
-    const loginData = {
-      emailOrUsername: credentials.email,
+    // ✅ Java AuthRequest DTO has field: private String username
+    //    Spring Security authenticates by username OR email via the service
+    //    So we send the value (email or username) in the "username" field
+    const body = {
+      username: credentials.email,   // field name must match Java DTO exactly
       password: credentials.password
     };
-    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/login`, loginData).pipe(
-      map(response => {
-        if (!response.success) {
-          throw new Error(response.message || 'Login failed');
-        }
-        return this.transformAuthResponse(response.data);
-      }),
-      tap(authResponse => this.handleAuthSuccess(authResponse)),
+
+    return this.http.post<any>(`${this.apiUrl}/login`, body).pipe(
+      map(raw  => this.extractAuthResponse(raw)),
+      tap(auth => this.handleAuthSuccess(auth)),
       catchError(error => {
-        const message = error.error?.message || error.message || 'Login failed';
-        throw new Error(message);
+        const msg = error.error?.message
+          || error.error?.error
+          || error.message
+          || 'Login failed. Please check your credentials.';
+        throw new Error(msg);
       })
     );
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/register`, data).pipe(
-      map(response => {
-        if (!response.success) {
-          throw new Error(response.message || 'Registration failed');
-        }
-        return this.transformAuthResponse(response.data);
-      }),
-      tap(authResponse => this.handleAuthSuccess(authResponse)),
+    return this.http.post<any>(`${this.apiUrl}/register`, data).pipe(
+      map(raw  => this.extractAuthResponse(raw)),
+      tap(auth => this.handleAuthSuccess(auth)),
       catchError(error => {
-        const message = error.error?.message || error.message || 'Registration failed';
-        throw new Error(message);
+        const msg = error.error?.message
+          || error.error?.error
+          || error.message
+          || 'Registration failed. Please try again.';
+        throw new Error(msg);
       })
     );
   }
 
-  private transformAuthResponse(data: any): AuthResponse {
-    // Transform backend response to AuthResponse format
+  // ── Response normalisation ────────────────────────────────────────────────
+
+  private extractAuthResponse(raw: any): AuthResponse {
+    // Supports both:
+    //   Flat    → { token, userId, name, role, ... }
+    //   Wrapped → { success: true, data: { token, ... } }
+    const p = (raw?.data && raw?.success !== undefined) ? raw.data : raw;
+    if (!p?.token) throw new Error('Invalid server response: token missing.');
+
+    // Backend returns role as "USER" enum — map to CLIENT for frontend
+    const rawRole = String(p.role ?? 'CLIENT').toUpperCase();
+    const roleMap: Record<string, UserRole> = { 'USER': 'CLIENT' };
+    const role: UserRole = roleMap[rawRole]
+      ?? (VALID_ROLES.includes(rawRole as UserRole) ? (rawRole as UserRole) : 'CLIENT');
+
     const user: User = {
-      id: data.userId || data.id,
-      name: data.name || data.username,
-      username: data.username,
-      email: data.email,
-      phone: data.phone,
-      address: data.address,
-      country: data.country,
-      loyaltyPoints: data.loyaltyPoints || 0,
-      role: data.role || 'CLIENT',
-      createdAt: data.createdAt || new Date().toISOString()
+      id:            String(p.userId ?? p.id),
+      name:          p.name      ?? p.username,
+      username:      p.username,
+      email:         p.email,
+      phone:         p.phone,
+      address:       p.address,
+      country:       p.country,
+      loyaltyPoints: p.loyaltyPoints ?? 0,
+      role,
+      avatar:        p.avatar,
+      bio:           p.bio,
+      coverImage:    p.coverImage,
+      location:      p.location,
+      createdAt:     p.createdAt ?? new Date().toISOString()
     };
-    console.log('Auth Response - User:', user);
-    return { token: data.token, user };
+    return { token: p.token, user };
   }
 
-  private handleAuthSuccess(response: AuthResponse): void {
-    if (this.isBrowser) {
-      localStorage.setItem(this.tokenKey, response.token);
-      localStorage.setItem(this.userKey, JSON.stringify(response.user));
-    }
-    this.currentUserSubject.next(response.user);
+  private handleAuthSuccess(auth: AuthResponse): void {
+    this.storageSet(this.tokenKey, auth.token);
+    this.storageSet(this.userKey, JSON.stringify(auth.user));
+    this.currentUserSubject.next(auth.user);
   }
+
+  // ── Public API ────────────────────────────────────────────────────────────
 
   logout(): void {
-    if (this.isBrowser) {
-      localStorage.removeItem(this.tokenKey);
-      localStorage.removeItem(this.userKey);
-    }
+    this.storageRemove(this.tokenKey);
+    this.storageRemove(this.userKey);
     this.currentUserSubject.next(null);
   }
 
-  getToken(): string | null {
-    if (this.isBrowser) {
-      return localStorage.getItem(this.tokenKey);
-    }
-    return null;
-  }
+  getToken(): string | null { return this.storageGet(this.tokenKey); }
 
   isAuthenticated(): boolean {
     const token = this.getToken();
     if (!token) return false;
-    
-    // Check token expiration
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const expiry = payload.exp * 1000; // Convert to milliseconds
-      if (Date.now() >= expiry) {
-        this.logout();
-        return false;
-      }
+      if (Date.now() >= payload.exp * 1000) { this.logout(); return false; }
       return true;
-    } catch {
-      return true; // If we can't parse, assume it's valid
-    }
+    } catch { return true; }
   }
 
-  // Check if token will expire soon (within 5 minutes)
-  isTokenExpiringSoon(): boolean {
+  isTokenExpiringSoon(thresholdMs = 5 * 60 * 1000): boolean {
     const token = this.getToken();
     if (!token) return false;
-    
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const expiry = payload.exp * 1000;
-      const fiveMinutes = 5 * 60 * 1000;
-      return Date.now() >= (expiry - fiveMinutes);
-    } catch {
-      return false;
-    }
+      return Date.now() >= payload.exp * 1000 - thresholdMs;
+    } catch { return false; }
   }
 
-  getCurrentUser(): User | null {
-    return this.currentUserSubject.value;
-  }
+  getCurrentUser(): User | null { return this.currentUserSubject.value; }
+  hasRole(role: string): boolean { return this.getCurrentUser()?.role === role; }
 
-  hasRole(role: string): boolean {
-    const user = this.getCurrentUser();
-    return user?.role === role;
-  }
-
-  isSeller(): boolean {
-    return this.hasRole('SELLER');
-  }
-
-  isClient(): boolean {
-    return this.hasRole('CLIENT');
-  }
-
-  isAdmin(): boolean {
-    return this.hasRole('ADMIN');
-  }
+  isAdmin():     boolean { return this.hasRole('ADMIN'); }
+  isSeller():    boolean { return this.hasRole('SELLER'); }
+  isClient():    boolean { return this.hasRole('CLIENT') || this.hasRole('USER' as any); }
+  isOrganizer(): boolean { return this.hasRole('ORGANIZER'); }
+  isCamper():    boolean { return this.hasRole('CAMPER'); }
+  isSponsor():   boolean { return this.hasRole('SPONSOR'); }
 }

@@ -1,17 +1,27 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  // Get token from localStorage
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+// Must match AuthService.tokenKey exactly
+const TOKEN_KEY = 'auth_token';
 
-  if (token) {
-    const clonedRequest = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return next(clonedRequest);
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  // Guard for SSR — localStorage doesn't exist on the server
+  if (typeof window === 'undefined') {
+    return next(req);
   }
 
-  return next(req);
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  // No token → pass request through untouched (login, register, public routes)
+  if (!token) {
+    return next(req);
+  }
+
+  // Attach Bearer token to all authenticated requests
+  const authReq = req.clone({
+    setHeaders: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  return next(authReq);
 };

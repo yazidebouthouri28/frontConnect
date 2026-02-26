@@ -3,364 +3,450 @@ import { CommonModule, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
-import { InventoryService } from '../../services/inventory.service';
+import { InventoryService, RentalService, WarehouseService } from '../../services/inventory-rental-warehouse.service';
 import { OrderService } from '../../services/order.service';
-import { RentalService } from '../../services/rental.service';
-import { WarehouseService } from '../../services/warehouse.service';
-import { Product, Category, Inventory, Order, Rental, Warehouse } from '../../models/api.models';
 
 @Component({
-    selector: 'app-marketplace-management',
-    standalone: true,
-    imports: [CommonModule, NgClass, FormsModule],
-    templateUrl: './marketplace-management.component.html',
-    styleUrl: './marketplace-management.component.css'
+  selector: 'app-marketplace-management',
+  standalone: true,
+  imports: [CommonModule, NgClass, FormsModule],
+  templateUrl: './marketplace-management.component.html',
+  styleUrl: './marketplace-management.component.css'
 })
 export class MarketplaceManagementComponent implements OnInit {
-    @Input() set section(value: string) {
-        if (value && value !== 'marketplace') {
-            this.activePortalSection = value;
-        }
+
+  @Input() set section(value: string) {
+    if (value && value !== 'marketplace') {
+      this.activePortalSection = value;
     }
+  }
 
-    activePortalSection = 'products_categories';
-    activeTab = 'products';
-    activeInventoryTab = 'stock';
-    activeOrdersTab = 'sales';
-    
-    // Loading and error states
-    isLoading = false;
-    errorMessage = '';
+  // ── UI State ────────────────────────────────────────────
+  activePortalSection = 'products_categories';
+  activeTab = 'products';
+  activeInventoryTab = 'stock';
+  isLoading = false;
 
-    // Data from backend
-    categories: any[] = [];
-    products: any[] = [];
-    inventory: any[] = [];
-    warehouses: Warehouse[] = [];
-    gearOrders: any[] = [];
-    gearRentals: any[] = [];
+  // Modal state
+  showProductModal = false;
+  showCategoryModal = false;
+  isEditMode = false;
+  editingId: string | null = null;
 
-    // Stats
-    totalOrders = 0;
-    pendingOrders = 0;
-    totalRevenue = 0;
-    activeRentals = 0;
-    overdueRentals = 0;
-    rentalRevenue = 0;
-    lowStockCount = 0;
+  // ── Data ────────────────────────────────────────────────
+  categories: any[] = [];
+  products: any[] = [];
+  filteredProducts: any[] = [];
+  inventory: any[] = [];
+  warehouses: any[] = [];
+  gearOrders: any[] = [];
+  filteredOrders: any[] = [];
+  gearRentals: any[] = [];
+  filteredRentals: any[] = [];
 
-    constructor(
-        private productService: ProductService,
-        private categoryService: CategoryService,
-        private inventoryService: InventoryService,
-        private orderService: OrderService,
-        private rentalService: RentalService,
-        private warehouseService: WarehouseService
-    ) {}
+  // ── Stats ───────────────────────────────────────────────
+  totalOrders = 0;
+  pendingOrders = 0;
+  totalRevenue = 0;
+  activeRentals = 0;
+  overdueRentals = 0;
+  rentalRevenue = 0;
+  lowStockCount = 0;
 
-    ngOnInit(): void {
-        this.loadAllData();
-    }
+  // ── Filter State ────────────────────────────────────────
+  productSearch = '';
+  selectedCategoryFilter = '';
+  selectedOrderStatus = 'All';
+  selectedRentalFilter = 'All';
+  selectedOrderStatus_map: { [key: string]: string } = {};
+  globalAlertThreshold = 15;
 
-    loadAllData(): void {
-        this.loadCategories();
-        this.loadProducts();
-        this.loadInventory();
-        this.loadWarehouses();
-        this.loadOrders();
-        this.loadRentals();
-    }
+  // ── Forms ───────────────────────────────────────────────
+  productForm: any = {
+    name: '', sku: '', categoryId: '', price: 0,
+    rentalPrice: null, stockQuantity: 0, description: '', isActive: true
+  };
 
-    loadCategories(): void {
-        this.categoryService.getAll().subscribe({
-            next: (data) => {
-                this.categories = data.map(cat => ({
-                    id: cat.id,
-                    name: cat.name,
-                    description: cat.description || 'Category',
-                    count: 0, // Will be updated from products
-                    icon: this.getCategoryIcon(cat.name),
-                    subcategories: []
-                }));
-            },
-            error: (err) => {
-                console.error('Failed to load categories:', err);
-                // Fallback to mock data
-                this.categories = [
-                    { id: 1, name: 'Tentes & Abris', description: 'Tous types de tentes', count: 8, icon: '⛺', subcategories: ['Tentes Familiales', 'Tentes 2-3 Personnes'] },
-                    { id: 2, name: 'Sacs & Bagages', description: 'Sacs à dos', count: 6, icon: '🎒' },
-                    { id: 3, name: 'Cuisine', description: 'Equipement cuisine', count: 5, icon: '🔥' },
-                    { id: 4, name: 'Couchage', description: 'Sacs de couchage', count: 5, icon: '💤' },
-                ];
-            }
+  categoryForm: any = { name: '', description: '', icon: '📦' };
+
+  constructor(
+    private productService: ProductService,
+    private categoryService: CategoryService,
+    private inventoryService: InventoryService,
+    private orderService: OrderService,
+    private rentalService: RentalService,
+    private warehouseService: WarehouseService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadAllData();
+  }
+
+  loadAllData(): void {
+    this.loadCategories();
+    this.loadProducts();
+    this.loadInventory();
+    this.loadWarehouses();
+    this.loadOrders();
+    this.loadRentals();
+  }
+
+  // ── Loaders ─────────────────────────────────────────────
+
+  loadCategories(): void {
+    this.categoryService.getAll().subscribe({
+      next: (data: any[]) => {
+        this.categories = data.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description || '',
+          count: cat.productCount || 0,
+          icon: cat.image || this.getCategoryIcon(cat.name),
+          subcategories: cat.subcategories || []
+        }));
+      },
+      error: (err: any) => {
+        console.error('categories:', err);
+        this.categories = [
+          { id: '1', name: 'Tentes & Abris', description: 'Tous types de tentes', count: 8, icon: '⛺', subcategories: [] },
+          { id: '2', name: 'Sacs & Bagages', description: 'Sacs à dos', count: 6, icon: '🎒', subcategories: [] },
+          { id: '3', name: 'Cuisine', description: 'Equipement cuisine', count: 5, icon: '🔥', subcategories: [] },
+          { id: '4', name: 'Couchage', description: 'Sacs de couchage', count: 5, icon: '💤', subcategories: [] },
+        ];
+      }
+    });
+  }
+
+  loadProducts(): void {
+    this.isLoading = true;
+    // Use admin endpoint for management view
+    this.productService.getAllAdmin().subscribe({
+      next: (data: any[]) => {
+        this.products = data.map((p: any) => ({
+          id: p.id,
+          sku: p.sku || `SKU-${String(p.id).substring(0, 8)}`,
+          name: p.name,
+          description: p.description || '',
+          category: p.categoryName || p.categoryId || 'Uncategorized',
+          categoryId: p.categoryId || '',
+          price: p.price || 0,
+          rental: p.rentalPrice || null,
+          stock: p.stockQuantity || 0,
+          status: p.isActive ? 'Active' : 'Inactive',
+          isActive: p.isActive
+        }));
+        this.filteredProducts = [...this.products];
+        this.isLoading = false;
+      },
+      error: (err: any) => {
+        console.error('products:', err);
+        this.isLoading = false;
+        this.products = [
+          { id: '1', sku: 'TENT-FAM-001', name: '4-Person Family Tent', description: '', category: 'Tentes & Abris', categoryId: '1', price: 299.99, rental: 45, stock: 45, status: 'Active', isActive: true },
+          { id: '2', sku: 'SLEEP-PREM-001', name: 'Premium Sleeping Bag -20°C', description: '', category: 'Couchage', categoryId: '4', price: 189.99, rental: 25, stock: 12, status: 'Active', isActive: true },
+          { id: '3', sku: 'COOK-STOV-001', name: 'Portable Camp Stove', description: '', category: 'Cuisine', categoryId: '3', price: 89.99, rental: null, stock: 67, status: 'Active', isActive: true },
+        ];
+        this.filteredProducts = [...this.products];
+      }
+    });
+  }
+
+  loadInventory(): void {
+    this.inventoryService.getAll().subscribe({
+      next: (data: any[]) => {
+        this.inventory = data.map((inv: any) => ({
+          id: inv.id,
+          productName: inv.productName || 'Product',
+          warehouse: inv.warehouseName || 'Main Warehouse',
+          location: inv.location || '—',
+          current: inv.currentStock || 0,
+          reserved: inv.reservedStock || 0,
+          available: (inv.currentStock || 0) - (inv.reservedStock || 0),
+          alertAt: inv.lowStockThreshold || 15,
+          status: (inv.currentStock || 0) <= (inv.lowStockThreshold || 15) ? 'low' : 'ok'
+        }));
+        this.lowStockCount = this.inventory.filter((i: any) => i.status === 'low').length;
+      },
+      error: (err: any) => {
+        console.error('inventory:', err);
+        this.inventory = [
+          { id: '1', productName: '4-Person Family Tent', warehouse: 'Main Warehouse', location: 'A1-B3-C2', current: 45, reserved: 8, available: 37, alertAt: 20, status: 'ok' },
+          { id: '2', productName: 'Premium Sleeping Bag -20°C', warehouse: 'Main Warehouse', location: 'B2-C1-B4', current: 12, reserved: 3, available: 9, alertAt: 15, status: 'low' },
+        ];
+        this.lowStockCount = 1;
+      }
+    });
+  }
+
+  loadWarehouses(): void {
+    this.warehouseService.getAll().subscribe({
+      next: (data: any[]) => { this.warehouses = data; },
+      error: (err: any) => { console.error('warehouses:', err); this.warehouses = []; }
+    });
+  }
+
+  loadOrders(): void {
+    this.orderService.getAll().subscribe({
+      next: (data: any[]) => {
+        this.gearOrders = data.map((o: any) => ({
+          id: o.id,
+          customer: o.customerName || o.buyerName || 'Customer',
+          email: o.customerEmail || o.buyerEmail || '—',
+          address: o.shippingAddress ? `${o.shippingAddress.street || ''}, ${o.shippingAddress.city || ''}` : '—',
+          date: o.orderDate ? new Date(o.orderDate).toISOString().split('T')[0] : '—',
+          total: o.totalAmount || 0,
+          status: (o.status || 'pending').toLowerCase(),
+          items: o.items || []
+        }));
+        this.filteredOrders = [...this.gearOrders];
+        this.totalOrders = this.gearOrders.length;
+        this.pendingOrders = this.gearOrders.filter((o: any) => o.status === 'pending').length;
+        this.totalRevenue = this.gearOrders.reduce((sum: number, o: any) => sum + o.total, 0);
+        // init status map
+        this.gearOrders.forEach((o: any) => { this.selectedOrderStatus_map[o.id] = o.status; });
+      },
+      error: (err: any) => {
+        console.error('orders:', err);
+        this.gearOrders = [
+          { id: 'ORD-001', customer: 'David Johnson', email: 'david@example.com', address: '789 Main St, Tunis', date: '2026-02-14', total: 350.50, status: 'delivered', items: [] },
+          { id: 'ORD-002', customer: 'Emma Wilson', email: 'emma@example.com', address: '12 Rue de la Paix, Tunis', date: '2026-02-15', total: 95.00, status: 'pending', items: [] },
+        ];
+        this.filteredOrders = [...this.gearOrders];
+        this.totalOrders = 2; this.pendingOrders = 1; this.totalRevenue = 445.50;
+        this.gearOrders.forEach((o: any) => { this.selectedOrderStatus_map[o.id] = o.status; });
+      }
+    });
+  }
+
+  loadRentals(): void {
+    this.rentalService.getAll().subscribe({
+      next: (data: any[]) => {
+        const today = new Date();
+        this.gearRentals = data.map((r: any) => {
+          const end = new Date(r.endDate);
+          return {
+            id: r.id,
+            customer: r.customerName || r.userName || 'Customer',
+            product: r.productName || 'Product',
+            email: r.customerEmail || '—',
+            startDate: r.startDate ? new Date(r.startDate).toISOString().split('T')[0] : '—',
+            endDate: r.endDate ? new Date(r.endDate).toISOString().split('T')[0] : '—',
+            total: r.totalCost || r.totalAmount || 0,
+            deposit: r.deposit || r.depositAmount || 0,
+            status: (r.status || 'active').toLowerCase(),
+            daysLeft: Math.ceil((end.getTime() - today.getTime()) / 86400000)
+          };
         });
-    }
+        this.filteredRentals = [...this.gearRentals];
+        this.activeRentals = this.gearRentals.filter((r: any) => r.status === 'active').length;
+        this.overdueRentals = this.gearRentals.filter((r: any) => r.status === 'overdue' || r.daysLeft < 0).length;
+        this.rentalRevenue = this.gearRentals.reduce((sum: number, r: any) => sum + r.total, 0);
+      },
+      error: (err: any) => {
+        console.error('rentals:', err);
+        this.gearRentals = [
+          { id: 'RNT-001', customer: 'David Johnson', product: '4-Person Family Tent', email: 'david@example.com', startDate: '2026-02-10', endDate: '2026-02-17', total: 90, deposit: 60, status: 'active', daysLeft: 3 },
+          { id: 'RNT-002', customer: 'Emma Wilson', product: 'Premium Sleeping Bag', email: 'emma@example.com', startDate: '2026-02-08', endDate: '2026-02-15', total: 50, deposit: 40, status: 'overdue', daysLeft: -9 },
+        ];
+        this.filteredRentals = [...this.gearRentals];
+        this.activeRentals = 1; this.overdueRentals = 1; this.rentalRevenue = 140;
+      }
+    });
+  }
 
-    loadProducts(): void {
-        this.isLoading = true;
-        this.productService.getAll().subscribe({
-            next: (data) => {
-                this.products = data.map(prod => ({
-                    id: prod.id,
-                    sku: prod.sku || `SKU-${prod.id?.substring(0, 8)}`,
-                    name: prod.name,
-                    category: prod.categoryId || 'Uncategorized',
-                    price: prod.price,
-                    rental: prod.rentalPrice || null,
-                    stock: prod.stockQuantity || 0,
-                    status: prod.isActive ? 'Active' : 'Inactive'
-                }));
-                this.isLoading = false;
-            },
-            error: (err) => {
-                console.error('Failed to load products:', err);
-                this.isLoading = false;
-                // Fallback to mock data
-                this.products = [
-                    { id: 1, sku: 'TENT-FAM-001', name: '4-Person Family Tent', category: 'Tentes & Abris', price: 299.99, rental: 45, stock: 45, status: 'Active' },
-                    { id: 2, sku: 'SLEEP-PREM-001', name: 'Premium Sleeping Bag -20°C', category: 'Couchage', price: 189.99, rental: 25, stock: 12, status: 'Active' },
-                    { id: 3, sku: 'COOK-STOV-001', name: 'Portable Camp Stove', category: 'Cuisine', price: 89.99, rental: null, stock: 67, status: 'Active' },
-                ];
-            }
-        });
-    }
+  // ── Product CRUD ─────────────────────────────────────────
 
-    loadInventory(): void {
-        this.inventoryService.getAll().subscribe({
-            next: (data) => {
-                this.inventory = data.map(inv => ({
-                    id: inv.id,
-                    productName: inv.productName || 'Product',
-                    warehouse: inv.warehouseName || 'Main Warehouse',
-                    location: inv.location || 'A1-B1-C1',
-                    current: inv.currentStock,
-                    reserved: inv.reservedStock || 0,
-                    available: inv.currentStock - (inv.reservedStock || 0),
-                    alertAt: inv.lowStockThreshold || 15,
-                    status: inv.currentStock <= (inv.lowStockThreshold || 15) ? 'low' : 'ok'
-                }));
-                this.lowStockCount = this.inventory.filter(i => i.status === 'low').length;
-            },
-            error: (err) => {
-                console.error('Failed to load inventory:', err);
-                // Fallback to mock data
-                this.inventory = [
-                    { id: 1, productName: '4-Person Family Tent', warehouse: 'Main Warehouse', location: 'A1-B3-C2', current: 45, reserved: 8, available: 37, alertAt: 20, status: 'ok' },
-                    { id: 2, productName: 'Premium Sleeping Bag -20°C', warehouse: 'Main Warehouse', location: 'B2-C1-B4', current: 12, reserved: 3, available: 9, alertAt: 15, status: 'low' },
-                    { id: 3, productName: 'Portable Camp Stove', warehouse: 'Secondary Warehouse', location: 'C3-D2-E1', current: 67, reserved: 5, available: 62, alertAt: 25, status: 'ok' },
-                ];
-                this.lowStockCount = 1;
-            }
-        });
-    }
+  openAddProduct(): void {
+    this.productForm = { name: '', sku: '', categoryId: '', price: 0, rentalPrice: null, stockQuantity: 0, description: '', isActive: true };
+    this.isEditMode = false;
+    this.editingId = null;
+    this.showProductModal = true;
+  }
 
-    loadWarehouses(): void {
-        this.warehouseService.getAll().subscribe({
-            next: (data) => {
-                this.warehouses = data;
-            },
-            error: (err) => {
-                console.error('Failed to load warehouses:', err);
-                this.warehouses = [];
-            }
-        });
-    }
+  openEditProduct(prod: any): void {
+    this.productForm = {
+      name: prod.name, sku: prod.sku, categoryId: prod.categoryId,
+      price: prod.price, rentalPrice: prod.rental, stockQuantity: prod.stock,
+      description: prod.description, isActive: prod.isActive
+    };
+    this.isEditMode = true;
+    this.editingId = prod.id;
+    this.showProductModal = true;
+  }
 
-    loadOrders(): void {
-        this.orderService.getAll().subscribe({
-            next: (data) => {
-                this.gearOrders = data.map(order => ({
-                    id: order.id,
-                    customer: order.customerName || 'Customer',
-                    email: order.customerEmail || 'customer@example.com',
-                    date: order.createdAt ? new Date(order.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                    total: order.totalAmount,
-                    status: order.status?.toLowerCase() || 'pending',
-                    type: 'sale',
-                    items: order.items || []
-                }));
-                this.totalOrders = this.gearOrders.length;
-                this.pendingOrders = this.gearOrders.filter(o => o.status === 'pending').length;
-                this.totalRevenue = this.gearOrders.reduce((sum, o) => sum + o.total, 0);
-            },
-            error: (err) => {
-                console.error('Failed to load orders:', err);
-                // Fallback to mock data
-                this.gearOrders = [
-                    { id: 'ORD-001', customer: 'David Johnson', email: 'david@example.com', date: '2026-02-14', total: 350.50, status: 'delivered', type: 'sale' },
-                    { id: 'ORD-002', customer: 'Emma Wilson', email: 'emma@example.com', date: '2026-02-15', total: 95.00, status: 'pending', type: 'sale' },
-                ];
-                this.totalOrders = 2;
-                this.pendingOrders = 1;
-                this.totalRevenue = 445.50;
-            }
-        });
+  saveProduct(): void {
+    if (!this.productForm.name || !this.productForm.price) {
+      alert('Name and price are required.');
+      return;
     }
+    const call = this.isEditMode && this.editingId
+      ? this.productService.update(this.editingId, this.productForm)
+      : this.productService.create(this.productForm);
 
-    loadRentals(): void {
-        this.rentalService.getAll().subscribe({
-            next: (data) => {
-                this.gearRentals = data.map(rental => {
-                    const endDate = new Date(rental.endDate);
-                    const today = new Date();
-                    const daysLeft = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                    
-                    return {
-                        id: rental.id,
-                        customer: rental.customerName || 'Customer',
-                        product: rental.productName || 'Product',
-                        email: rental.customerEmail || 'customer@example.com',
-                        startDate: rental.startDate ? new Date(rental.startDate).toISOString().split('T')[0] : '',
-                        endDate: rental.endDate ? new Date(rental.endDate).toISOString().split('T')[0] : '',
-                        total: rental.totalCost || 0,
-                        deposit: rental.deposit || 0,
-                        status: rental.status?.toLowerCase() || 'active',
-                        daysLeft: daysLeft
-                    };
-                });
-                this.activeRentals = this.gearRentals.filter(r => r.status === 'active').length;
-                this.overdueRentals = this.gearRentals.filter(r => r.status === 'overdue' || r.daysLeft < 0).length;
-                this.rentalRevenue = this.gearRentals.reduce((sum, r) => sum + r.total, 0);
-            },
-            error: (err) => {
-                console.error('Failed to load rentals:', err);
-                // Fallback to mock data
-                this.gearRentals = [
-                    { id: 'RNT-001', customer: 'David Johnson', product: '4-Person Family Tent', email: 'david@example.com', startDate: '2026-02-10', endDate: '2026-02-17', total: 90.00, deposit: 60.00, status: 'active', daysLeft: 1 },
-                    { id: 'RNT-002', customer: 'Emma Wilson', product: 'Premium Sleeping Bag', email: 'emma@example.com', startDate: '2026-02-08', endDate: '2026-02-15', total: 50.00, deposit: 40.00, status: 'overdue', daysLeft: -1 },
-                ];
-                this.activeRentals = 1;
-                this.overdueRentals = 1;
-                this.rentalRevenue = 140;
-            }
-        });
-    }
+    call.subscribe({
+      next: () => { this.closeModals(); this.loadProducts(); },
+      error: (err: any) => { console.error(err); alert('Failed to save product.'); }
+    });
+  }
 
-    // Helper methods
-    getCategoryIcon(name: string): string {
-        const iconMap: { [key: string]: string } = {
-            'tent': '⛺',
-            'tentes': '⛺',
-            'bag': '🎒',
-            'sacs': '🎒',
-            'cook': '🔥',
-            'cuisine': '🔥',
-            'sleep': '💤',
-            'couchage': '💤',
-            'light': '🔦',
-            'tool': '🔧',
-            'electronics': '📱',
-            'default': '📦'
-        };
-        
-        const lowerName = name.toLowerCase();
-        for (const [key, icon] of Object.entries(iconMap)) {
-            if (lowerName.includes(key)) {
-                return icon;
-            }
-        }
-        return iconMap['default'];
-    }
+  deleteProduct(id: string): void {
+    if (!confirm('Delete this product?')) return;
+    this.productService.deleteAdmin(id).subscribe({
+      next: () => this.loadProducts(),
+      error: (err: any) => { console.error(err); alert('Failed to delete product.'); }
+    });
+  }
 
-    setPortalSection(section: string) {
-        this.activePortalSection = section;
-    }
+  // ── Category CRUD ────────────────────────────────────────
 
-    setTab(tab: string) {
-        this.activeTab = tab;
-    }
+  openAddCategory(): void {
+    this.categoryForm = { name: '', description: '', icon: '📦' };
+    this.isEditMode = false;
+    this.editingId = null;
+    this.showCategoryModal = true;
+  }
 
-    setInventoryTab(tab: string) {
-        this.activeInventoryTab = tab;
-    }
+  openEditCategory(cat: any): void {
+    this.categoryForm = { name: cat.name, description: cat.description, icon: cat.icon };
+    this.isEditMode = true;
+    this.editingId = cat.id;
+    this.showCategoryModal = true;
+  }
 
-    setOrdersTab(tab: string) {
-        this.activeOrdersTab = tab;
-    }
+  saveCategory(): void {
+    if (!this.categoryForm.name) { alert('Name is required.'); return; }
+    const call = this.isEditMode && this.editingId
+      ? this.categoryService.update(this.editingId, this.categoryForm)
+      : this.categoryService.create(this.categoryForm);
 
-    getStatusClass(status: string): string {
-        switch (status.toLowerCase()) {
-            case 'active':
-            case 'delivered':
-            case 'in stock':
-                return 'bg-green-100 text-green-700';
-            case 'low':
-            case 'low stock':
-            case 'pending':
-            case 'shipped':
-                return 'bg-yellow-100 text-yellow-700';
-            case 'cancelled':
-            case 'out of stock':
-                return 'bg-red-100 text-red-700';
-            default: return 'bg-gray-100 text-gray-700';
-        }
-    }
+    call.subscribe({
+      next: () => { this.closeModals(); this.loadCategories(); },
+      error: (err: any) => { console.error(err); alert('Failed to save category.'); }
+    });
+  }
 
-    // CRUD Operations
-    deleteProduct(productId: string): void {
-        if (confirm('Are you sure you want to delete this product?')) {
-            this.productService.delete(productId).subscribe({
-                next: () => {
-                    this.loadProducts();
-                },
-                error: (err) => {
-                    console.error('Failed to delete product:', err);
-                    alert('Failed to delete product. Please try again.');
-                }
-            });
-        }
-    }
+  deleteCategory(id: string): void {
+    if (!confirm('Delete this category?')) return;
+    this.categoryService.delete(id).subscribe({
+      next: () => this.loadCategories(),
+      error: (err: any) => { console.error(err); alert('Failed to delete category.'); }
+    });
+  }
 
-    deleteCategory(categoryId: string): void {
-        if (confirm('Are you sure you want to delete this category?')) {
-            this.categoryService.delete(categoryId).subscribe({
-                next: () => {
-                    this.loadCategories();
-                },
-                error: (err) => {
-                    console.error('Failed to delete category:', err);
-                    alert('Failed to delete category. Please try again.');
-                }
-            });
-        }
-    }
+  closeModals(): void {
+    this.showProductModal = false;
+    this.showCategoryModal = false;
+  }
 
-    updateOrderStatus(orderId: string, newStatus: string): void {
-        this.orderService.updateStatus(orderId, newStatus.toUpperCase()).subscribe({
-            next: () => {
-                this.loadOrders();
-            },
-            error: (err) => {
-                console.error('Failed to update order status:', err);
-                alert('Failed to update order status. Please try again.');
-            }
-        });
-    }
+  // ── Order Operations ─────────────────────────────────────
 
-    markRentalReturned(rentalId: string): void {
-        this.rentalService.markReturned(rentalId).subscribe({
-            next: () => {
-                this.loadRentals();
-            },
-            error: (err) => {
-                console.error('Failed to mark rental as returned:', err);
-                alert('Failed to mark rental as returned. Please try again.');
-            }
-        });
-    }
+  filterOrders(status: string): void {
+    this.selectedOrderStatus = status;
+    this.filteredOrders = status === 'All'
+      ? [...this.gearOrders]
+      : this.gearOrders.filter((o: any) => o.status === status.toLowerCase());
+  }
 
-    extendRental(rentalId: string): void {
-        const days = prompt('Enter number of days to extend:');
-        if (days && parseInt(days) > 0) {
-            this.rentalService.extend(rentalId, { additionalDays: parseInt(days) }).subscribe({
-                next: () => {
-                    this.loadRentals();
-                },
-                error: (err) => {
-                    console.error('Failed to extend rental:', err);
-                    alert('Failed to extend rental. Please try again.');
-                }
-            });
-        }
+  updateOrderStatus(orderId: string): void {
+    const status = this.selectedOrderStatus_map[orderId];
+    if (!status) return;
+    this.orderService.updateStatus(orderId, status.toUpperCase()).subscribe({
+      next: () => this.loadOrders(),
+      error: (err: any) => { console.error(err); alert('Failed to update order status.'); }
+    });
+  }
+
+  cancelOrder(orderId: string): void {
+    if (!confirm('Cancel this order?')) return;
+    this.orderService.cancelAdmin(orderId, 'Cancelled by admin').subscribe({
+      next: () => this.loadOrders(),
+      error: (err: any) => { console.error(err); alert('Failed to cancel order.'); }
+    });
+  }
+
+  // ── Rental Operations ────────────────────────────────────
+
+  filterRentals(filter: string): void {
+    this.selectedRentalFilter = filter;
+    this.filteredRentals = filter === 'All'
+      ? [...this.gearRentals]
+      : this.gearRentals.filter((r: any) => r.status === filter.toLowerCase());
+  }
+
+  markRentalReturned(id: string): void {
+    this.rentalService.markReturned(id).subscribe({
+      next: () => this.loadRentals(),
+      error: (err: any) => { console.error(err); alert('Failed to mark as returned.'); }
+    });
+  }
+
+  extendRental(id: string): void {
+    const days = prompt('Days to extend:');
+    if (!days || parseInt(days) <= 0) return;
+    this.rentalService.extend(id, { additionalDays: parseInt(days) }).subscribe({
+      next: () => this.loadRentals(),
+      error: (err: any) => { console.error(err); alert('Failed to extend rental.'); }
+    });
+  }
+
+  sendReminder(id: string): void {
+    this.rentalService.sendReminder(id).subscribe({
+      next: () => alert('Reminder sent.'),
+      error: (err: any) => { console.error(err); alert('Failed to send reminder.'); }
+    });
+  }
+
+  // ── Inventory ────────────────────────────────────────────
+
+  applyGlobalAlert(): void {
+    alert(`Global threshold of ${this.globalAlertThreshold} will be applied on the backend.`);
+  }
+
+  recordMovement(): void {
+    const productId = prompt('Enter inventory ID to record movement for:');
+    if (!productId) return;
+    const qty = prompt('Quantity (use negative for OUT):');
+    if (!qty) return;
+    const type = parseInt(qty) >= 0 ? 'IN' : 'OUT';
+    this.inventoryService.recordMovement(productId, { type, quantity: Math.abs(parseInt(qty)) }).subscribe({
+      next: () => { alert('Movement recorded.'); this.loadInventory(); },
+      error: (err: any) => { console.error(err); alert('Failed to record movement.'); }
+    });
+  }
+
+  filterProducts(): void {
+    this.filteredProducts = this.products.filter((p: any) => {
+      const matchSearch = !this.productSearch || p.name.toLowerCase().includes(this.productSearch.toLowerCase()) || p.sku.toLowerCase().includes(this.productSearch.toLowerCase());
+      const matchCat = !this.selectedCategoryFilter || p.category === this.selectedCategoryFilter;
+      return matchSearch && matchCat;
+    });
+  }
+
+  // ── Helpers ──────────────────────────────────────────────
+
+  getCategoryIcon(name: string): string {
+    const map: { [key: string]: string } = {
+      tent: '⛺', tentes: '⛺', bag: '🎒', sacs: '🎒',
+      cook: '🔥', cuisine: '🔥', sleep: '💤', couchage: '💤',
+      light: '🔦', tool: '🔧', electronics: '📱'
+    };
+    const lower = name.toLowerCase();
+    for (const [key, icon] of Object.entries(map)) {
+      if (lower.includes(key)) return icon;
     }
+    return '📦';
+  }
+
+  getOrderStatusClass(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'delivered': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      case 'shipped':   return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'processing':return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+      case 'pending':   return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'cancelled': return 'bg-red-50 text-red-500 border-red-100';
+      default:          return 'bg-gray-50 text-gray-500 border-gray-100';
+    }
+  }
+
+  setPortalSection(section: string): void { this.activePortalSection = section; }
 }

@@ -170,7 +170,7 @@ export class ClientComponent implements OnInit {
   updateQuantity(index: number, change: number) {
     const item = this.cartItems[index];
     const newQuantity = item.quantity + change;
-    
+
     if (newQuantity <= 0) {
       this.removeFromCart(index);
     } else {
@@ -244,7 +244,7 @@ export class ClientComponent implements OnInit {
 
     this.isLoading = true;
     this.orderService.create(orderData).subscribe({
-      next: (order) => {
+      next: (order: any) => {
         this.latestOrderId = order.id;
         this.lastEarnedPoints = Math.floor(this.cartTotal);
         this.showCheckoutSuccess = true;
@@ -257,7 +257,8 @@ export class ClientComponent implements OnInit {
         this.loadWallet();
         this.loadOrders();
       },
-      error: (err) => {
+      error: (err: any) => {
+
         this.isLoading = false;
         alert('❌ Checkout failed: ' + (err.message || 'Unknown error'));
       }
