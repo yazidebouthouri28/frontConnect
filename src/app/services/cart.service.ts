@@ -1,9 +1,9 @@
 import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, catchError, tap, map } from 'rxjs';
+import { BehaviorSubject, Observable, of, catchError, map } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
-import { Cart, CartItem } from '../models/api.models';
+import { CartItem } from '../models/api.models';
 
 const LOCAL_CART_KEY = 'local_cart';
 
@@ -14,7 +14,7 @@ export class CartService {
   private isBrowser: boolean;
 
   private cartSubject = new BehaviorSubject<CartItem[]>([]);
-  cart$  = this.cartSubject.asObservable();
+  cart$ = this.cartSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -51,11 +51,16 @@ export class CartService {
 
   // ── Cart state ────────────────────────────────────────────────────────────
 
-  getItems():    CartItem[] { return this.cartSubject.value; }
-  getItemCount(): number    { return this.cartSubject.value.reduce((s, i) => s + i.quantity, 0); }
-  getSubtotal():  number    { return this.cartSubject.value.reduce((s, i) => s + i.price * i.quantity, 0); }
+  getItems():     CartItem[] { return this.cartSubject.value; }
+  getItemCount(): number     { return this.cartSubject.value.reduce((s, i) => s + i.quantity, 0); }
+  getSubtotal():  number     { return this.cartSubject.value.reduce((s, i) => s + i.price * i.quantity, 0); }
 
-  addItem(item: CartItem): void {
+  // ── Core methods — all return Observable<void> so .subscribe() always works ──
+
+  /**
+   * addItem / addToCart — both names accepted by components.
+   */
+  addItem(item: CartItem): Observable<void> {
     const current = [...this.cartSubject.value];
     const idx = current.findIndex(i => i.productId === item.productId && i.type === item.type);
     if (idx >= 0) {
@@ -67,13 +72,23 @@ export class CartService {
     this.saveLocalCart(current);
 
     if (this.isLoggedIn()) {
-      this.http.post(`${this.apiUrl}/items`, item).pipe(
-        catchError(e => { console.warn('Cart add failed silently:', e.status); return of(null); })
-      ).subscribe();
+      return this.http.post<any>(`${this.apiUrl}/items`, item).pipe(
+        map(() => void 0),
+        catchError(e => { console.warn('Cart add failed silently:', e.status); return of(void 0); })
+      );
     }
+    return of(void 0);
   }
 
-  removeItem(productId: string, type: 'PURCHASE' | 'RENTAL' = 'PURCHASE'): void {
+  /** Alias used by marketplace.component */
+  addToCart(item: CartItem): Observable<void> {
+    return this.addItem(item);
+  }
+
+  /**
+   * removeItem / removeFromCart — both names accepted.
+   */
+  removeItem(productId: string, type: 'PURCHASE' | 'RENTAL' = 'PURCHASE'): Observable<void> {
     const current = this.cartSubject.value.filter(
       i => !(i.productId === productId && i.type === type)
     );
@@ -81,38 +96,55 @@ export class CartService {
     this.saveLocalCart(current);
 
     if (this.isLoggedIn()) {
-      this.http.delete(`${this.apiUrl}/items/${productId}`).pipe(
-        catchError(e => { console.warn('Cart remove failed silently:', e.status); return of(null); })
-      ).subscribe();
+      return this.http.delete<any>(`${this.apiUrl}/items/${productId}`).pipe(
+        map(() => void 0),
+        catchError(e => { console.warn('Cart remove failed silently:', e.status); return of(void 0); })
+      );
     }
+    return of(void 0);
   }
 
-  updateQuantity(productId: string, quantity: number, type: 'PURCHASE' | 'RENTAL' = 'PURCHASE'): void {
-    if (quantity <= 0) { this.removeItem(productId, type); return; }
+  /** Alias used by cart.component and client.component */
+  removeFromCart(productId: string, type: 'PURCHASE' | 'RENTAL' = 'PURCHASE'): Observable<void> {
+    return this.removeItem(productId, type);
+  }
+
+  /**
+   * updateQuantity — returns Observable<void> so .subscribe() works.
+   */
+  updateQuantity(
+    productId: string,
+    quantity: number,
+    type: 'PURCHASE' | 'RENTAL' = 'PURCHASE'
+  ): Observable<void> {
+    if (quantity <= 0) return this.removeItem(productId, type);
+
     const current = this.cartSubject.value.map(i =>
       i.productId === productId && i.type === type ? { ...i, quantity } : i
     );
     this.cartSubject.next(current);
     this.saveLocalCart(current);
+    return of(void 0);
   }
-
-  clearCart(): void {
-    this.cartSubject.next([]);
-    this.clearLocalCart();
-    if (this.isLoggedIn()) {
-      this.http.delete(`${this.apiUrl}`).pipe(
-        catchError(e => { console.warn('Cart clear failed silently:', e.status); return of(null); })
-      ).subscribe();
-    }
-  }
-
-  // ── Called after login — NO /cart/sync endpoint ───────────────────────────
 
   /**
-   * After login: fetch the server cart, merge with local cart, update state.
-   * If the server cart endpoint fails (404/500), silently keep the local cart.
-   * ✅ Never calls /cart/sync — that endpoint doesn't exist in the backend.
+   * clearCart — returns Observable<void> so .subscribe() works.
    */
+  clearCart(): Observable<void> {
+    this.cartSubject.next([]);
+    this.clearLocalCart();
+
+    if (this.isLoggedIn()) {
+      return this.http.delete<any>(`${this.apiUrl}`).pipe(
+        map(() => void 0),
+        catchError(e => { console.warn('Cart clear failed silently:', e.status); return of(void 0); })
+      );
+    }
+    return of(void 0);
+  }
+
+  // ── Called after login ────────────────────────────────────────────────────
+
   syncCartAfterLogin(): void {
     if (!this.isLoggedIn()) return;
 
@@ -124,14 +156,13 @@ export class CartService {
         return of(null);
       })
     ).subscribe(response => {
-      if (response === null) return;  // server unavailable — keep local cart
+      if (response === null) return;
 
       const serverItems: CartItem[] =
-        response?.items          ??   // { items: [...] }
-        response?.data?.items    ??   // { success, data: { items: [...] } }
+        response?.items       ??
+        response?.data?.items ??
         [];
 
-      // Merge: server wins for existing items, add local-only items on top
       const merged = [...serverItems];
       for (const local of localItems) {
         const exists = merged.find(s => s.productId === local.productId && s.type === local.type);
@@ -141,7 +172,6 @@ export class CartService {
       this.cartSubject.next(merged);
       this.saveLocalCart(merged);
 
-      // Push local-only items to server
       const newItems = localItems.filter(
         l => !serverItems.find(s => s.productId === l.productId && s.type === l.type)
       );
