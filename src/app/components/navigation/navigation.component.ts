@@ -52,11 +52,10 @@ import { User } from '../../models/api.models';
                class="text-cream-beige hover:text-sage-green transition-colors text-sm font-medium">
               Community
             </a>
-            <!-- Sponsors Link (only for SPONSOR role) -->
-            <a *ngIf="isSponsor"
-               routerLink="/sponsors"
+            <!-- Sponsors Link (visible to all) -->
+            <a routerLink="/sponsors"
                routerLinkActive="text-sage-green"
-               class="text-orange-400 hover:text-orange-300 transition-colors text-sm font-medium">
+               class="text-cream-beige hover:text-sage-green transition-colors text-sm font-medium">
               Sponsors
             </a>
             <!-- Seller Dashboard Link (only for SELLER role) -->
@@ -217,12 +216,11 @@ import { User } from '../../models/api.models';
              class="block py-2 text-cream-beige hover:text-sage-green">
             💬 Community
           </a>
-          <!-- Sponsors (only for SPONSOR role) -->
-          <a *ngIf="isSponsor"
-             routerLink="/sponsors"
+          <!-- Sponsors (visible to all) -->
+          <a routerLink="/sponsors"
              (click)="toggleMobileMenu()"
              routerLinkActive="text-sage-green"
-             class="block py-2 text-orange-400 hover:text-orange-300">
+             class="block py-2 text-cream-beige hover:text-sage-green">
             🤝 Sponsors
           </a>
           <!-- Seller Dashboard (only for SELLER role) -->
