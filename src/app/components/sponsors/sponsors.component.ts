@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ApiService } from '../../services/api.service';
 
 interface Sponsor {
     name: string;
@@ -24,7 +25,16 @@ interface SponsorTier {
     templateUrl: './sponsors.component.html',
     styleUrls: ['./sponsors.component.css'],
 })
-export class SponsorsComponent {
+export class SponsorsComponent implements OnInit {
+
+    constructor(private apiService: ApiService) {}
+
+    ngOnInit(): void {
+        this.apiService.getAll('sponsors').subscribe({
+            next: (res) => console.log('✅ Backend response:', res),
+            error: (err) => console.error('❌ Error:', err)
+        });
+    }
 
     sponsorTiers: SponsorTier[] = [
         {
@@ -83,7 +93,7 @@ export class SponsorsComponent {
             tier: 'gold',
         },
         {
-            name: 'ONTT – Office National du Tourisme',
+            name: 'ONTT - Office National du Tourisme',
             logo: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=200',
             description: 'The National Tourism Office of Tunisia, promoting eco-tourism, adventure travel, and sustainable camping throughout Tunisia\'s diverse landscapes.',
             website: 'https://www.tourisme.gov.tn',
@@ -107,7 +117,7 @@ export class SponsorsComponent {
             tier: 'silver',
         },
         {
-            name: 'Délice Danone',
+            name: 'Delice Danone',
             logo: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?q=80&w=200',
             description: 'Tunisia\'s leading dairy brand, fueling campers and hikers with nutritious snacks and refreshing drinks on every trail.',
             website: '#',
@@ -124,7 +134,7 @@ export class SponsorsComponent {
 
     bronzeSponsors: Sponsor[] = [
         {
-            name: 'Café Meddeb',
+            name: 'Cafe Meddeb',
             logo: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=200',
             description: 'Handcrafted Tunisian coffee blends perfect for early morning campfire brews.',
             website: '#',
@@ -165,9 +175,9 @@ export class SponsorsComponent {
         { name: 'Association Tourisme Vert', icon: '🌿' },
         { name: 'Club Alpin Tunisien', icon: '🏔️' },
         { name: 'SOS Nature Tunisie', icon: '🌍' },
-        { name: 'Fédération Randonnée', icon: '🥾' },
+        { name: 'Federation Randonnee', icon: '🥾' },
         { name: 'Youth Hostel Tunisia', icon: '🏠' },
-        { name: 'Éco-Village Sejnane', icon: '🏕️' },
+        { name: 'Eco-Village Sejnane', icon: '🏕️' },
         { name: 'Patrimoine Vert', icon: '🌳' },
     ];
 }

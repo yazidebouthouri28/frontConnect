@@ -105,13 +105,12 @@ export const routes: Routes = [
   },
   
   // Sponsor Dashboard
-  { 
-    path: 'sponsor-dashboard', 
-    loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent),
-    canActivate: [AuthGuard],
-    data: { role: 'SPONSOR' }
-  },
-  
+{ 
+  path: 'sponsor-dashboard', 
+  loadComponent: () => import('./admin/sponsors-management/sponsors-management.component').then(m => m.SponsorsManagementComponent),
+  canActivate: [AdminGuard],
+  data: { role: 'SPONSOR' }
+},
   // Admin Panel (comprehensive)
   { 
     path: 'admin', 

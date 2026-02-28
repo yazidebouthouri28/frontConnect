@@ -7,6 +7,7 @@ import { WalletService } from '../../services/wallet.service';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { ApiService } from '../../services/api.service';
 import { CartItem, Wallet, WalletTransaction, Order, CreateOrderDto } from '../../models/api.models';
 
 @Component({
@@ -70,7 +71,8 @@ export class ClientComponent implements OnInit {
     private walletService: WalletService,
     private orderService: OrderService,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private apiService: ApiService
   ) {}
 
   ngOnInit() {
@@ -79,15 +81,18 @@ export class ClientComponent implements OnInit {
     if (user) {
       this.customerName = user.name;
       this.customerEmail = user.email;
+      this.customerPhone = user.phone || '';
+      this.customerCountry = user.country || '';
+      this.customerAddress = user.address || '';
     }
 
-    // Check route data for default tab (e.g., /cart route sets defaultTab: 'cart')
+    // Check route data for default tab
     const routeData = this.route.snapshot.data;
     if (routeData['defaultTab']) {
       this.activeTab = routeData['defaultTab'];
     }
 
-    // Handle query params for tab (overrides route data)
+    // Handle query params for tab
     this.route.queryParams.subscribe(params => {
       if (params['tab']) this.activeTab = params['tab'];
     });
@@ -110,14 +115,12 @@ export class ClientComponent implements OnInit {
         this.loyaltyPoints = wallet.loyaltyPoints;
       },
       error: () => {
-        // Fallback - try balance endpoint
         this.walletService.getBalance().subscribe({
           next: (data) => {
             this.walletBalance = data.balance;
             this.loyaltyPoints = data.loyaltyPoints;
           },
           error: () => {
-            // Wallet service unavailable - use defaults
             this.walletBalance = 0;
             this.loyaltyPoints = 0;
           }
@@ -127,7 +130,7 @@ export class ClientComponent implements OnInit {
 
     this.walletService.getTransactions().subscribe({
       next: (transactions) => this.walletTransactions = transactions,
-      error: () => this.walletTransactions = [] // Transactions unavailable
+      error: () => this.walletTransactions = []
     });
   }
 
@@ -137,7 +140,7 @@ export class ClientComponent implements OnInit {
       error: () => {
         this.orderService.getAll().subscribe({
           next: (orders) => this.customerOrders = orders,
-          error: () => this.customerOrders = [] // Orders unavailable
+          error: () => this.customerOrders = []
         });
       }
     });
@@ -170,7 +173,6 @@ export class ClientComponent implements OnInit {
   updateQuantity(index: number, change: number) {
     const item = this.cartItems[index];
     const newQuantity = item.quantity + change;
-
     if (newQuantity <= 0) {
       this.removeFromCart(index);
     } else {
@@ -249,16 +251,11 @@ export class ClientComponent implements OnInit {
         this.lastEarnedPoints = Math.floor(this.cartTotal);
         this.showCheckoutSuccess = true;
         this.isLoading = false;
-
-        // Clear cart
         this.cartService.clearCart().subscribe();
-
-        // Reload wallet and orders
         this.loadWallet();
         this.loadOrders();
       },
       error: (err: any) => {
-
         this.isLoading = false;
         alert('❌ Checkout failed: ' + (err.message || 'Unknown error'));
       }
@@ -344,6 +341,35 @@ export class ClientComponent implements OnInit {
   }
 
   saveProfile() {
-    alert('✅ Profile saved successfully!');
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      alert('❌ Not logged in');
+      return;
+    }
+
+    this.isLoading = true;
+
+    const updatedUser = {
+      name: this.customerName,
+      email: this.customerEmail,
+      phone: this.customerPhone,
+      country: this.customerCountry,
+      address: this.customerAddress
+    };
+
+    this.apiService.update('users', Number(user.id), updatedUser).subscribe({
+      next: (res: any) => {
+        this.isLoading = false;
+        alert('✅ Profile updated successfully!');
+
+        // Update stored user in localStorage
+        const updatedStoredUser = { ...user, ...updatedUser };
+        localStorage.setItem('current_user', JSON.stringify(updatedStoredUser));
+      },
+      error: (err: any) => {
+        this.isLoading = false;
+        alert('❌ Failed to update profile: ' + (err.message || 'Unknown error'));
+      }
+    });
   }
 }
