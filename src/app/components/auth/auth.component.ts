@@ -6,8 +6,17 @@ import { AuthService } from '../../services/auth.service';
 import { CartService } from '../../services/cart.service';
 import { User } from '../../models/api.models';
 
-// ✅ Derive role type from User interface — no separate UserRole export needed
 type UserRole = User['role'];
+
+// Maps frontend display roles → backend enum values
+const ROLE_TO_BACKEND: Record<string, string> = {
+  'CLIENT':    'USER',
+  'CAMPER':    'PARTICIPANT',
+  'SELLER':    'SELLER',
+  'ORGANIZER': 'ORGANIZER',
+  'SPONSOR':   'SPONSOR',
+  'ADMIN':     'ADMIN'
+};
 
 @Component({
   selector: 'app-auth',
@@ -342,12 +351,15 @@ export class AuthComponent implements OnInit {
     this.isLoading = true;
     this.clearMessages();
 
+    // Map frontend role → backend enum value
+    const backendRole = ROLE_TO_BACKEND[this.registerForm.role] || 'USER';
+
     const payload: any = {
       name:     this.registerForm.name,
       username: this.registerForm.username,
       email:    this.registerForm.email,
       password: this.registerForm.password,
-      role:     this.registerForm.role,
+      role:     backendRole,
       isSeller: this.registerForm.role === 'SELLER',
       isBuyer:  this.registerForm.isBuyer,
       avatar:   'avatar.png'
