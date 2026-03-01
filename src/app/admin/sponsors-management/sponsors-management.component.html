@@ -25,17 +25,19 @@
         <button class="px-4 py-2 bg-white border rounded-lg text-sm font-bold hover:bg-gray-50">
           Export List
         </button>
-        <button class="px-4 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold hover:bg-[#1a2e1a] flex items-center gap-2">
+        <button
+          (click)="openRequestsModal()"
+          class="px-4 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold hover:bg-[#1a2e1a] flex items-center gap-2">
           <span>+</span> Add Partner
         </button>
       </div>
     </div>
 
-    <!-- Stats (mostly placeholders now) -->
+    <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       <div class="bg-white p-6 rounded-xl border shadow-sm">
         <p class="text-xs font-bold text-gray-500 uppercase">Total Sponsors</p>
-        <p class="text-3xl font-black text-[#1a2e1a]">{{ sponsors.length }}</p>
+        <p class="text-3xl font-black text-[#1a2e1a]">{{ allSponsorsCount }}</p>
       </div>
       <div class="bg-white p-6 rounded-xl border shadow-sm">
         <p class="text-xs font-bold text-gray-500 uppercase">Active</p>
@@ -54,10 +56,10 @@
     <!-- Search -->
     <div class="bg-white p-4 rounded-xl border mb-8">
       <div class="relative">
-        <input 
-          type="text" 
-          [(ngModel)]="searchTerm" 
-          placeholder="Search by name, email, contact..." 
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by name, email, contact..."
           class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a2e1a]/20">
         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
       </div>
@@ -69,11 +71,24 @@
         <div class="bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all">
           <div class="p-6 border-b flex items-start gap-4">
             <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-              {{ sponsor.logo ? '' : (sponsor.name?.charAt(0) || 'S') }}
+              <span *ngIf="!sponsor.logo">{{ sponsor.name?.charAt(0) || 'S' }}</span>
               <img *ngIf="sponsor.logo" [src]="sponsor.logo" alt="logo" class="w-full h-full object-cover rounded-xl">
             </div>
             <div class="flex-1">
-              <h3 class="font-bold text-lg text-[#1a2e1a]">{{ sponsor.name || 'Unnamed Sponsor' }}</h3>
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-lg text-[#1a2e1a]">{{ sponsor.name || 'Unnamed Sponsor' }}</h3>
+                <span *ngIf="sponsor.tier" class="text-xs px-2 py-0.5 rounded-full font-bold"
+                  [ngClass]="{
+                    'bg-yellow-100 text-yellow-700': sponsor.tier === 'GOLD',
+                    'bg-gray-200 text-gray-700': sponsor.tier === 'SILVER',
+                    'bg-orange-100 text-orange-700': sponsor.tier === 'BRONZE',
+                    'bg-purple-100 text-purple-700': sponsor.tier === 'PLATINUM',
+                    'bg-blue-100 text-blue-700': sponsor.tier === 'DIAMOND',
+                    'bg-green-100 text-green-700': sponsor.tier === 'TITLE_SPONSOR'
+                  }">
+                  {{ sponsor.tier }}
+                </span>
+              </div>
               <p class="text-sm text-gray-600 mt-1">
                 {{ sponsor.contactPerson || 'No contact person' }}
                 <span *ngIf="sponsor.contactPosition"> • {{ sponsor.contactPosition }}</span>
@@ -92,15 +107,11 @@
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Location</span>
-              <span>
-  {{ sponsor.city && sponsor.country ? sponsor.city + ', ' + sponsor.country : (sponsor.city || sponsor.country || '—') }}
-</span>
+              <span>{{ sponsor.city && sponsor.country ? sponsor.city + ', ' + sponsor.country : (sponsor.city || sponsor.country || '—') }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Website</span>
-              <a *ngIf="sponsor.website" [href]="sponsor.website" target="_blank" class="text-blue-600 hover:underline">
-                Visit
-              </a>
+              <a *ngIf="sponsor.website" [href]="sponsor.website" target="_blank" class="text-blue-600 hover:underline">Visit</a>
               <span *ngIf="!sponsor.website">—</span>
             </div>
             <div *ngIf="sponsor.isActive === false" class="text-red-600 text-center mt-2 font-medium">
@@ -109,19 +120,172 @@
           </div>
 
           <div class="p-4 bg-gray-50 border-t flex gap-2">
-            <button class="flex-1 py-2 bg-gray-100 rounded text-sm font-medium hover:bg-gray-200">
-              View Details
+            <button
+              (click)="openEditModal(sponsor)"
+              class="flex-1 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-medium hover:bg-[#1a2e1a] transition-colors">
+              ✏️ Edit
             </button>
-            <button class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200">
-              ✉️
+            <button
+              (click)="openDeleteModal(sponsor)"
+              class="flex-1 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
+              🗑️ Delete
             </button>
           </div>
         </div>
       } @empty {
         <div class="col-span-full text-center py-16 text-gray-500">
-          No sponsors found. {{ searchTerm ? 'Try different search term.' : 'Add your first partner.' }}
+          No sponsors found. {{ searchTerm ? 'Try a different search term.' : 'Add your first partner.' }}
         </div>
       }
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ADD PARTNER MODAL (Pending Requests)                   -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div *ngIf="showRequestsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+
+    <div class="flex justify-between items-center p-6 border-b">
+      <div>
+        <h2 class="text-xl font-black text-[#1a2e1a]">Pending Sponsor Requests</h2>
+        <p class="text-sm text-gray-500 mt-0.5">Approve or reject sponsor applications</p>
+      </div>
+      <button (click)="closeRequestsModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoadingRequests" class="p-10 text-center">
+      <div class="animate-spin h-8 w-8 border-4 border-[#2C4A3C] border-t-transparent rounded-full mx-auto"></div>
+      <p class="mt-3 text-gray-500 text-sm">Loading requests...</p>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!isLoadingRequests && pendingRequests.length === 0" class="p-10 text-center text-gray-500">
+      <div class="text-4xl mb-3">🎉</div>
+      <p class="font-bold">No pending requests</p>
+      <p class="text-sm mt-1">All sponsor applications have been reviewed.</p>
+    </div>
+
+    <!-- Request list -->
+    <div *ngIf="!isLoadingRequests && pendingRequests.length > 0" class="p-4 space-y-3">
+      @for (req of pendingRequests; track req.id) {
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1">
+              <p class="font-bold text-[#1a2e1a]">{{ req.name }}</p>
+              <p class="text-sm text-gray-600">{{ req.email }}</p>
+              <p class="text-sm text-gray-500">{{ req.phone || 'No phone provided' }}</p>
+              <p class="text-xs text-gray-400 mt-1">Applied {{ req.createdAt | date:'mediumDate' }}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <button
+                (click)="approveRequest(req.id)"
+                class="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 whitespace-nowrap">
+                ✅ Approve
+              </button>
+              <button
+                (click)="rejectRequest(req.id)"
+                class="px-4 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-bold hover:bg-red-100 whitespace-nowrap">
+                ❌ Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="p-4 border-t">
+      <button (click)="closeRequestsModal()" class="w-full py-2 border rounded-lg text-sm font-bold hover:bg-gray-50">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- EDIT MODAL                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div *ngIf="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+
+    <div class="flex justify-between items-center p-6 border-b">
+      <h2 class="text-xl font-black text-[#1a2e1a]">Edit Sponsor</h2>
+      <button (click)="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    </div>
+
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Name *</label>
+        <input [(ngModel)]="editForm.name" type="text" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Email</label>
+        <input [(ngModel)]="editForm.email" type="email" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Phone</label>
+        <input [(ngModel)]="editForm.phone" type="text" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Website</label>
+        <input [(ngModel)]="editForm.website" type="text" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Contact Person</label>
+        <input [(ngModel)]="editForm.contactPerson" type="text" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Tier</label>
+        <select [(ngModel)]="editForm.tier" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30">
+          <option value="">— None —</option>
+          <option *ngFor="let t of tierOptions" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Description</label>
+        <textarea [(ngModel)]="editForm.description" rows="3" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Logo URL</label>
+        <input [(ngModel)]="editForm.logo" type="text" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/30">
+      </div>
+    </div>
+
+    <div class="flex gap-3 p-6 border-t">
+      <button (click)="closeEditModal()" class="flex-1 py-2 border rounded-lg text-sm font-bold hover:bg-gray-50">
+        Cancel
+      </button>
+      <button (click)="saveSponsor()" [disabled]="isSaving"
+        class="flex-1 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold hover:bg-[#1a2e1a] disabled:opacity-50">
+        {{ isSaving ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- DELETE CONFIRMATION MODAL                              -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+    <div class="text-center">
+      <div class="text-5xl mb-4">⚠️</div>
+      <h2 class="text-xl font-black text-[#1a2e1a] mb-2">Delete Sponsor?</h2>
+      <p class="text-gray-600 text-sm mb-6">
+        Are you sure you want to delete <strong>{{ selectedSponsor?.name }}</strong>?
+        This action cannot be undone.
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button (click)="closeDeleteModal()" class="flex-1 py-2 border rounded-lg text-sm font-bold hover:bg-gray-50">
+        Cancel
+      </button>
+      <button (click)="confirmDelete()" [disabled]="isDeleting"
+        class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 disabled:opacity-50">
+        {{ isDeleting ? 'Deleting...' : 'Yes, Delete' }}
+      </button>
     </div>
   </div>
 </div>

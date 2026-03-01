@@ -12,20 +12,28 @@ import { HttpClient } from '@angular/common/http';
 })
 export class SponsorsManagementComponent implements OnInit {
 
-  filterStatus: 'all' | 'pending' | 'approved' = 'all'; // kept for UI, but no real filtering possible yet
   searchTerm = '';
-
-  sponsors: any[] = [];  // ← using any[] to avoid strict typing issues for now
-
+  sponsors: any[] = [];
+  allSponsorsCount = 0;
   isLoading = true;
   errorMessage: string | null = null;
 
-  // Stats – most will be 0 or based on limited data
-  approvedCount = 0;
-  pendingCount = 0;
-  totalBudget = 0;
+  // Pending requests modal
+  showRequestsModal = false;
+  pendingRequests: any[] = [];
+  isLoadingRequests = false;
 
-  private apiUrl = 'http://localhost:8089/api/sponsors'; // ← CHANGE THIS to your real endpoint
+  // Edit modal
+  showEditModal = false;
+  selectedSponsor: any = null;
+  editForm: any = {};
+  isSaving = false;
+
+  // Delete modal
+  showDeleteModal = false;
+  isDeleting = false;
+
+  private apiUrl = '/api/sponsors';
 
   constructor(private http: HttpClient) {}
 
@@ -33,43 +41,131 @@ export class SponsorsManagementComponent implements OnInit {
     this.loadSponsors();
   }
 
- loadSponsors() {
-  this.isLoading = true;
-  this.errorMessage = null;
+  loadSponsors() {
+    this.isLoading = true;
+    this.errorMessage = null;
+    this.http.get<any>(this.apiUrl).subscribe({
+      next: (response) => {
+        this.sponsors = response.data || [];
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.errorMessage = 'Failed to load sponsors. Please try again.';
+        console.error(err);
+        this.isLoading = false;
+      }
+    });
 
-  this.http.get<any>(this.apiUrl).subscribe({
-    next: (response) => {
-      this.sponsors = response.data || [];
-      this.updateStats();
-      this.isLoading = false;
-    },
-    error: (err) => {
-      this.errorMessage = 'Failed to load sponsors. Please try again.';
-      console.error(err);
-      this.isLoading = false;
-    }
-  });
-}
-
-  private updateStats() {
-    // These are placeholders — real stats would need different endpoint or logic
-    this.approvedCount = this.sponsors.length; // example fallback
-    this.pendingCount = 0;
-    this.totalBudget = 0;
-  }
-
-  statusClass(status: string): string {
-    // fallback - we don't have status field
-    return 'bg-gray-100 text-gray-700 border-gray-300';
-  }
-
-  // Keep your filteredSponsors getter but adjust fields
-  get filteredSponsors() {
-    return this.sponsors.filter(s => {
-      const matchSearch = !this.searchTerm ||
-        (s.name || '').toLowerCase().includes(this.searchTerm.toLowerCase());
-      return matchSearch;
-      // status filter removed because no status field exists
+    this.http.get<any>('/api/sponsors/all').subscribe({
+      next: (response) => this.allSponsorsCount = (response.data || []).length,
+      error: () => {}
     });
   }
+
+  get filteredSponsors() {
+    return this.sponsors.filter(s =>
+      !this.searchTerm ||
+      (s.name || '').toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      (s.email || '').toLowerCase().includes(this.searchTerm.toLowerCase())
+    );
+  }
+
+  // ── Pending Requests Modal ─────────────────────────────
+  openRequestsModal() {
+    this.showRequestsModal = true;
+    this.isLoadingRequests = true;
+    this.http.get<any>(`${this.apiUrl}/requests`).subscribe({
+      next: (res) => {
+        this.pendingRequests = res.data || [];
+        this.isLoadingRequests = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.isLoadingRequests = false;
+      }
+    });
+  }
+
+  closeRequestsModal() {
+    this.showRequestsModal = false;
+    this.pendingRequests = [];
+  }
+
+  approveRequest(userId: number) {
+    this.http.put(`${this.apiUrl}/requests/${userId}/approve`, {}).subscribe({
+      next: () => {
+        this.pendingRequests = this.pendingRequests.filter(r => r.id !== userId);
+        this.loadSponsors();
+      },
+      error: (err) => console.error(err)
+    });
+  }
+
+  rejectRequest(userId: number) {
+    this.http.put(`${this.apiUrl}/requests/${userId}/reject`, {}).subscribe({
+      next: () => this.pendingRequests = this.pendingRequests.filter(r => r.id !== userId),
+      error: (err) => console.error(err)
+    });
+  }
+
+  // ── Edit Modal ─────────────────────────────────────────
+  openEditModal(sponsor: any) {
+    this.selectedSponsor = sponsor;
+    this.editForm = { ...sponsor };
+    this.showEditModal = true;
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.selectedSponsor = null;
+    this.editForm = {};
+  }
+
+  saveSponsor() {
+    if (!this.selectedSponsor) return;
+    this.isSaving = true;
+    this.http.put<any>(`${this.apiUrl}/${this.selectedSponsor.id}`, this.editForm).subscribe({
+      next: (response) => {
+        const updated = response.data;
+        const index = this.sponsors.findIndex(s => s.id === this.selectedSponsor.id);
+        if (index !== -1) this.sponsors[index] = updated;
+        this.isSaving = false;
+        this.closeEditModal();
+      },
+      error: (err) => {
+        console.error('Update failed:', err);
+        this.isSaving = false;
+      }
+    });
+  }
+
+  // ── Delete Modal ───────────────────────────────────────
+  openDeleteModal(sponsor: any) {
+    this.selectedSponsor = sponsor;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.selectedSponsor = null;
+  }
+
+  confirmDelete() {
+    if (!this.selectedSponsor) return;
+    this.isDeleting = true;
+    this.http.delete<any>(`${this.apiUrl}/${this.selectedSponsor.id}`).subscribe({
+      next: () => {
+        this.sponsors = this.sponsors.filter(s => s.id !== this.selectedSponsor.id);
+        this.allSponsorsCount--;
+        this.isDeleting = false;
+        this.closeDeleteModal();
+      },
+      error: (err) => {
+        console.error('Delete failed:', err);
+        this.isDeleting = false;
+      }
+    });
+  }
+
+  tierOptions = ['GOLD', 'SILVER', 'BRONZE', 'PLATINUM', 'DIAMOND', 'TITLE_SPONSOR'];
 }
