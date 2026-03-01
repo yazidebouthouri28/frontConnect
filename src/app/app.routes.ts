@@ -3,146 +3,146 @@ import { AuthGuard, SellerGuard, ClientGuard, AdminGuard, OrganizerGuard } from 
 
 export const routes: Routes = [
   // Home routes
-  { 
-    path: '', 
-    loadComponent: () => import('./components/home/home.component').then(m => m.HomeComponent)
+  {
+    path: '',
+    loadComponent: () => import('./components/home-hub/home-hub.component').then(m => m.HomeHubComponent)
   },
-  
+
   // Campsite routes
-  { 
-    path: 'campsites', 
+  {
+    path: 'campsites',
     loadComponent: () => import('./components/campsites/campsite-listings.component').then(m => m.CampsiteListingsComponent)
   },
-  { 
-    path: 'campsites/:id', 
+  {
+    path: 'campsites/:id',
     loadComponent: () => import('./components/campsite-detail/campsite-detail.component').then(m => m.CampsiteDetailComponent)
   },
-  
+
   // Event routes
-  { 
-    path: 'events', 
+  {
+    path: 'events',
     loadComponent: () => import('./components/events/events-management.component').then(m => m.EventsManagementComponent)
   },
-  { 
-    path: 'events/:id', 
+  {
+    path: 'events/:id',
     loadComponent: () => import('./components/event-detail/event-detail.component').then(m => m.EventDetailComponent)
   },
-  
+
   // Marketplace routes (e-commerce)
-  { 
-    path: 'marketplace', 
+  {
+    path: 'marketplace',
     loadComponent: () => import('./components/marketplace/marketplace.component').then(m => m.MarketplaceComponent)
   },
-  { 
-    path: 'marketplace/:id', 
+  {
+    path: 'marketplace/:id',
     loadComponent: () => import('./components/marketplace/product-detail/product-detail.component').then(m => m.ProductDetailComponent)
   },
-  
+
   // Community routes
-  { 
-    path: 'community', 
+  {
+    path: 'community',
     loadComponent: () => import('./components/community/community-forum.component').then(m => m.CommunityForumComponent)
   },
-  
+
   // Map route
-  { 
-    path: 'map', 
+  {
+    path: 'map',
     loadComponent: () => import('./components/map/interactive-map.component').then(m => m.InteractiveMapComponent)
   },
-  
+
   // Sponsors route
-  { 
-    path: 'sponsors', 
+  {
+    path: 'sponsors',
     loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent)
   },
-  
+
   // Cart route - standalone page
-  { 
-    path: 'cart', 
+  {
+    path: 'cart',
     loadComponent: () => import('./components/client/client.component').then(m => m.ClientComponent),
     canActivate: [AuthGuard],
     data: { defaultTab: 'cart' }
   },
-  
+
   // Dashboard route - main user dashboard
-  { 
-    path: 'dashboard', 
+  {
+    path: 'dashboard',
     loadComponent: () => import('./components/client/client.component').then(m => m.ClientComponent),
     canActivate: [AuthGuard]
   },
-  
+
   // Legacy /client redirect to /dashboard
-  { 
-    path: 'client', 
+  {
+    path: 'client',
     redirectTo: '/dashboard',
     pathMatch: 'full'
   },
-  
+
   // Profile routes
-  { 
-    path: 'profile', 
+  {
+    path: 'profile',
     loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'profile/:id', 
+  {
+    path: 'profile/:id',
     loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent)
   },
-  
+
   // User preferences
-  { 
-    path: 'preferences', 
+  {
+    path: 'preferences',
     loadComponent: () => import('./components/user-preferences/user-preferences.component').then(m => m.UserPreferencesComponent),
     canActivate: [AuthGuard]
   },
-  
+
   // E-commerce Seller Dashboard
-  { 
-    path: 'seller', 
+  {
+    path: 'seller',
     loadComponent: () => import('./components/seller/seller.component').then(m => m.SellerComponent),
     canActivate: [AuthGuard],
     data: { role: 'SELLER' }
   },
-  
+
   // Sponsor Dashboard
-  { 
-    path: 'sponsor-dashboard', 
+  {
+    path: 'sponsor-dashboard',
     loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent),
     canActivate: [AuthGuard],
     data: { role: 'SPONSOR' }
   },
-  
+
   // Admin Panel (comprehensive)
-  { 
-    path: 'admin', 
+  {
+    path: 'admin',
     loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent),
     canActivate: [AdminGuard]
   },
-  
+
   // Authentication routes - Single unified auth page
-  { 
-    path: 'auth', 
+  {
+    path: 'auth',
     loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent)
   },
-  { 
-    path: 'auth/login', 
+  {
+    path: 'auth/login',
     loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent)
   },
-  { 
-    path: 'auth/register', 
+  {
+    path: 'auth/register',
     loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent)
   },
-  { 
-    path: 'login', 
+  {
+    path: 'login',
     redirectTo: '/auth/login',
     pathMatch: 'full'
   },
-  { 
-    path: 'register', 
+  {
+    path: 'register',
     redirectTo: '/auth/register',
     pathMatch: 'full'
   },
-  
+
   // Fallback route
   { path: '**', redirectTo: '' }
 ];
