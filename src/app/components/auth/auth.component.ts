@@ -9,12 +9,8 @@ interface CarouselSlide {
   image: string;
 }
 
-interface UserAccount {
-  email: string;
-  password: string;
-  role: 'user' | 'admin';
-  name: string;
-}
+import { UserService, UserAccount } from '../../services/user.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-auth',
@@ -38,6 +34,7 @@ export class AuthComponent implements OnInit, OnDestroy {
   signupPhone = '';
   signupPassword = '';
   signupConfirmPassword = '';
+  signupRole: 'ADMIN' | 'ORGANIZER' | 'PARTICIPANT' | 'USER' = 'USER';
 
   showLoginPassword = false;
   showSignupPassword = false;
@@ -65,19 +62,11 @@ export class AuthComponent implements OnInit, OnDestroy {
     },
   ];
 
-  /* Hardcoded test accounts */
-  private readonly accounts: UserAccount[] = [
-    { email: 'user@campconnect.com', password: 'user123', role: 'user', name: 'John Camper' },
-    { email: 'admin@campconnect.com', password: 'admin123', role: 'admin', name: 'Admin Manager' },
-    { email: 'test@gmail.com', password: 'test12', role: 'user', name: 'Demo User' },
-    { email: 'ahmed@gmail.com', password: 'ahmed12', role: 'admin', name: 'Ahmed Admin' },
-    { email: 'farah@gmail.com', password: 'farah12', role: 'user', name: 'Farah Explorer' },
-    { email: 'yazide@gmail.com', password: 'yazide12', role: 'user', name: 'Yazide Adventurer' },
-    { email: 'fedi@gmail.com', password: 'fedi12', role: 'user', name: 'Fedi User' },
-    { email: 'salma@gmail.com', password: 'salma12', role: 'user', name: 'Salma User' },
-  ];
-
-  constructor(private router: Router) { }
+  constructor(
+    private router: Router,
+    private userService: UserService,
+    private authService: AuthService
+  ) { }
 
   get slide(): CarouselSlide {
     return this.carouselSlides[this.currentSlide];
@@ -105,39 +94,69 @@ export class AuthComponent implements OnInit, OnDestroy {
 
   onSubmitLogin() {
     this.loginError = '';
-    const account = this.accounts.find(
-      (a) => a.email === this.loginEmail && a.password === this.loginPassword
-    );
-    if (!account) {
-      this.loginError = 'Invalid email or password.';
-      return;
-    }
-    localStorage.setItem('campconnect_user', JSON.stringify({ email: account.email, name: account.name, role: account.role }));
-    if (account.role === 'admin') {
-      this.router.navigate(['/admin']);
-    } else {
-      // Check if preferences are already done for this specific account
-      const prefsDone = localStorage.getItem(`campconnect_preferences_done_${account.email}`);
-      if (prefsDone === 'true') {
-        this.router.navigate(['/home']);
-      } else {
-        this.router.navigate(['/preferences']);
+    this.authService.login({ email: this.loginEmail, password: this.loginPassword }).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          const account = response.data;
+          if (['ADMIN', 'ORGANIZER', 'PARTICIPANT'].includes(account.role)) {
+            this.router.navigate(['/admin']);
+          } else {
+            const prefsDone = localStorage.getItem(`campconnect_preferences_done_${account.email}`);
+            if (prefsDone === 'true') {
+              this.router.navigate(['/home']);
+            } else {
+              this.router.navigate(['/preferences']);
+            }
+          }
+        } else {
+          this.loginError = response.message || 'Identifiants invalides.';
+        }
+      },
+      error: (err) => {
+        this.loginError = `Erreur ${err.status || ''}: ${err.error?.message || err.message || 'Connexion impossible'}`;
+        console.error('Login error:', err);
       }
-    }
+    });
   }
 
   onSubmitSignup() {
     if (this.signupPassword !== this.signupConfirmPassword) {
-      alert('Passwords do not match');
+      alert('Les mots de passe ne correspondent pas');
       return;
     }
-    console.log('Sign up', {
+
+    const userData = {
       name: this.signupName,
+      username: this.signupEmail.split('@')[0], // Generate username from email to satisfy backend validation
       email: this.signupEmail,
-      dob: this.signupDob,
-      gender: this.signupGender,
-      phone: this.signupPhone,
       password: this.signupPassword,
+      role: this.signupRole,
+      phone: this.signupPhone || ''
+    };
+
+    this.authService.register(userData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          alert('Compte créé avec succès ! Connectez-vous maintenant.');
+          this.isLogin.set(true);
+        } else {
+          alert(response.message || 'Erreur lors de l\'inscription');
+        }
+      },
+      error: (err) => {
+        let detail = err.error?.message || err.message || 'Erreur inconnue';
+        
+        // Extract specific field validation errors from Spring Boot @Valid
+        if (err.error?.data && typeof err.error.data === 'object' && Object.keys(err.error.data).length > 0) {
+          const fieldErrors = Object.entries(err.error.data)
+            .map(([field, msg]) => `- ${field}: ${msg}`)
+            .join('\n');
+          detail += `\n\nDétails spécifiques :\n${fieldErrors}`;
+        }
+        
+        alert(`Erreur d'inscription (${err.status}): ${detail}`);
+        console.error('Signup error:', err);
+      }
     });
   }
 }

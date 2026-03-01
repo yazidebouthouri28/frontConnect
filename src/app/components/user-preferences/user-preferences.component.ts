@@ -255,6 +255,9 @@ export class UserPreferencesComponent {
     finish() {
         console.log('Preferences submitted:', this.selections);
 
+        // Save preferences for recommendation engine
+        localStorage.setItem('camp_user_preferences', JSON.stringify(this.selections));
+
         // Get current user email for account-specific tracking
         const userJson = localStorage.getItem('campconnect_user');
         if (userJson) {
@@ -262,6 +265,10 @@ export class UserPreferencesComponent {
             localStorage.setItem(`campconnect_preferences_done_${user.email}`, 'true');
         }
 
+        this.router.navigate(['/home']);
+    }
+
+    skip() {
         this.router.navigate(['/home']);
     }
 }

@@ -1,5 +1,5 @@
 <aside [class.w-20]="isCollapsed" [class.w-72]="!isCollapsed"
-  class="bg-[#2C4A3C] border-r border-[#243f33] transition-all duration-300 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.1)] text-white/90">
+  class="bg-[#2C4A3C] border-r border-[#243f33] transition-all duration-300 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.1)] text-white/90 h-full">
 
   <!-- Branding Section -->
   <div class="p-8 pb-10">
@@ -23,13 +23,41 @@
   </div>
 
   <!-- Navigation Links -->
-  <nav class="flex-1 px-4 py-2 space-y-6 overflow-y-auto custom-sidebar-scroll">
+  <nav class="flex-1 px-4 py-2 space-y-6 overflow-y-auto custom-sidebar-scroll pb-10">
+    <!-- 1. Intelligence (Moved to TOP for visibility) -->
+    <div>
+      @if (!isCollapsed) {
+      <h3 class="px-4 text-[9px] font-black text-[#A8B9A3] uppercase tracking-[0.2em] mb-4">Intelligence</h3>
+      }
+      <ul class="space-y-1.5">
+        @for (item of intelItems(); track item.id) {
+        <li>
+          <button (click)="selectSection(item.id)" type="button"
+            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"
+            [ngClass]="activeSection() === item.id ? 'bg-[#5D7B5F] text-white shadow-xl shadow-black/10' : ''"
+            [attr.title]="isCollapsed ? item.label : null">
+            @if (item.icon) {
+            <svg class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
+            </svg>
+            }
+            @if (!isCollapsed) {
+            <span class="font-bold text-sm tracking-tight">{{ item.label }}</span>
+            }
+          </button>
+        </li>
+        }
+      </ul>
+    </div>
+
+    <!-- 2. Core Management -->
     <div>
       @if (!isCollapsed) {
       <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Core Management</h3>
       }
       <ul class="space-y-1.5">
-        @for (item of navItems.slice(0, 3); track item.id) {
+        @for (item of coreItems(); track item.id) {
         <li>
           <button (click)="selectSection(item.id)" type="button"
             class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative"
@@ -53,38 +81,13 @@
       </ul>
     </div>
 
+    <!-- 3. Market Operations -->
     <div>
       @if (!isCollapsed) {
       <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Market Operations</h3>
       }
       <ul class="space-y-1.5">
-        @for (item of navItems.slice(3, 8); track item.id) {
-        <li>
-          <button (click)="selectSection(item.id)" type="button"
-            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"
-            [ngClass]="activeSection() === item.id ? 'bg-[#5D7B5F] text-white shadow-xl shadow-black/10' : ''"
-            [attr.title]="isCollapsed ? item.label : null">
-            @if (item.icon) {
-            <svg class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-            </svg>
-            }
-            @if (!isCollapsed) {
-            <span class="font-bold text-sm tracking-tight">{{ item.label }}</span>
-            }
-          </button>
-        </li>
-        }
-      </ul>
-    </div>
-
-    <div>
-      @if (!isCollapsed) {
-      <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Intelligence</h3>
-      }
-      <ul class="space-y-1.5">
-        @for (item of navItems.slice(8); track item.id) {
+        @for (item of marketItems(); track item.id) {
         <li>
           <button (click)="selectSection(item.id)" type="button"
             class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"
@@ -111,11 +114,12 @@
     <div class="flex items-center gap-4">
       <div
         class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white font-black border border-white/5">
-        AD</div>
+        {{ (user()?.name || 'A')[0] }}</div>
       @if (!isCollapsed) {
       <div class="flex-1 min-w-0">
-        <p class="font-black text-sm text-white truncate leading-tight">Admin Principal</p>
-        <p class="text-[10px] font-bold text-[#A8B9A3] truncate uppercase tracking-tighter">Senior Governance</p>
+        <p class="font-black text-sm text-white truncate leading-tight">{{ user()?.name || 'Guest' }}</p>
+        <p class="text-[10px] font-bold text-[#A8B9A3] truncate uppercase tracking-tighter">{{ user()?.role || 'Visitor'
+          }}</p>
       </div>
       }
     </div>

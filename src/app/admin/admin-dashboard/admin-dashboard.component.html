@@ -148,30 +148,55 @@
   </div>
 
   <!-- Action Shortcuts -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <a routerLink="/admin"
-      class="group p-8 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+    <!-- Existing Team Shortcuts -->
+    <button (click)="changeSection('campsites')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
       <div
         class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
         ⛺</div>
-      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter">Approve Campsites</h4>
-      <p class="text-xs text-gray-400 font-bold italic">12 pending environmental reviews</p>
-    </a>
-    <a routerLink="/admin"
-      class="group p-8 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Approve Campsites</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">12 pending environmental reviews</p>
+    </button>
+
+    <button (click)="changeSection('moderation')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
       <div
         class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
         🛡️</div>
-      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter">Governance Node</h4>
-      <p class="text-xs text-gray-400 font-bold italic">8 community reports requiring moderation</p>
-    </a>
-    <a routerLink="/admin"
-      class="group p-8 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Governance Node</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">8 community reports moderation</p>
+    </button>
+
+    <button (click)="changeSection('sponsors')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
       <div
         class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
         💼</div>
-      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter">Sponsorship Review</h4>
-      <p class="text-xs text-gray-400 font-bold italic">5 new partnership manifestos</p>
-    </a>
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Sponsorship Review</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">5 new partnership manifestos</p>
+    </button>
+
+    <!-- NEW: Services Shortcut -->
+    <button (click)="changeSection('services_users')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+      <div
+        class="w-12 h-12 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+        🛠️</div>
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Manage Services</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">Service catalog & promotions</p>
+    </button>
+
+    <!-- NEW: Emergency Shortcut -->
+    <button (click)="changeSection('emergency')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-red-600 hover:shadow-xl">
+      <div
+        class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform relative">
+        🚨
+        <div class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+      </div>
+      <h4 class="font-black text-red-600 mb-2 uppercase tracking-tighter text-sm">Emergency SOS</h4>
+      <p class="text-[10px] text-red-400 font-bold italic">3 active alerts require attention</p>
+    </button>
   </div>
 </div>

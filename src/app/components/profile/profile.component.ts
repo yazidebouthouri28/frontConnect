@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { UserService, User } from '../../services/user.service';
 
 interface Post {
@@ -20,7 +20,7 @@ interface Highlight {
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule],
     templateUrl: './profile.component.html',
     styleUrls: ['./profile.component.css']
 })

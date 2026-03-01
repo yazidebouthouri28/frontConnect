@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule, NgClass } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ProductDetailComponent } from './product-detail/product-detail.component';
 
 interface Review {
@@ -37,7 +37,7 @@ interface Product {
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [CommonModule, NgClass, ProductDetailComponent],
+  imports: [CommonModule, ProductDetailComponent],
   templateUrl: './marketplace.component.html',
   styleUrls: ['./marketplace.component.css'],
 })

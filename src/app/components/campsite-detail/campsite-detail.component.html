@@ -185,13 +185,26 @@
                             <div
                                 class="p-3 border-r border-gray-300 hover:bg-gray-50 cursor-pointer transition-colors relative group">
                                 <label
-                                    class="block text-[10px] font-bold text-gray-800 uppercase tracking-wider">Check-in</label>
-                                <div class="text-gray-600 truncate">Add date</div>
+                                    class="block text-[10px] font-bold text-gray-800 uppercase tracking-wider">Duration
+                                    (Nights)</label>
+                                <div class="flex items-center gap-3 mt-1">
+                                    <button (click)="nights = nights > 1 ? nights - 1 : 1"
+                                        class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-forest hover:text-white transition-colors">-</button>
+                                    <span class="font-bold text-forest">{{ nights }}</span>
+                                    <button (click)="nights = nights + 1"
+                                        class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-forest hover:text-white transition-colors">+</button>
+                                </div>
                             </div>
-                            <div class="p-3 hover:bg-gray-50 cursor-pointer transition-colors relative group">
+                            <div class="p-3 hover:bg-gray-50 transition-colors relative group">
                                 <label
-                                    class="block text-[10px] font-bold text-gray-800 uppercase tracking-wider">Check-out</label>
-                                <div class="text-gray-600 truncate">Add date</div>
+                                    class="block text-[10px] font-bold text-gray-800 uppercase tracking-wider">Guests</label>
+                                <div class="flex items-center gap-3 mt-1">
+                                    <button (click)="guests = guests > 1 ? guests - 1 : 1"
+                                        class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-forest hover:text-white transition-colors">-</button>
+                                    <span class="font-bold text-forest">{{ guests }}</span>
+                                    <button (click)="guests = guests + 1"
+                                        class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-forest hover:text-white transition-colors">+</button>
+                                </div>
                             </div>
                         </div>
                         <div class="p-3 hover:bg-gray-50 cursor-pointer transition-colors relative group">
@@ -206,9 +219,9 @@
                         </div>
                     </div>
 
-                    <button
+                    <button (click)="onReserve()"
                         class="w-full bg-[#1F4D36] text-white font-bold text-lg py-3 rounded-lg hover:bg-[#163a28] transition-all transform active:scale-[0.98] mb-4">
-                        Reserve
+                        Confirm Reservation
                     </button>
 
                     <p class="text-center text-sm text-gray-500 mb-6">You won't be charged yet</p>
@@ -217,9 +230,28 @@
                     <div class="space-y-4 text-gray-600 mb-6 pb-6 border-b border-gray-100">
                         <div
                             class="flex justify-between hover:text-forest transition-colors underline decoration-dotted cursor-help">
-                            <span>{{ campsite.price }} DT x 5 nights</span>
-                            <span>{{ campsite.price * 5 }} DT</span>
+                            <span>{{ campsite.price }} DT x {{ nights }} nights</span>
+                            <span>{{ campsite.price * nights }} DT</span>
                         </div>
+
+                        <!-- Dynamic Addon -->
+                        <div *ngIf="selectedAddon"
+                            class="flex justify-between items-center text-olive font-bold py-2 px-3 bg-olive/5 rounded-lg border border-olive/10 group relative">
+                            <div class="flex flex-col">
+                                <span class="flex items-center gap-1">✨ {{ selectedAddon.name }}</span>
+                                <button (click)="removeAddon()"
+                                    class="bg-red-500 text-white text-[10px] px-2 py-1 rounded-md font-black uppercase tracking-widest text-left w-fit mt-2 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">
+                                    ✕ Remove Service
+                                </button>
+                            </div>
+                            <div class="text-right">
+                                <span class="block">{{ selectedAddon.price }} DT</span>
+                                <small
+                                    class="text-[10px] text-olive/60 block -mt-1 font-black uppercase tracking-tighter">Fixed
+                                    per stay</small>
+                            </div>
+                        </div>
+
                         <div
                             class="flex justify-between hover:text-forest transition-colors underline decoration-dotted cursor-help">
                             <span>Cleaning fee</span>
@@ -233,8 +265,11 @@
                     </div>
 
                     <div class="flex justify-between items-center text-lg font-bold text-forest">
-                        <span>Total</span>
-                        <span>{{ (campsite.price * 5) + 45 + 32 }} DT</span>
+                        <span>Total Price</span>
+                        <div class="text-right">
+                            <span class="block text-3xl font-black">{{ totalPrice }} DT</span>
+                            <small class="text-[10px] text-gray-400 font-medium">Incl. all taxes & services</small>
+                        </div>
                     </div>
                 </div>
             </div>

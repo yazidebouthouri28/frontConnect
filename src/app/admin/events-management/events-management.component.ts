@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { UserService } from '../../services/user.service';
+import { CandidatureService } from '../../modules/services/services/candidature.service';
 
 interface AdminEvent {
     id: number;
@@ -21,8 +23,23 @@ interface AdminEvent {
     templateUrl: './events-management.component.html',
     styleUrls: ['./events-management.component.css']
 })
-export class EventsAdminManagementComponent {
+export class EventsAdminManagementComponent implements OnInit {
     activeEventsTab: 'active' | 'requests' = 'active';
+
+    isAdmin = false;
+    isOrganizer = false;
+    isParticipant = false;
+
+    constructor(
+        private userService: UserService,
+        private candidatureService: CandidatureService
+    ) { }
+
+    ngOnInit() {
+        this.isAdmin = this.userService.isAdmin();
+        this.isOrganizer = this.userService.isOrganizer();
+        this.isParticipant = this.userService.isParticipant();
+    }
 
     events: AdminEvent[] = [
         { id: 1, title: 'Wilderness Survival', type: 'Workshop', location: 'Zaghouan', date: 'Feb 25, 2026', participants: 18, capacity: 20, price: 85, description: 'Learn fire starting and shelter building in the Atlas foothills.', status: 'Published' },
@@ -48,5 +65,24 @@ export class EventsAdminManagementComponent {
             case 'pending': return 'bg-orange-100 text-orange-700 border-orange-200';
             default: return 'bg-gray-100 text-gray-700';
         }
+    }
+
+    applyAsWorker(eventId: number) {
+        const message = prompt('Briefly explain why you want to work on this event:');
+        if (message !== null) {
+            this.candidatureService.apply({
+                eventId: eventId,
+                motivation: message,
+                serviceId: 0,
+                status: 'PENDING'
+            }).subscribe({
+                next: () => alert('Your application has been sent to the Organizer!'),
+                error: () => alert('Failed to send application.')
+            });
+        }
+    }
+
+    joinEvent(eventId: number) {
+        alert('You have successfully registered to attend this event!');
     }
 }

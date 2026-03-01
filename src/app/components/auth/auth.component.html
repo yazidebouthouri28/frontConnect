@@ -58,8 +58,13 @@
           }
           <button type="submit"
             class="auth-btn w-full bg-forest hover:bg-black text-cream font-semibold py-3 px-4 rounded-lg transition-colors">Login</button>
-          <p class="text-center text-sm text-gray-500">You don't have an account yet? <button type="button"
-              (click)="switchToSignup()" class="text-olive hover:text-forest font-semibold">Sign up</button></p>
+          <div class="pt-6 border-t border-gray-100 text-center">
+            <p class="text-xs text-gray-400 mb-4">New to ConnectCamp?</p>
+            <button type="button" (click)="switchToSignup()"
+              class="w-full py-3 border-2 border-olive text-olive hover:bg-olive hover:text-white rounded-lg font-bold transition-all uppercase tracking-widest text-xs">
+              Create New Account
+            </button>
+          </div>
         </form>
 
         <footer class="mt-8 pt-6 border-t border-gray-200/50">
@@ -84,34 +89,42 @@
           </a>
         </header>
 
-        <form (ngSubmit)="onSubmitSignup()" class="space-y-2">
+        <form (ngSubmit)="onSubmitSignup()" class="space-y-3">
           <h1 class="text-2xl font-bold text-forest text-center">Sign up</h1>
           <p class="text-gray-500 text-xs text-center leading-tight">Create an account to book campsites, join events,
             and connect with the community.</p>
-          <div>
-            <label for="signup-name" class="block text-sm font-medium text-gray-700 mb-1">Full name</label>
-            <input id="signup-name" type="text" [(ngModel)]="signupName" name="signupName" placeholder="John Doe"
-              class="auth-input w-full px-4 py-2.5 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent"
-              required />
-          </div>
-          <div>
-            <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
-            <input id="signup-email" type="email" [(ngModel)]="signupEmail" name="signupEmail"
-              placeholder="you@example.com"
-              class="auth-input w-full px-4 py-2.5 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent"
-              required />
-          </div>
-          <div class="flex gap-3">
+
+          <div class="flex gap-4">
             <div class="flex-1">
-              <label for="signup-dob" class="block text-sm font-medium text-gray-700 mb-1">Date of birth</label>
-              <input id="signup-dob" type="date" [(ngModel)]="signupDob" name="signupDob"
-                class="auth-input w-full px-4 py-2.5 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent"
+              <label for="signup-name"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Full name</label>
+              <input id="signup-name" type="text" [(ngModel)]="signupName" name="signupName" placeholder="John Doe"
+                class="auth-input w-full px-4 py-2 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
                 required />
             </div>
             <div class="flex-1">
-              <label for="signup-gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+              <label for="signup-email"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Email address</label>
+              <input id="signup-email" type="email" [(ngModel)]="signupEmail" name="signupEmail"
+                placeholder="you@example.com"
+                class="auth-input w-full px-4 py-2 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
+                required />
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <label for="signup-dob"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Birth Date</label>
+              <input id="signup-dob" type="date" [(ngModel)]="signupDob" name="signupDob"
+                class="auth-input w-full px-4 py-2 border border-gray-200 rounded-lg text-forest focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
+                required />
+            </div>
+            <div class="flex-1">
+              <label for="signup-gender"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Gender</label>
               <select id="signup-gender" [(ngModel)]="signupGender" name="signupGender"
-                class="auth-input w-full px-4 py-2.5 border border-gray-200 rounded-lg text-forest focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent"
+                class="auth-input w-full px-4 py-2 border border-gray-200 rounded-lg text-forest focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
                 required>
                 <option value="" disabled>Select</option>
                 <option value="male">Male</option>
@@ -119,72 +132,71 @@
               </select>
             </div>
           </div>
-          <div>
-            <label for="signup-phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input id="signup-phone" type="tel" [(ngModel)]="signupPhone" name="signupPhone"
-              placeholder="+1 234 567 890"
-              class="auth-input w-full px-4 py-2.5 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent"
-              required />
-          </div>
-          <div class="flex gap-3">
+
+          <div class="flex gap-4">
             <div class="flex-1">
-              <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label for="signup-phone"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Phone</label>
+              <input id="signup-phone" type="tel" [(ngModel)]="signupPhone" name="signupPhone"
+                placeholder="+1 234 567 890"
+                class="auth-input w-full px-4 py-2 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
+                required />
+            </div>
+            <div class="flex-1">
+              <label for="signup-role"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Join As</label>
+              <select id="signup-role" [(ngModel)]="signupRole" name="signupRole"
+                class="auth-input w-full px-4 py-2 border border-gray-200 rounded-lg text-forest focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
+                required>
+                <option value="USER">Camper</option>
+                <option value="PARTICIPANT">Worker</option>
+                <option value="ORGANIZER">Organizer</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <label for="signup-password"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Password</label>
               <div class="relative">
                 <input id="signup-password" [type]="showSignupPassword ? 'text' : 'password'"
                   [(ngModel)]="signupPassword" name="signupPassword" placeholder="••••••••"
-                  class="auth-input w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent"
+                  class="auth-input w-full px-4 py-2 pr-10 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
                   required minlength="6" />
                 <button type="button" (click)="showSignupPassword = !showSignupPassword"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label="Toggle password">
-                  @if (showSignupPassword) {
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                  } @else {
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  }
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <i class="fas" [class.fa-eye]="!showSignupPassword" [class.fa-eye-slash]="showSignupPassword"></i>
                 </button>
               </div>
             </div>
             <div class="flex-1">
-              <label for="signup-confirm" class="block text-sm font-medium text-gray-700 mb-1">Confirm</label>
+              <label for="signup-confirm"
+                class="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wider">Confirm</label>
               <div class="relative">
                 <input id="signup-confirm" [type]="showSignupConfirm ? 'text' : 'password'"
                   [(ngModel)]="signupConfirmPassword" name="signupConfirmPassword" placeholder="••••••••"
-                  class="auth-input w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent"
+                  class="auth-input w-full px-4 py-2 pr-10 border border-gray-200 rounded-lg text-forest placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent text-sm"
                   required />
                 <button type="button" (click)="showSignupConfirm = !showSignupConfirm"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label="Toggle password">
-                  @if (showSignupConfirm) {
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                  } @else {
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  }
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <i class="fas" [class.fa-eye]="!showSignupConfirm" [class.fa-eye-slash]="showSignupConfirm"></i>
                 </button>
               </div>
             </div>
           </div>
-          <button type="submit"
-            class="auth-btn w-full bg-forest hover:bg-black text-cream font-semibold py-3 px-4 rounded-lg transition-colors">Create
-            account</button>
-          <p class="text-center text-sm text-gray-500">Already have an account? <button type="button"
-              (click)="switchToLogin()" class="text-olive hover:text-forest font-semibold">Log in</button></p>
+
+          <div class="pt-4">
+            <button type="submit"
+              class="auth-btn w-full bg-forest hover:bg-black text-cream font-black uppercase tracking-[0.2em] py-4 px-4 rounded-xl transition-all transform active:scale-95 shadow-lg shadow-forest/20">
+              Create Account & Register
+            </button>
+          </div>
+
+          <p class="text-center text-xs text-gray-500">Already have an account? <button type="button"
+              (click)="switchToLogin()"
+              class="text-olive hover:text-forest font-black uppercase tracking-widest text-[10px]">Log in</button></p>
         </form>
 
         <p class="text-[10px] text-gray-400 mt-2 text-center">© {{ currentYear }} ConnectCamp. All rights reserved.</p>

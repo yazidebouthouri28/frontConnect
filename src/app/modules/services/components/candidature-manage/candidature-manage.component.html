@@ -1,0 +1,79 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+        <div>
+            <h2 class="text-4xl font-black text-forest">Manage Requests</h2>
+            <p class="text-gray-500 font-medium">Review and approve applications for your camping event.</p>
+        </div>
+        <div
+            class="bg-forest text-cream px-6 py-2 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-forest/20">
+            {{ candidatures.length }} Total Requests
+        </div>
+    </div>
+
+    <div class="bg-white rounded-[3rem] shadow-2xl border border-sage/10 overflow-hidden">
+        <div class="table-responsive p-4">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-sage/10">
+                        <th class="px-6 py-4">Applicant</th>
+                        <th class="px-6 py-4">ServiceRequested</th>
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-sage/5">
+                    <tr *ngFor="let entry of candidatures" class="hover:bg-cream/20 transition-colors">
+                        <td class="px-6 py-6 border-b border-sage/5">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-sage text-forest flex items-center justify-center font-black">
+                                    {{ (entry.candidatName || 'U').charAt(0).toUpperCase() }}
+                                </div>
+                                <span class="font-bold text-forest">{{ entry.candidatName || 'User #' + entry.candidatId
+                                    }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-6 border-b border-sage/5">
+                            <span class="bg-olive/10 text-olive px-3 py-1 rounded-lg text-xs font-black">{{
+                                entry.eventServiceName || 'Role' }}</span>
+                        </td>
+                        <td class="px-6 py-6 border-b border-sage/5">
+                            <span class="text-xs font-medium text-gray-500">{{ entry.createdAt | date:'shortDate'
+                                }}</span>
+                        </td>
+                        <td class="px-6 py-6 border-b border-sage/5">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase border" [ngClass]="{
+                      'bg-success/10 text-success border-success/20': entry.statut === 'ACCEPTEE',
+                      'bg-red-50 text-red-500 border-red-100': entry.statut === 'REJETEE',
+                      'bg-orange-50 text-orange-500 border-orange-100': entry.statut === 'EN_ATTENTE'
+                    }">
+                                {{ entry.statut }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-6 border-b border-sage/5 text-right">
+                            <div *ngIf="entry.statut === 'EN_ATTENTE'" class="flex justify-end gap-2">
+                                <button (click)="accept(entry.id)"
+                                    class="h-10 w-10 rounded-xl bg-success text-white hover:bg-green-700 transition-all flex items-center justify-center shadow-lg shadow-success/20">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button (click)="refuse(entry.id)"
+                                    class="h-10 w-10 rounded-xl bg-red-400 text-white hover:bg-red-600 transition-all flex items-center justify-center shadow-lg shadow-red-400/20">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <span *ngIf="entry.statut !== 'EN_ATTENTE'"
+                                class="text-gray-300 italic text-xs">Processed</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Empty Manage -->
+            <div *ngIf="candidatures.length === 0" class="py-20 text-center">
+                <i class="fas fa-inbox text-sage/20 text-5xl mb-4"></i>
+                <p class="text-gray-400 font-bold">No pending requests for this event.</p>
+            </div>
+        </div>
+    </div>
+</div>

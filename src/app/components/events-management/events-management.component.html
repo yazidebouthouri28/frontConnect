@@ -1,5 +1,6 @@
 @if (selectedEvent) {
-<app-event-detail [event]="selectedEvent" (back)="clearSelection()">
+<app-event-detail [event]="selectedEvent" (back)="clearSelection()"
+  (apply)="openApplyModal($event.event, $event.service)">
 </app-event-detail>
 } @else {
 <section id="events" class="py-16 px-4 sm:px-6 lg:px-8 bg-sage/20">
@@ -117,15 +118,45 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center justify-between mb-2">
             <div class="text-lg font-black text-forest">{{ event.price }} DT</div>
             <div class="text-[9px] font-black text-sage uppercase tracking-widest leading-none">per person</div>
           </div>
 
-          <button
-            class="block w-full text-center bg-olive hover:bg-forest text-cream py-2.5 px-4 rounded-lg transition-colors font-black uppercase tracking-widest text-[10px] shadow-sm">
-            Get Tickets
-          </button>
+          <!-- Services Section -->
+          @if (event.requestedServices && event.requestedServices.length > 0) {
+          <div class="mb-4 pt-3 border-t border-sage/20">
+            <p class="text-[9px] font-black text-olive uppercase tracking-[0.2em] mb-2">Required Services</p>
+            <div class="flex flex-wrap gap-2">
+              @for (service of event.requestedServices; track service.id) {
+              <div class="bg-forest/5 px-2 py-1 rounded text-[9px] font-bold text-forest border border-forest/10">
+                {{ service.name }} - <span class="text-olive">{{ service.price }} DT</span>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <div class="flex flex-col gap-2">
+            <button
+              class="block w-full text-center bg-olive hover:bg-forest text-cream py-2.5 px-4 rounded-lg transition-colors font-black uppercase tracking-widest text-[10px] shadow-sm">
+              Get Tickets
+            </button>
+
+            @if (isOrganizer()) {
+            <button (click)="$event.stopPropagation(); openB2BPicker(event)"
+              class="block w-full text-center border-2 border-forest text-forest hover:bg-forest hover:text-white py-2.5 px-4 rounded-lg transition-all font-black uppercase tracking-widest text-[10px]">
+              Manage Services
+            </button>
+            }
+
+            @if (isWorker()) {
+            <button (click)="$event.stopPropagation(); openApplyModal(event)"
+              class="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white py-2.5 px-4 rounded-lg transition-colors font-black uppercase tracking-widest text-[10px] shadow-sm">
+              Join Event / Apply for Work
+            </button>
+            }
+          </div>
         </div>
       </div>
       }
@@ -139,4 +170,16 @@
     </div>
   </div>
 </section>
+}
+
+<!-- Application Modal -->
+@if (isApplyModalOpen) {
+<app-worker-apply-modal [event]="modalEvent" [service]="modalService" (close)="closeApplyModal()"
+  (apply)="handleApplySubmission($event)">
+</app-worker-apply-modal>
+}
+
+@if (isB2BPickerOpen) {
+<app-b2b-service-picker [event]="modalEvent" (close)="closeB2BPicker()" (serviceAdded)="refreshEvents()">
+</app-b2b-service-picker>
 }

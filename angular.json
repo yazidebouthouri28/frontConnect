@@ -40,6 +40,9 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "hmr": false
+          },
           "configurations": {
             "production": { "buildTarget": "campconnect-angular:build:production" },
             "development": { "buildTarget": "campconnect-angular:build:development" }

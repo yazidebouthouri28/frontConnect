@@ -17,10 +17,43 @@ export interface User {
     achievements?: { title: string; icon: string; description?: string; date?: string }[];
 }
 
+export interface UserAccount {
+    email: string;
+    password: string;
+    role: 'ADMIN' | 'ORGANIZER' | 'PARTICIPANT' | 'USER';
+    name: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class UserService {
+    private accounts: UserAccount[] = [];
+
+    constructor() {
+        this.loadAccounts();
+    }
+
+    private loadAccounts(): void {
+        const stored = localStorage.getItem('campconnect_accounts');
+        if (stored) {
+            this.accounts = JSON.parse(stored);
+        } else {
+            // Initial default accounts
+            this.accounts = [
+                { email: 'admin@campconnect.com', password: 'admin123', role: 'ADMIN', name: 'Admin Manager' },
+                { email: 'organizer@campconnect.com', password: 'org123', role: 'ORGANIZER', name: 'Event Organizer' },
+                { email: 'participant@campconnect.com', password: 'part123', role: 'PARTICIPANT', name: 'Service Participant' },
+                { email: 'user@campconnect.com', password: 'user123', role: 'USER', name: 'Standard Camper' },
+            ];
+            this.saveAccounts();
+        }
+    }
+
+    private saveAccounts(): void {
+        localStorage.setItem('campconnect_accounts', JSON.stringify(this.accounts));
+    }
+
     private currentUser: User = {
         id: 'me',
         name: 'Ahmed Ben Salem',
@@ -85,7 +118,6 @@ export class UserService {
         }
     ];
 
-    constructor() { }
 
     getCurrentUser(): User {
         return this.currentUser;
@@ -94,5 +126,44 @@ export class UserService {
     getUserById(id: string): User | undefined {
         if (id === 'me') return this.currentUser;
         return this.mockUsers.find(u => u.id === id);
+    }
+
+    login(email: string, password: string): UserAccount | null {
+        const account = this.accounts.find(a => a.email === email && a.password === password) || null;
+        if (account) {
+            localStorage.setItem('currentUser', JSON.stringify(account));
+        }
+        return account;
+    }
+
+    getLoggedInUser(): UserAccount | null {
+        const user = localStorage.getItem('currentUser');
+        return user ? JSON.parse(user) : null;
+    }
+
+    isAdmin(): boolean {
+        return this.getLoggedInUser()?.role === 'ADMIN';
+    }
+
+    isOrganizer(): boolean {
+        return this.getLoggedInUser()?.role === 'ORGANIZER';
+    }
+
+    isParticipant(): boolean {
+        return this.getLoggedInUser()?.role === 'PARTICIPANT';
+    }
+
+    isUser(): boolean {
+        return this.getLoggedInUser()?.role === 'USER';
+    }
+
+    logout(): void {
+        localStorage.removeItem('currentUser');
+    }
+
+    signup(account: UserAccount): UserAccount {
+        this.accounts.push(account);
+        this.saveAccounts();
+        return account;
     }
 }

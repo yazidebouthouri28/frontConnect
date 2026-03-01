@@ -17,10 +17,14 @@
           class="text-cream hover:text-sage transition-colors">Campsites</a>
         <a routerLink="/marketplace" routerLinkActive="text-sage"
           class="text-cream hover:text-sage transition-colors">Marketplace</a>
+        <a routerLink="/services/home" routerLinkActive="text-sage"
+          class="text-cream hover:text-sage transition-colors">Services</a>
         <a routerLink="/events" routerLinkActive="text-sage"
           class="text-cream hover:text-sage transition-colors">Events</a>
         <a routerLink="/community" routerLinkActive="text-sage"
           class="text-cream hover:text-sage transition-colors">Community</a>
+        <a routerLink="/emergency" routerLinkActive="text-sage"
+          class="text-red-300 hover:text-red-400 font-bold transition-colors">SOS</a>
         <a routerLink="/sponsors" routerLinkActive="text-sage"
           class="text-cream hover:text-sage transition-colors">Sponsors</a>
       </div>
@@ -33,7 +37,7 @@
           </svg>
           <span
             class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-forest">
-            15
+            {{ cartCount }}
           </span>
         </button>
 
@@ -101,9 +105,13 @@
         (click)="mobileMenuOpen = false">Campsites</a>
       <a routerLink="/marketplace" class="block py-2 text-cream hover:text-sage"
         (click)="mobileMenuOpen = false">Marketplace</a>
+      <a routerLink="/services/home" class="block py-2 text-cream hover:text-sage"
+        (click)="mobileMenuOpen = false">Services</a>
       <a routerLink="/events" class="block py-2 text-cream hover:text-sage" (click)="mobileMenuOpen = false">Events</a>
       <a routerLink="/community" class="block py-2 text-cream hover:text-sage"
         (click)="mobileMenuOpen = false">Community</a>
+      <a routerLink="/emergency" class="block py-2 text-red-400 hover:text-red-300 font-bold"
+        (click)="mobileMenuOpen = false">SOS Emergency</a>
       <a routerLink="/sponsors" class="block py-2 text-cream hover:text-sage"
         (click)="mobileMenuOpen = false">Sponsors</a>
       @if (isLoggedIn) {

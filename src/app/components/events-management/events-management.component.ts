@@ -1,29 +1,45 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { EventDetailComponent, Event } from '../event-detail/event-detail.component';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule, DecimalPipe } from '@angular/common';
+import { EventDetailComponent } from '../event-detail/event-detail.component';
+import { WorkerApplyModalComponent } from '../worker-apply-modal/worker-apply-modal.component';
+import { Event } from '../../models/event.model';
+import { EventServiceEntity } from '../../models/event-service-entity.model';
+import { EventService } from '../../services/event.service';
+import { UserService } from '../../services/user.service';
+import { CandidatureService } from '../../modules/services/services/candidature.service';
+
+import { B2BServicePickerComponent } from '../b2b-service-picker/b2b-service-picker.component';
 
 @Component({
   selector: 'app-events-management',
   standalone: true,
-  imports: [CommonModule, EventDetailComponent],
+  imports: [CommonModule, EventDetailComponent, WorkerApplyModalComponent, B2BServicePickerComponent, DecimalPipe],
   templateUrl: './events-management.component.html',
   styleUrls: ['./events-management.component.css'],
 })
-export class EventsManagementComponent {
+export class EventsManagementComponent implements OnInit {
   selectedEvent: Event | null = null;
-  events: Event[] = [
-    { id: 1, title: 'Wilderness Survival Skills Workshop', type: 'workshop', date: 'Feb 15, 2026', time: '9:00 AM - 4:00 PM', location: 'Zaghouan Mountain, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080', participants: 18, maxParticipants: 25, price: 85, organizer: 'Tunis Adventure Co.' },
-    { id: 2, title: 'Summer Camping Music Festival', type: 'festival', date: 'Jul 4-6, 2026', time: 'All Day', location: 'Kelibia Beach, Tunisia', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1080', participants: 342, maxParticipants: 500, price: 195, organizer: 'Carthage Sounds' },
-    { id: 3, title: "Beginner's Backcountry Group Trip", type: 'trip', date: 'Mar 22-24, 2026', time: '3 Days / 2 Nights', location: 'Sahara Desert, Douz, Tunisia', image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1080', participants: 8, maxParticipants: 12, price: 250, organizer: 'Sahara Peak Adventures' },
-    { id: 4, title: 'Family Camping Weekend', type: 'trip', date: 'Apr 12-14, 2026', time: 'Weekend', location: 'Beni M Tir, Tunisia', image: 'https://images.unsplash.com/photo-1510672981848-a1c4f1cb5ccf?q=80&w=1080', participants: 24, maxParticipants: 30, price: 120, organizer: 'Bizerte Outdoors Club' },
-    { id: 5, title: 'Photography & Nature Workshop', type: 'workshop', date: 'May 8, 2026', time: '6:00 AM - 2:00 PM', location: 'Haouaria Cliffs, Tunisia', image: 'https://images.unsplash.com/photo-1533873984035-25970ab07451?q=80&w=1080', participants: 12, maxParticipants: 15, price: 95, organizer: 'Tunisian Nature Photo' },
-    { id: 6, title: 'Mountain Summit Challenge', type: 'trip', date: 'Jun 15-18, 2026', time: '4 Days / 3 Nights', location: 'Djebel Chaambi, Tunisia', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1080', participants: 6, maxParticipants: 10, price: 450, organizer: 'Summit Seekers Tunisia' },
-  ];
+  events: Event[] = [];
+  recommendedEvents: Event[] = [];
 
-  recommendedEvents: Event[] = [
-    { id: 1, title: 'Wilderness Survival Skills Workshop', type: 'workshop', date: 'Feb 15, 2026', time: '9:00 AM - 4:00 PM', location: 'Zaghouan Mountain, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080', participants: 18, maxParticipants: 25, price: 85, organizer: 'Tunis Adventure Co.' },
-    { id: 3, title: "Beginner's Backcountry Group Trip", type: 'trip', date: 'Mar 22-24, 2026', time: '3 Days / 2 Nights', location: 'Sahara Desert, Douz, Tunisia', image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1080', participants: 8, maxParticipants: 12, price: 250, organizer: 'Sahara Peak Adventures' },
-  ];
+  // Modal State
+  isApplyModalOpen = false;
+  isB2BPickerOpen = false;
+  modalEvent: Event | null = null;
+  modalService: any | null = null;
+
+  constructor(
+    private eventService: EventService,
+    public userService: UserService,
+    private candidatureService: CandidatureService
+  ) { }
+
+  ngOnInit() {
+    this.eventService.getEvents().subscribe(data => {
+      this.events = data;
+      this.recommendedEvents = data.slice(0, 2);
+    });
+  }
 
   eventTypeClass(type: string): string {
     const map: Record<string, string> = {
@@ -45,5 +61,71 @@ export class EventsManagementComponent {
 
   clearSelection() {
     this.selectedEvent = null;
+  }
+
+  isWorker(): boolean {
+    return this.userService.isParticipant();
+  }
+
+  isOrganizer(): boolean {
+    return this.userService.isOrganizer();
+  }
+
+  openApplyModal(event: Event, service?: EventServiceEntity) {
+    this.modalEvent = event;
+    // If service not provided, worker might just want to "Join" (we can handle default or selection)
+    // Here we assume service is required as per user request "choisir les services"
+    this.modalService = service || (event.requestedServices && event.requestedServices[0]) || null;
+    this.isApplyModalOpen = true;
+  }
+
+  closeApplyModal() {
+    this.isApplyModalOpen = false;
+    this.modalEvent = null;
+    this.modalService = null;
+  }
+
+  openB2BPicker(event: Event) {
+    this.modalEvent = event;
+    this.isB2BPickerOpen = true;
+  }
+
+  closeB2BPicker() {
+    this.isB2BPickerOpen = false;
+    this.modalEvent = null;
+    this.refreshEvents();
+  }
+
+  refreshEvents() {
+    this.eventService.getEvents().subscribe(data => {
+      this.events = data;
+      this.recommendedEvents = data.slice(0, 2);
+      if (this.selectedEvent) {
+        this.selectedEvent = this.events.find(e => e.id === this.selectedEvent?.id) || null;
+      }
+    });
+  }
+
+  handleApplySubmission(data: { motivation: string }) {
+    if (this.modalEvent && this.modalService) {
+      const candidature = {
+        eventId: this.modalEvent.id,
+        serviceId: this.modalService.id,
+        motivation: data.motivation,
+        status: 'PENDING' as const,
+        appliedDate: new Date()
+      };
+
+      this.candidatureService.apply(candidature).subscribe({
+        next: () => {
+          alert('Application submitted successfully!');
+          this.closeApplyModal();
+        },
+        error: (err) => {
+          console.error('Application failed', err);
+          alert('Failed to submit application. Please try again.');
+        }
+      });
+    }
   }
 }

@@ -1,0 +1,169 @@
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-10 text-center md:text-left">
+        <a (click)="goBack()"
+            class="cursor-pointer text-olive hover:text-forest transition-colors flex items-center mb-4 font-bold">
+            <i class="fas fa-chevron-left mr-2"></i>
+            Back to Bundles
+        </a>
+        <h2 class="text-4xl font-black text-forest">Design a New Bundle</h2>
+        <p class="text-gray-500 font-medium">Combine services to create attractive deals for campers.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Form Side -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-[2.5rem] shadow-2xl p-10 border border-sage/10 relative overflow-hidden">
+                <form [formGroup]="packForm" (ngSubmit)="onSubmit()" class="space-y-8">
+
+                    <!-- Basic Info -->
+                    <div class="space-y-6">
+                        <h4 class="text-lg font-black text-forest flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-forest text-cream flex items-center justify-center text-xs">01</span>
+                            General Details
+                        </h4>
+
+                        <div class="grid grid-cols-1 gap-6">
+                            <div>
+                                <label class="block text-sm font-black text-forest mb-2">Bundle Name *</label>
+                                <input type="text" formControlName="name" placeholder="Extreme Adventure Pack"
+                                    class="w-full px-5 py-4 rounded-2xl border border-gray-100 bg-cream/20 focus:bg-white focus:border-olive focus:ring-4 focus:ring-olive/5 transition-all outline-none"
+                                    [ngClass]="{'border-red-300': submitted && packForm.get('name')?.invalid}">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-black text-forest mb-2">Short Pitch *</label>
+                                <textarea formControlName="description" rows="3"
+                                    placeholder="Tell them why this bundle is amazing..."
+                                    class="w-full px-5 py-4 rounded-2xl border border-gray-100 bg-cream/20 focus:bg-white focus:border-olive focus:ring-4 focus:ring-olive/5 transition-all outline-none resize-none"
+                                    [ngClass]="{'border-red-300': submitted && packForm.get('description')?.invalid}"></textarea>
+                            </div>
+
+                            <!-- Image Upload (Base64) -->
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold uppercase tracking-wider text-forest mb-2">Bundle
+                                    Cover Image</label>
+                                <div class="relative w-full h-40 border-2 border-dashed border-sage/40 rounded-2xl bg-cream/10 flex flex-col items-center justify-center cursor-pointer hover:bg-cream/30 transition-colors group overflow-hidden"
+                                    (click)="fileInput.click()">
+
+                                    <!-- Hidden Input -->
+                                    <input type="file" #fileInput (change)="onFileSelected($event)"
+                                        accept="image/png, image/jpeg, image/webp" class="hidden">
+
+                                    <!-- Default State -->
+                                    <div *ngIf="!imagePreview" class="flex flex-col items-center p-4 text-center">
+                                        <i
+                                            class="fas fa-camera text-3xl text-olive/40 mb-3 group-hover:scale-110 transition-transform"></i>
+                                        <span class="text-sm font-black text-forest">Upload Custom Photo</span>
+                                        <span
+                                            class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">PNG,
+                                            JPG, WEBP</span>
+                                    </div>
+
+                                    <!-- Preview State -->
+                                    <div *ngIf="imagePreview" class="absolute inset-0 w-full h-full">
+                                        <img [src]="imagePreview" class="w-full h-full object-cover">
+                                        <div
+                                            class="absolute inset-0 flex items-center justify-center bg-forest/40 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                                            <span
+                                                class="text-white text-xs font-black uppercase tracking-widest bg-forest/80 px-4 py-2 rounded-xl shadow-xl flex items-center gap-2">
+                                                <i class="fas fa-sync-alt"></i> Replace Photo
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pricing & Savings -->
+                    <div class="space-y-6 pt-6 border-t border-dashed border-sage/20">
+                        <h4 class="text-lg font-black text-forest flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-forest text-cream flex items-center justify-center text-xs">02</span>
+                            Pricing & Savings
+                        </h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-black text-forest mb-2">Bundle Price (DT) *</label>
+                                <div class="relative">
+                                    <input type="number" formControlName="price"
+                                        class="w-full px-5 py-4 rounded-2xl border border-gray-100 bg-cream/20 focus:bg-white focus:border-olive focus:ring-4 focus:ring-olive/5 transition-all outline-none pr-16"
+                                        [ngClass]="{'border-red-300': submitted && packForm.get('price')?.invalid}">
+                                    <span
+                                        class="absolute right-5 top-1/2 -translate-y-1/2 font-black text-forest">DT</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-black text-forest mb-2">Visual Discount % *</label>
+                                <div class="relative">
+                                    <input type="number" formControlName="discount"
+                                        class="w-full px-5 py-4 rounded-2xl border border-gray-100 bg-cream/20 focus:bg-white focus:border-olive focus:ring-4 focus:ring-olive/5 transition-all outline-none pr-16"
+                                        [ngClass]="{'border-red-300': submitted && packForm.get('discount')?.invalid}">
+                                    <span class="absolute right-5 top-1/2 -translate-y-1/2 font-black text-red-500">%
+                                        OFF</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit"
+                        class="w-full bg-forest hover:bg-black text-cream py-5 rounded-[2rem] font-black text-lg shadow-2xl shadow-forest/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-8"
+                        [disabled]="loading">
+                        <i *ngIf="!loading" class="fas fa-magic"></i>
+                        <div *ngIf="loading"
+                            class="animate-spin h-6 w-6 border-4 border-white border-t-transparent rounded-full"></div>
+                        {{ loading ? 'Publishing Bundle...' : 'Unveil Bundle' }}
+                    </button>
+
+                    <p *ngIf="errorMessage" class="text-center text-red-500 font-bold animate-bounce mt-4">{{
+                        errorMessage }}</p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Multi-select Side -->
+        <div class="lg:col-span-1">
+            <div class="bg-forest rounded-[2.5rem] shadow-2xl p-8 sticky top-8">
+                <h4 class="text-xl font-black text-cream mb-6 flex items-center gap-3">
+                    <i class="fas fa-tasks text-sage"></i>
+                    Service Selection
+                </h4>
+
+                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div *ngFor="let s of services" (click)="toggleService(s.id)"
+                        [ngClass]="{'bg-cream/20 border-sage/50 shadow-inner': isServiceSelected(s.id), 'bg-white/5 border-white/5 opacity-60 hover:opacity-100': !isServiceSelected(s.id)}"
+                        class="p-4 rounded-2xl border cursor-pointer transition-all flex items-center gap-4 group">
+
+                        <div class="h-6 w-6 rounded-lg border-2 border-sage flex items-center justify-center transition-all"
+                            [ngClass]="{'bg-sage text-forest': isServiceSelected(s.id)}">
+                            <i *ngIf="isServiceSelected(s.id)" class="fas fa-check text-[10px]"></i>
+                        </div>
+
+                        <div>
+                            <p class="font-bold text-sm"
+                                [ngClass]="isServiceSelected(s.id) ? 'text-cream' : 'text-gray-400'">{{ s.name }}</p>
+                            <p class="text-[10px] text-sage/70">{{ s.price }} DT</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-white/10">
+                    <div class="flex justify-between items-center text-cream mb-2">
+                        <span class="text-xs font-bold uppercase tracking-widest text-sage">Selected</span>
+                        <span class="bg-sage text-forest font-black px-3 py-1 rounded-full text-xs">{{
+                            packForm.get('serviceIds')?.value.length }}</span>
+                    </div>
+                    <p *ngIf="submitted && packForm.get('serviceIds')?.invalid"
+                        class="text-red-400 text-[10px] font-bold mt-2">
+                        * Please select at least one service.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
