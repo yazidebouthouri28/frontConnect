@@ -14,9 +14,9 @@ interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class WarehouseService {
-  private apiUrl = `${environment.apiUrl}/warehouses`;
+  private apiUrl = `${environment.apiUrl}/api/warehouses`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private extractData<T>(response: ApiResponse<T>): T {
     return response.data ?? ([] as any);

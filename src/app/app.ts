@@ -11,22 +11,27 @@ import { filter } from 'rxjs/operators';
   imports: [RouterOutlet, NavigationComponent, FooterComponent, CommonModule],
   template: `
     <div class="min-h-screen flex flex-col">
-      <app-navigation *ngIf="!isAdminRoute"></app-navigation>
+      <app-navigation *ngIf="!hideChrome"></app-navigation>
       <main class="flex-1">
         <router-outlet></router-outlet>
       </main>
-      <app-footer *ngIf="!isAdminRoute"></app-footer>
+      <app-footer *ngIf="!hideChrome"></app-footer>
     </div>
   `
 })
 export class App {
-  isAdminRoute = false;
+  hideChrome = false;
 
   constructor(private router: Router) {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: any) => {
-        this.isAdminRoute = event.url.includes('/admin');
+        const url: string = (event.urlAfterRedirects || event.url || '') as string;
+        this.hideChrome =
+          url.startsWith('/admin') ||
+          url.startsWith('/auth') ||
+          url.startsWith('/login') ||
+          url.startsWith('/register');
       });
   }
 }

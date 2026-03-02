@@ -10,7 +10,7 @@ const LOCAL_CART_KEY = 'local_cart';
 @Injectable({ providedIn: 'root' })
 export class CartService {
 
-  private apiUrl    = `${environment.apiUrl}/cart`;
+  private apiUrl = `${environment.apiUrl}/api/cart`;
   private isBrowser: boolean;
 
   private cartSubject = new BehaviorSubject<CartItem[]>([]);
@@ -51,9 +51,9 @@ export class CartService {
 
   // ── Cart state ────────────────────────────────────────────────────────────
 
-  getItems():     CartItem[] { return this.cartSubject.value; }
-  getItemCount(): number     { return this.cartSubject.value.reduce((s, i) => s + i.quantity, 0); }
-  getSubtotal():  number     { return this.cartSubject.value.reduce((s, i) => s + i.price * i.quantity, 0); }
+  getItems(): CartItem[] { return this.cartSubject.value; }
+  getItemCount(): number { return this.cartSubject.value.reduce((s, i) => s + i.quantity, 0); }
+  getSubtotal(): number { return this.cartSubject.value.reduce((s, i) => s + i.price * i.quantity, 0); }
 
   // ── Core methods — all return Observable<void> so .subscribe() always works ──
 
@@ -159,7 +159,7 @@ export class CartService {
       if (response === null) return;
 
       const serverItems: CartItem[] =
-        response?.items       ??
+        response?.items ??
         response?.data?.items ??
         [];
 
