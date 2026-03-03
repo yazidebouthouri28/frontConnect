@@ -192,37 +192,134 @@ export interface Report {
   generatedAt: Date | string;
 }
 
-// Service Models
-export interface CampingService {
-  id: string;
+// Discovery and Management Models
+export interface Site {
+  id: number;
   name: string;
-  description: string;
-  price: number;
-  category: string;
-  available: boolean;
-  icon?: string;
+  location: string;
+  latitude: number;
+  longitude: number;
+  averageRating: number;
+  image: string;
+  capacity?: number;
+  price?: number;
+  status?: string;
+  description?: string;
+  type?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  images?: string[];
+  amenities?: string[];
+  contactPhone?: string;
+  contactEmail?: string;
+  isActive?: boolean;
+  pricePerNight?: number;
+  reviewCount?: number;
+  checkInTime?: string;
+  checkOutTime?: string;
+  houseRules?: string;
 }
 
-// Moderation Models
-export interface ModerationItem {
-  id: string;
-  type: 'review' | 'comment' | 'listing' | 'user';
-  content: string;
-  reportedBy?: string;
-  reportReason?: string;
-  status: 'pending' | 'approved' | 'rejected';
+export interface Review {
+  id: number;
+  rating: number;
+  comment: string;
+  siteId: number;
   createdAt: Date | string;
-  targetId?: string;
+  title?: string;
+  images?: string[];
+  userId?: number;
+  userName?: string;
+  userAvatar?: string;
 }
 
-// Organization Request Models
-export interface OrganizationRequest {
-  id: string;
-  userId: string;
-  userName: string;
-  eventTitle: string;
-  eventDescription: string;
-  proposedDate: Date | string;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: Date | string;
+export interface VirtualTour {
+  id: number;
+  title: string;
+  siteId: number;
+  description?: string;
+  thumbnailUrl?: string;
+  durationMinutes?: number;
+  viewCount?: number;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  scenes?: Scene360[];
+}
+
+export interface Scene360 {
+  id: number;
+  title?: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  panoramaUrl: string;
+  thumbnailUrl?: string;
+  orderIndex?: number;
+  sceneOrder: number;
+  initialYaw?: number;
+  initialPitch?: number;
+  initialFov?: number;
+  hotspots?: string[];
+  virtualTourId: number;
+}
+
+export interface RouteGuide {
+  id: number;
+  name?: string;
+  description?: string;
+  originCity: string;
+  distanceKm: number;
+  distanceMeters?: number;
+  estimatedDurationMinutes?: number;
+  durationMin: number;
+  difficulty?: string;
+  instructions: any; // Can be string (JSON) or object
+  mapUrl: string;
+  waypoints?: string[];
+  isActive?: boolean;
+  siteId: number;
+  virtualTourId?: number;
+}
+
+export interface Certification {
+  id: number;
+  certificationCode?: string;
+  title?: string;
+  description?: string;
+  issuingOrganization?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CERTIFIED' | 'UNDER_REVIEW' | 'EXPIRED' | 'REVOKED' | 'SUSPENDED';
+  score: number;
+  issueDate: Date | string;
+  expirationDate?: Date | string;
+  expiryDate?: Date | string;
+  documentUrl?: string;
+  verificationUrl?: string;
+  siteId: number;
+  items?: CertificationItem[];
+}
+
+export interface CertificationItem {
+  id: number;
+  name?: string;
+  description?: string;
+  criteriaName: 'SAFETY' | 'CLEANLINESS' | 'EQUIPMENT' | 'SERVICES' | 'PRICE' | 'RATING' | 'DISTANCE' | 'CAPACITY' | 'DATE' | 'AVAILABILITY' | 'POPULARITY' | 'CATEGORY' | 'LOCATION';
+  score: number;
+  requiredScore?: number;
+  passed?: boolean;
+  comment: string;
+  completedAt?: Date | string;
+  certificationId: number;
+}
+
+export interface CampHighlight {
+  id: number;
+  title: string;
+  content: string;
+  category: 'FLORA' | 'FAUNA' | 'CLIMATE' | 'GEOLOGY' | 'HISTORY';
+  imageUrl: string;
+  isPublished?: boolean;
+  siteId?: number;
+  createdAt: Date | string;
+  updatedAt?: Date | string;
 }

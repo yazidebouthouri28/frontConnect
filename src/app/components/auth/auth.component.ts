@@ -167,17 +167,23 @@ export class AuthComponent implements OnInit, OnDestroy {
   private animateSidebarSwitch(targetIsLogin: boolean): void {
     if (this.isLoginMode === targetIsLogin || this.isSidebarAnimatingOut) return;
 
+    // 1. Start the 'slide out' animation
     this.isSidebarAnimatingOut = true;
 
+    // 2. Wait for the sidebar to fully exit the screen (400ms CSS transition)
     setTimeout(() => {
+      // 3. Swap the form content while it's hidden out of view
       this.isLoginMode = targetIsLogin;
       this.clearMessages();
 
+      // 4. Wait a tiny tick for Angular to render the new DOM elements 
+      //    (so it calculates height/layout properly)
       setTimeout(() => {
+        // 5. Slide it back in!
         this.isSidebarAnimatingOut = false;
-      }, 30);
+      }, 50);
 
-    }, 200);
+    }, 400); // Wait 400ms for slide out transition
   }
 
   private initCampfireAudio(): void {

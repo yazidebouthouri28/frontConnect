@@ -14,6 +14,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/campsites/campsite-listings.component').then(m => m.CampsiteListingsComponent)
   },
   {
+    path: 'campsites/:siteId/highlights/:highlightId',
+    loadComponent: () => import('./components/camp-highlight-detail/camp-highlight-detail.component').then(m => m.CampHighlightDetailComponent)
+  },
+  {
     path: 'campsites/:id',
     loadComponent: () => import('./components/campsite-detail/campsite-detail.component').then(m => m.CampsiteDetailComponent)
   },

@@ -18,7 +18,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       let userFriendlyMessage = 'Something went wrong. Please try again.';
 
-      if (error.error instanceof ErrorEvent) {
+      const hasErrorEvent = typeof ErrorEvent !== 'undefined';
+      if (hasErrorEvent && error.error instanceof ErrorEvent) {
         userFriendlyMessage = 'A network error occurred. Please check your connection.';
       } else {
         switch (error.status) {
