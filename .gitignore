@@ -46,3 +46,4 @@ coverage/
 # Angular cache
 .angular/
 >>>>>>> Stashed changes
+node_modules

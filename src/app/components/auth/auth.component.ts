@@ -2,18 +2,12 @@ import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 interface CarouselSlide {
   headline: string;
   description: string;
   image: string;
-}
-
-interface UserAccount {
-  email: string;
-  password: string;
-  role: 'user' | 'admin';
-  name: string;
 }
 
 @Component({
@@ -28,6 +22,7 @@ export class AuthComponent implements OnInit, OnDestroy {
   logoError = false;
   currentYear = new Date().getFullYear();
   loginError = '';
+  isSubmittingLogin = false;
 
   loginEmail = '';
   loginPassword = '';
@@ -65,19 +60,7 @@ export class AuthComponent implements OnInit, OnDestroy {
     },
   ];
 
-  /* Hardcoded test accounts */
-  private readonly accounts: UserAccount[] = [
-    { email: 'user@campconnect.com', password: 'user123', role: 'user', name: 'John Camper' },
-    { email: 'admin@campconnect.com', password: 'admin123', role: 'admin', name: 'Admin Manager' },
-    { email: 'test@gmail.com', password: 'test12', role: 'user', name: 'Demo User' },
-    { email: 'ahmed@gmail.com', password: 'ahmed12', role: 'admin', name: 'Ahmed Admin' },
-    { email: 'farah@gmail.com', password: 'farah12', role: 'user', name: 'Farah Explorer' },
-    { email: 'yazide@gmail.com', password: 'yazide12', role: 'user', name: 'Yazide Adventurer' },
-    { email: 'fedi@gmail.com', password: 'fedi12', role: 'user', name: 'Fedi User' },
-    { email: 'salma@gmail.com', password: 'salma12', role: 'user', name: 'Salma User' },
-  ];
-
-  constructor(private router: Router) { }
+  constructor(private router: Router, private authService: AuthService) { }
 
   get slide(): CarouselSlide {
     return this.carouselSlides[this.currentSlide];
@@ -104,26 +87,39 @@ export class AuthComponent implements OnInit, OnDestroy {
   }
 
   onSubmitLogin() {
-    this.loginError = '';
-    const account = this.accounts.find(
-      (a) => a.email === this.loginEmail && a.password === this.loginPassword
-    );
-    if (!account) {
-      this.loginError = 'Invalid email or password.';
+    if (!this.loginEmail.trim() || !this.loginPassword) {
+      this.loginError = 'Veuillez saisir votre identifiant et mot de passe.';
       return;
     }
-    localStorage.setItem('campconnect_user', JSON.stringify({ email: account.email, name: account.name, role: account.role }));
-    if (account.role === 'admin') {
-      this.router.navigate(['/admin']);
-    } else {
-      // Check if preferences are already done for this specific account
-      const prefsDone = localStorage.getItem(`campconnect_preferences_done_${account.email}`);
-      if (prefsDone === 'true') {
-        this.router.navigate(['/home']);
-      } else {
-        this.router.navigate(['/preferences']);
+
+    this.loginError = '';
+    this.isSubmittingLogin = true;
+
+    this.authService.login({
+      email: this.loginEmail.trim(),
+      password: this.loginPassword,
+    }).subscribe({
+      next: (auth) => {
+        this.isSubmittingLogin = false;
+        const role = auth.user.role;
+
+        if (role === 'ADMIN') {
+          this.router.navigate(['/admin']);
+          return;
+        }
+
+        const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
+        if (prefsDone === 'true') {
+          this.router.navigate(['/home']);
+        } else {
+          this.router.navigate(['/preferences']);
+        }
+      },
+      error: (error: Error) => {
+        this.isSubmittingLogin = false;
+        this.loginError = error.message || 'Login failed. Please check your credentials.';
       }
-    }
+    });
   }
 
   onSubmitSignup() {

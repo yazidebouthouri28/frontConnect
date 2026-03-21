@@ -45,29 +45,73 @@
     </div>
 
     @if (event) {
-    <!-- Hero Image Grid (3-Image Pattern) -->
+    <!-- Hero Image Grid (Dynamic 1-2-3 Pattern) -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-sm">
-            <!-- Main Image (Left) -->
-            <div class="h-full">
-                <img [src]="event.image" [alt]="event.title"
-                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-700">
-            </div>
-            <!-- Secondary Images (Right Stack) -->
-            <div class="hidden md:grid grid-rows-2 gap-4 h-full">
-                <div class="h-full overflow-hidden">
-                    <img [src]="event.image" alt="Gallery 2"
-                        class="w-full h-full object-cover hover:scale-105 transition-transform duration-700 brightness-95">
+        <!-- ORGANIZER VIEW (Always 3 Slots with "+" placeholders) -->
+        <div *ngIf="canManage"
+            class="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-sm">
+            <!-- Slot 1 (Large) -->
+            <div (click)="triggerUpload(-1)" class="h-full relative group cursor-pointer bg-sage/10 overflow-hidden">
+                <img *ngIf="event.image" [src]="event.image" [alt]="event.title"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                <div *ngIf="!event.image"
+                    class="w-full h-full flex flex-col items-center justify-center text-forest/40">
+                    <span class="text-3xl mb-2">🖼️</span>
+                    <span class="text-xs font-black uppercase tracking-widest">Main Photo</span>
                 </div>
-                <div class="h-full overflow-hidden relative group cursor-pointer">
-                    <img [src]="event.image" alt="Gallery 3"
-                        class="w-full h-full object-cover hover:scale-105 transition-transform duration-700 brightness-90">
-                    <div
-                        class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span
-                            class="text-white font-bold text-lg border-2 border-white px-4 py-2 rounded-lg uppercase tracking-widest text-xs">View
-                            Photos</span>
+                <div
+                    class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <span
+                        class="text-white text-xs font-black uppercase tracking-widest border-2 border-white px-4 py-2 rounded-xl">Replace
+                        Photo</span>
+                </div>
+            </div>
+
+            <!-- Right Stack (Slots 2 & 3) -->
+            <div class="hidden md:grid grid-rows-2 gap-4 h-full">
+                <!-- Slot 2 -->
+                <div (click)="triggerUpload(0)" class="h-full relative group cursor-pointer bg-sage/5 overflow-hidden">
+                    <img *ngIf="event.images && event.images[0]" [src]="event.images[0]" alt="Gallery 2"
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    <div *ngIf="!event.images || !event.images[0]"
+                        class="w-full h-full flex flex-col items-center justify-center text-forest/30 border-2 border-dashed border-forest/10 rounded-2xl m-2">
+                        <span class="text-xl">➕</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest mt-1">Add Detail</span>
                     </div>
+                </div>
+                <!-- Slot 3 -->
+                <div (click)="triggerUpload(1)" class="h-full relative group cursor-pointer bg-sage/5 overflow-hidden">
+                    <img *ngIf="event.images && event.images[1]" [src]="event.images[1]" alt="Gallery 3"
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    <div *ngIf="!event.images || !event.images[1]"
+                        class="w-full h-full flex flex-col items-center justify-center text-forest/30 border-2 border-dashed border-forest/10 rounded-2xl m-2">
+                        <span class="text-xl">➕</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest mt-1">Add Detail</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USER VIEW (Adaptive Grid) -->
+        <div *ngIf="!canManage" class="rounded-3xl overflow-hidden shadow-sm h-[400px] md:h-[500px]">
+            <!-- Case 1: Only 1 Image -->
+            <div *ngIf="(!event.images || event.images.length <= 1)" class="w-full h-full">
+                <img [src]="event.image" [alt]="event.title" class="w-full h-full object-cover">
+            </div>
+
+            <!-- Case 2: Exactly 2 Images -->
+            <div *ngIf="event.images && event.images.length === 2" class="grid grid-cols-2 gap-2 w-full h-full">
+                <img [src]="event.image" alt="1" class="w-full h-full object-cover">
+                <img [src]="event.images[0]" alt="2" class="w-full h-full object-cover font-bold">
+            </div>
+
+            <!-- Case 3: 3+ Images -->
+            <div *ngIf="event.images && event.images.length >= 3"
+                class="grid grid-cols-1 md:grid-cols-2 gap-2 w-full h-full">
+                <img [src]="event.image" alt="1" class="w-full h-full object-cover">
+                <div class="grid grid-rows-2 gap-2 h-full">
+                    <img [src]="event.images[0]" alt="2" class="w-full h-full object-cover">
+                    <img [src]="event.images[1]" alt="3" class="w-full h-full object-cover">
                 </div>
             </div>
         </div>

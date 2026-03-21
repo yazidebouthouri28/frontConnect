@@ -41,7 +41,8 @@ export class EventsManagementComponent implements OnInit {
     endDate: '',
     maxParticipants: 50,
     price: 0,
-    picture: ''
+    picture: '',
+    images: [] as string[]
   };
 
   categories = ['Nature', 'Survival', 'Music', 'Culture', 'Sports', 'Education', 'Adventure'];
@@ -159,10 +160,12 @@ export class EventsManagementComponent implements OnInit {
       id: e.id,
       title: e.name,
       type: (e.eventType?.toLowerCase() || 'workshop') as any,
+      rawEndDate: e.endDate,
       date: e.endDate ? new Date(e.endDate).toLocaleDateString() : 'TBD',
       time: e.endDate ? new Date(e.endDate).toLocaleTimeString() : 'TBD',
       location: e.location,
       image: this.resolveImageUrl(e.picture),
+      images: e.images ? e.images.map((img: string) => this.resolveImageUrl(img)) : [],
       participants: e.currentParticipants || 0,
       maxParticipants: e.maxParticipants || 100,
       price: e.price,
@@ -213,6 +216,30 @@ export class EventsManagementComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  // -1 => main picture, 0..n => gallery images
+  currentUploadSlot: number | null = null;
+  private uploadFromDetailContext = false;
+
+  prepareMainUpload() {
+    this.currentUploadSlot = -1;
+  }
+
+  handleGalleryUpload(slotIndex: number) {
+    this.currentUploadSlot = slotIndex;
+    this.uploadFromDetailContext = !!this.selectedEvent && !this.isCreateModalOpen;
+
+    // In detail view there is no visible "Save Changes" button.
+    // Preload edit context so uploaded images can be persisted immediately.
+    if (this.uploadFromDetailContext && this.selectedEvent) {
+      this.isEditing = true;
+      this.editingEventId = this.selectedEvent.id;
+      this.fillFormFromEvent(this.selectedEvent);
+    }
+
+    const fileInput = document.getElementById('galleryFileInput') as HTMLInputElement;
+    if (fileInput) fileInput.click();
+  }
+
   closeCreateModal() {
     this.isCreateModalOpen = false;
   }
@@ -227,7 +254,8 @@ export class EventsManagementComponent implements OnInit {
       endDate: '',
       maxParticipants: 50,
       price: 0,
-      picture: ''
+      picture: '',
+      images: []
     };
   }
 
@@ -240,19 +268,52 @@ export class EventsManagementComponent implements OnInit {
 
       this.http.post<any>(`${this.apiUrl}/api/files/upload`, formData).subscribe({
         next: (res) => {
-          this.eventForm.picture = res.data.fileName;
+          const fileName = res.data.fileName;
+          if (this.currentUploadSlot === null || this.currentUploadSlot === -1) {
+            this.eventForm.picture = fileName;
+            if (this.selectedEvent) {
+              this.selectedEvent.image = this.resolveImageUrl(fileName);
+            }
+          } else {
+            if (!this.eventForm.images) this.eventForm.images = [];
+            // Ensure array is large enough
+            while (this.eventForm.images.length <= this.currentUploadSlot) {
+              this.eventForm.images.push('');
+            }
+            this.eventForm.images[this.currentUploadSlot] = fileName;
+
+            if (this.selectedEvent) {
+              if (!this.selectedEvent.images) {
+                this.selectedEvent.images = [];
+              }
+              while (this.selectedEvent.images.length <= this.currentUploadSlot) {
+                this.selectedEvent.images.push('');
+              }
+              this.selectedEvent.images[this.currentUploadSlot] = this.resolveImageUrl(fileName);
+            }
+          }
           this.isUploading = false;
+          this.currentUploadSlot = null;
+          this.cdr.detectChanges();
+
+          // If upload was triggered from detail view, persist immediately.
+          if (this.uploadFromDetailContext && this.isEditing && this.editingEventId) {
+            this.saveEvent(true);
+          }
+          this.uploadFromDetailContext = false;
         },
         error: (err) => {
           console.error('Upload failed', err);
           this.isUploading = false;
+          this.currentUploadSlot = null;
           alert('Failed to upload image');
+          this.uploadFromDetailContext = false;
         }
       });
     }
   }
 
-  saveEvent() {
+  saveEvent(silent = false) {
     const user = this.authService.getCurrentUser();
     if (!user) return;
 
@@ -263,6 +324,7 @@ export class EventsManagementComponent implements OnInit {
 
     const request = {
       ...this.eventForm,
+      images: (this.eventForm.images || []).filter((img) => !!img && img.trim().length > 0),
       organizerId: Number(user.organizerId),
       status: 'PUBLISHED' // Defaulting to published for immediate visibility
     };
@@ -270,13 +332,18 @@ export class EventsManagementComponent implements OnInit {
     if (this.isEditing && this.editingEventId) {
       this.http.put(`${this.apiUrl}/api/events/${this.editingEventId}`, request).subscribe({
         next: () => {
-          this.closeCreateModal();
+          if (!silent) this.closeCreateModal();
           this.fetchEvents();
-          alert('Event updated successfully!');
+          if (!silent) {
+            alert('Event updated successfully!');
+          }
         },
         error: (err) => {
           console.error('Failed to update event', err);
-          alert('Failed to update event: ' + (err.error?.message || 'Unknown error'));
+          const details = err?.error?.errors
+            ? JSON.stringify(err.error.errors)
+            : (err.error?.message || err.message || 'Unknown error');
+          alert('Failed to update event: ' + details);
         }
       });
     } else {
@@ -304,21 +371,25 @@ export class EventsManagementComponent implements OnInit {
   editEvent(event: Event) {
     this.isEditing = true;
     this.editingEventId = event.id;
+    this.fillFormFromEvent(event);
 
+    this.isCreateModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  private fillFormFromEvent(event: Event) {
     this.eventForm = {
       name: event.title,
       description: event.description || '',
       eventType: event.type.toUpperCase(),
       category: 'Nature',
       location: event.location || '',
-      endDate: this.formatDateForInput(event.date),
+      endDate: event.rawEndDate ? this.formatDateForInput(event.rawEndDate) : this.formatDateForInput(event.date),
       maxParticipants: event.maxParticipants || 50,
       price: event.price || 0,
-      picture: event.image ? (event.image.split('/').pop() || '') : ''
+      picture: event.image ? (event.image.split('/').pop() || '') : '',
+      images: event.images ? event.images.map((img) => img.split('/').pop() || '') : []
     };
-
-    this.isCreateModalOpen = true;
-    this.cdr.detectChanges();
   }
 
   private formatDateForInput(dateStr: string): string {

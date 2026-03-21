@@ -98,6 +98,7 @@
         <div class="relative">
           <input type="file" (change)="onFileSelected($event)" accept="image/*" id="fileUpload" class="hidden">
           <label for="fileUpload"
+            (click)="prepareMainUpload()"
             class="flex flex-col items-center justify-center w-full h-44 rounded-3xl border-2 border-dashed border-forest/20 bg-forest/5 hover:bg-forest/10 transition-all cursor-pointer group overflow-hidden">
             @if (isUploading) {
             <div class="flex flex-col items-center">
@@ -125,6 +126,36 @@
         </div>
       </div>
 
+      <!-- Gallery Images -->
+      <div class="space-y-4 text-left border-t border-forest/5 pt-6">
+        <label class="text-[10px] font-black text-forest uppercase tracking-widest opacity-60 ml-2">Additional Photos
+          (Optional)</label>
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Slot 1 -->
+          <div (click)="handleGalleryUpload(0)"
+            class="relative h-32 rounded-3xl border-2 border-dashed border-forest/20 bg-forest/5 hover:bg-forest/10 transition-all cursor-pointer group overflow-hidden">
+            <img *ngIf="eventForm.images && eventForm.images[0]" [src]="resolveImageUrl(eventForm.images[0])"
+              class="w-full h-full object-cover">
+            <div *ngIf="!eventForm.images || !eventForm.images[0]"
+              class="w-full h-full flex flex-col items-center justify-center text-forest/20">
+              <span class="text-xl">➕</span>
+              <span class="text-[8px] font-black uppercase mt-1">Photo 2</span>
+            </div>
+          </div>
+          <!-- Slot 2 -->
+          <div (click)="handleGalleryUpload(1)"
+            class="relative h-32 rounded-3xl border-2 border-dashed border-forest/20 bg-forest/5 hover:bg-forest/10 transition-all cursor-pointer group overflow-hidden">
+            <img *ngIf="eventForm.images && eventForm.images[1]" [src]="resolveImageUrl(eventForm.images[1])"
+              class="w-full h-full object-cover">
+            <div *ngIf="!eventForm.images || !eventForm.images[1]"
+              class="w-full h-full flex flex-col items-center justify-center text-forest/20">
+              <span class="text-xl">➕</span>
+              <span class="text-[8px] font-black uppercase mt-1">Photo 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Modal Footer -->
@@ -144,7 +175,9 @@
 }
 
 @if (selectedEvent) {
-<app-event-detail [event]="selectedEvent" (back)="clearSelection()" (edit)="editEvent($event)" (add)="createEvent()">
+<input type="file" (change)="onFileSelected($event)" accept="image/*" id="galleryFileInput" class="hidden">
+<app-event-detail [event]="selectedEvent" (back)="clearSelection()" (edit)="editEvent($event)" (add)="createEvent()"
+  (uploadImage)="handleGalleryUpload($event)">
 </app-event-detail>
 } @else {
 <section id="events" [class]="isOrganizer ? 'py-6 px-4 sm:px-6 lg:px-8' : 'py-16 px-4 sm:px-6 lg:px-8'">
@@ -221,8 +254,9 @@
     }
 
     <!-- DISCOVERY & MANAGEMENT SECTION -->
-    <div class="mb-12" [class.border-t]="!isOrganizer" [class.border-forest/5]="!isOrganizer"
-      [class.pt-16]="!isOrganizer">
+    <div
+      class="mb-12"
+      [ngClass]="{ 'border-t border-forest/5 pt-16': !isOrganizer }">
 
       <!-- UNIFIED BAR FOR ORGANIZER / STANDARD FOR USER -->
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12">

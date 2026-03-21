@@ -10,6 +10,7 @@ export interface Event {
     id: number;
     title: string;
     type: 'workshop' | 'trip' | 'festival';
+    rawEndDate?: string;
     date: string;
     time: string;
     location: string;
@@ -25,6 +26,7 @@ export interface Event {
     description?: string;
     sponsors?: string[];
     features?: string[];
+    images?: string[];
 }
 
 @Component({
@@ -62,6 +64,13 @@ export class EventDetailComponent {
         if (clonedValue && clonedValue.image && !clonedValue.image.startsWith('http') && !clonedValue.image.startsWith('blob')) {
             clonedValue.image = `${this.apiUrl}/uploads/${clonedValue.image}`;
         }
+        if (clonedValue && clonedValue.images) {
+            clonedValue.images = clonedValue.images.map(img =>
+                (img && !img.startsWith('http') && !img.startsWith('blob'))
+                    ? `${this.apiUrl}/uploads/${img}`
+                    : img
+            );
+        }
         this._event = clonedValue;
         // Reset reaction state each time a new event is opened
         this.userLiked = false;
@@ -77,6 +86,7 @@ export class EventDetailComponent {
     @Output() back = new EventEmitter<void>();
     @Output() edit = new EventEmitter<Event>();
     @Output() add = new EventEmitter<void>();
+    @Output() uploadImage = new EventEmitter<number>();
 
     get progressPercent(): number {
         if (!this.event) return 0;
@@ -121,6 +131,11 @@ export class EventDetailComponent {
 
     addNewEvent() {
         this.add.emit();
+    }
+
+    triggerUpload(index: number) {
+        if (!this.canManage) return;
+        this.uploadImage.emit(index);
     }
 
     deleteEvent() {
