@@ -1,29 +1,178 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 import { EventDetailComponent, Event } from '../event-detail/event-detail.component';
 
 @Component({
   selector: 'app-events-management',
   standalone: true,
-  imports: [CommonModule, EventDetailComponent],
+  imports: [CommonModule, EventDetailComponent, FormsModule],
   templateUrl: './events-management.component.html',
   styleUrls: ['./events-management.component.css'],
 })
-export class EventsManagementComponent {
+export class EventsManagementComponent implements OnInit {
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  public authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
+  private apiUrl = environment.apiUrl;
+
   selectedEvent: Event | null = null;
-  events: Event[] = [
-    { id: 1, title: 'Wilderness Survival Skills Workshop', type: 'workshop', date: 'Feb 15, 2026', time: '9:00 AM - 4:00 PM', location: 'Zaghouan Mountain, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080', participants: 18, maxParticipants: 25, price: 85, organizer: 'Tunis Adventure Co.' },
-    { id: 2, title: 'Summer Camping Music Festival', type: 'festival', date: 'Jul 4-6, 2026', time: 'All Day', location: 'Kelibia Beach, Tunisia', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1080', participants: 342, maxParticipants: 500, price: 195, organizer: 'Carthage Sounds' },
-    { id: 3, title: "Beginner's Backcountry Group Trip", type: 'trip', date: 'Mar 22-24, 2026', time: '3 Days / 2 Nights', location: 'Sahara Desert, Douz, Tunisia', image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1080', participants: 8, maxParticipants: 12, price: 250, organizer: 'Sahara Peak Adventures' },
-    { id: 4, title: 'Family Camping Weekend', type: 'trip', date: 'Apr 12-14, 2026', time: 'Weekend', location: 'Beni M Tir, Tunisia', image: 'https://images.unsplash.com/photo-1510672981848-a1c4f1cb5ccf?q=80&w=1080', participants: 24, maxParticipants: 30, price: 120, organizer: 'Bizerte Outdoors Club' },
-    { id: 5, title: 'Photography & Nature Workshop', type: 'workshop', date: 'May 8, 2026', time: '6:00 AM - 2:00 PM', location: 'Haouaria Cliffs, Tunisia', image: 'https://images.unsplash.com/photo-1533873984035-25970ab07451?q=80&w=1080', participants: 12, maxParticipants: 15, price: 95, organizer: 'Tunisian Nature Photo' },
-    { id: 6, title: 'Mountain Summit Challenge', type: 'trip', date: 'Jun 15-18, 2026', time: '4 Days / 3 Nights', location: 'Djebel Chaambi, Tunisia', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1080', participants: 6, maxParticipants: 10, price: 450, organizer: 'Summit Seekers Tunisia' },
+  events: Event[] = [];
+  recommendedEvents: Event[] = [];
+  myEvents: Event[] = [];
+  selectedCategory: string = 'all';
+
+  isCreateModalOpen: boolean = false;
+  isUploading: boolean = false;
+  isEditing: boolean = false;
+  editingEventId: number | null = null;
+
+  eventForm = {
+    name: '',
+    description: '',
+    eventType: 'WORKSHOP',
+    category: 'Nature',
+    location: '',
+    endDate: '',
+    maxParticipants: 50,
+    price: 0,
+    picture: ''
+  };
+
+  categories = ['Nature', 'Survival', 'Music', 'Culture', 'Sports', 'Education', 'Adventure'];
+  eventTypes = ['WORKSHOP', 'TRIP', 'FESTIVAL', 'CAMPING', 'HIKING', 'OTHER'];
+
+  private mockEvents: Event[] = [
+    {
+      id: 101,
+      title: 'Zaghouan Mountain Trekking',
+      type: 'trip',
+      date: '15 Mars 2026',
+      time: '08:00',
+      location: 'Djebel Zaghouan, Tunisia',
+      image: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?q=80&w=1080',
+      participants: 12,
+      maxParticipants: 20,
+      price: 45,
+      organizer: 'Mountain Pro',
+      description: 'Une randonnée guidée spectaculaire vers le sommet de Zaghouan.'
+    },
+    {
+      id: 102,
+      title: 'Kroumirie Forest Workshop',
+      type: 'workshop',
+      date: '22 Mars 2026',
+      time: '10:00',
+      location: 'Ain Draham Forest, Tunisia',
+      image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1080',
+      participants: 8,
+      maxParticipants: 15,
+      price: 30,
+      organizer: 'Nature Academy',
+      description: 'Apprenez les techniques de survie et la flore locale.'
+    },
+    {
+      id: 103,
+      title: 'Sahara Star Gazing Festival',
+      type: 'festival',
+      date: '05 Avril 2026',
+      time: '19:00',
+      location: 'Douz Desert, Tunisia',
+      image: 'https://images.unsplash.com/photo-1541410965313-d53b3c16ef17?q=80&w=1080',
+      participants: 85,
+      maxParticipants: 200,
+      price: 120,
+      organizer: 'Desert Vibes',
+      description: 'Une nuit magique sous les étoiles avec musique et culture nomade.'
+    }
   ];
 
-  recommendedEvents: Event[] = [
-    { id: 1, title: 'Wilderness Survival Skills Workshop', type: 'workshop', date: 'Feb 15, 2026', time: '9:00 AM - 4:00 PM', location: 'Zaghouan Mountain, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080', participants: 18, maxParticipants: 25, price: 85, organizer: 'Tunis Adventure Co.' },
-    { id: 3, title: "Beginner's Backcountry Group Trip", type: 'trip', date: 'Mar 22-24, 2026', time: '3 Days / 2 Nights', location: 'Sahara Desert, Douz, Tunisia', image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1080', participants: 8, maxParticipants: 12, price: 250, organizer: 'Sahara Peak Adventures' },
-  ];
+  ngOnInit() {
+    this.fetchEvents();
+  }
+
+  fetchEvents() {
+    this.http.get<any>(`${this.apiUrl}/api/events`).subscribe({
+      next: (res) => {
+        const data = res.data || res;
+        if (Array.isArray(data) && data.length > 0) {
+          // Filter only PUBLISHED events for the public page
+          const publishedEvents = data.filter((e: any) => e.status === 'PUBLISHED');
+
+          if (publishedEvents.length > 0) {
+            this.events = this.mapEvents(publishedEvents);
+            this.recommendedEvents = this.events.slice(0, 2);
+
+            const user = this.authService.getCurrentUser();
+            if (user && user.role === 'ORGANIZER') {
+              this.myEvents = this.events.filter(e => e.organizerUserId === Number(user.id));
+            } else {
+              this.myEvents = [];
+            }
+          } else {
+            this.useMockData();
+          }
+        } else {
+          // Fallback to mock if API returns empty
+          this.useMockData();
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to fetch events, using mock data', err);
+        this.useMockData();
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  filterEvents(category: string) {
+    this.selectedCategory = category;
+  }
+
+  getFilteredEvents(): Event[] {
+    if (this.selectedCategory === 'all') return this.events;
+    if (this.selectedCategory === 'my') return this.myEvents;
+    return this.events.filter(e => e.type === this.selectedCategory);
+  }
+
+  private useMockData() {
+    this.events = [...this.mockEvents];
+    this.recommendedEvents = this.events.slice(0, 2);
+    this.myEvents = [];
+    this.cdr.detectChanges();
+  }
+
+  resolveImageUrl(path: string | null): string {
+    if (!path) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080';
+    if (path.startsWith('http')) return path;
+    return `${this.apiUrl}/uploads/${path}`;
+  }
+
+  private mapEvents(data: any[]): Event[] {
+    return data.map(e => ({
+      id: e.id,
+      title: e.name,
+      type: (e.eventType?.toLowerCase() || 'workshop') as any,
+      date: e.endDate ? new Date(e.endDate).toLocaleDateString() : 'TBD',
+      time: e.endDate ? new Date(e.endDate).toLocaleTimeString() : 'TBD',
+      location: e.location,
+      image: this.resolveImageUrl(e.picture),
+      participants: e.currentParticipants || 0,
+      maxParticipants: e.maxParticipants || 100,
+      price: e.price,
+      organizer: e.organizerName || 'Organizer',
+      organizerUserId: e.organizerUserId,
+      likesCount: e.likesCount,
+      dislikesCount: e.dislikesCount,
+      description: e.description
+    }));
+  }
 
   eventTypeClass(type: string): string {
     const map: Record<string, string> = {
@@ -45,5 +194,169 @@ export class EventsManagementComponent {
 
   clearSelection() {
     this.selectedEvent = null;
+  }
+
+  get isOrganizer(): boolean {
+    return this.authService.isOrganizer();
+  }
+
+  get currentUserId(): number | null {
+    const user = this.authService.getCurrentUser();
+    return user ? Number(user.id) : null;
+  }
+
+  createEvent() {
+    this.isEditing = false;
+    this.editingEventId = null;
+    this.resetForm();
+    this.isCreateModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeCreateModal() {
+    this.isCreateModalOpen = false;
+  }
+
+  resetForm() {
+    this.eventForm = {
+      name: '',
+      description: '',
+      eventType: 'WORKSHOP',
+      category: 'Nature',
+      location: '',
+      endDate: '',
+      maxParticipants: 50,
+      price: 0,
+      picture: ''
+    };
+  }
+
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      this.isUploading = true;
+      const formData = new FormData();
+      formData.append('file', file);
+
+      this.http.post<any>(`${this.apiUrl}/api/files/upload`, formData).subscribe({
+        next: (res) => {
+          this.eventForm.picture = res.data.fileName;
+          this.isUploading = false;
+        },
+        error: (err) => {
+          console.error('Upload failed', err);
+          this.isUploading = false;
+          alert('Failed to upload image');
+        }
+      });
+    }
+  }
+
+  saveEvent() {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    if (!user.organizerId) {
+      alert('Your organizer profile is being initialized. Please log out and log back in to continue.');
+      return;
+    }
+
+    const request = {
+      ...this.eventForm,
+      organizerId: Number(user.organizerId),
+      status: 'PUBLISHED' // Defaulting to published for immediate visibility
+    };
+
+    if (this.isEditing && this.editingEventId) {
+      this.http.put(`${this.apiUrl}/api/events/${this.editingEventId}`, request).subscribe({
+        next: () => {
+          this.closeCreateModal();
+          this.fetchEvents();
+          alert('Event updated successfully!');
+        },
+        error: (err) => {
+          console.error('Failed to update event', err);
+          alert('Failed to update event: ' + (err.error?.message || 'Unknown error'));
+        }
+      });
+    } else {
+      this.http.post(`${this.apiUrl}/api/events`, request).subscribe({
+        next: () => {
+          this.closeCreateModal();
+          this.fetchEvents();
+          alert('Event created successfully!');
+        },
+        error: (err) => {
+          console.error('Failed to create event', err);
+          alert('Failed to create event: ' + (err.error?.message || 'Unknown error'));
+        }
+      });
+    }
+  }
+
+
+  canManage(event: Event): boolean {
+    const user = this.authService.getCurrentUser();
+    if (!user || user.role !== 'ORGANIZER' || !event) return false;
+    return Number(user.id) === event.organizerUserId;
+  }
+
+  editEvent(event: Event) {
+    this.isEditing = true;
+    this.editingEventId = event.id;
+
+    this.eventForm = {
+      name: event.title,
+      description: event.description || '',
+      eventType: event.type.toUpperCase(),
+      category: 'Nature',
+      location: event.location || '',
+      endDate: this.formatDateForInput(event.date),
+      maxParticipants: event.maxParticipants || 50,
+      price: event.price || 0,
+      picture: event.image ? (event.image.split('/').pop() || '') : ''
+    };
+
+    this.isCreateModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  private formatDateForInput(dateStr: string): string {
+    if (!dateStr || dateStr === 'TBD') return '';
+
+    // If it's already in the correct format YYYY-MM-DDTHH:mm
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateStr)) return dateStr;
+
+    try {
+      // Handle the case where the date is in a locale string format or other
+      // Attempt to parse it
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const year = d.getFullYear();
+      const month = pad(d.getMonth() + 1);
+      const day = pad(d.getDate());
+      const hours = pad(d.getHours());
+      const minutes = pad(d.getMinutes());
+
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  deleteEvent(eventId: number) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet événement ?')) {
+      this.http.delete(`${this.apiUrl}/api/events/${eventId}`).subscribe({
+        next: () => {
+          this.fetchEvents(); // Refresh list
+        },
+        error: (err) => {
+          console.error('Delete failed:', err);
+          alert('Erreur lors de la suppression.');
+        }
+      });
+    }
   }
 }
