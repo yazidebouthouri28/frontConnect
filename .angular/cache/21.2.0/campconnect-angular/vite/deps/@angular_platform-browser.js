@@ -1,4 +1,3 @@
-import { createRequire } from 'module';const require = createRequire(import.meta.url);
 import {
   BrowserDomAdapter,
   BrowserGetTestability,
@@ -35,17 +34,16 @@ import {
   withI18nSupport,
   withIncrementalHydration,
   withNoHttpTransferCache
-} from "./chunk-RAUFH2NV.js";
-import "./chunk-I4S2YHOR.js";
-import "./chunk-FL3HPPSG.js";
+} from "./chunk-TC2RV3M7.js";
+import "./chunk-XICTXLD3.js";
+import "./chunk-SSQPGPZR.js";
 import {
   getDOM
-} from "./chunk-XSRRV6MC.js";
-import "./chunk-4WCOKSWQ.js";
-import "./chunk-C27DBZK2.js";
-import "./chunk-2UVUUPPC.js";
-import "./chunk-K54IFBYX.js";
-import "./chunk-6DU2HRTW.js";
+} from "./chunk-JU4HG2OS.js";
+import "./chunk-JTJIMGXE.js";
+import "./chunk-UAVGWFT4.js";
+import "./chunk-BY7Z3IGD.js";
+import "./chunk-PSTBIIF2.js";
 export {
   BrowserModule,
   By,
