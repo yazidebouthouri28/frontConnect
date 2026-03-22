@@ -1,44 +1,115 @@
-<div class="min-h-screen bg-[#F9F7F2] pb-12 font-sans text-forest">
+<div class="min-h-screen pb-16 font-sans text-forest campsite-detail-root">
 
     <!-- Back Button & Header -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <button (click)="goBack()"
-            class="flex items-center gap-2 text-forest hover:text-olive transition-colors mb-6 font-semibold">
+        <a routerLink="/campsites"
+            class="inline-flex items-center gap-2 text-[#2C4A3C] hover:text-[#1a2e1a] transition-all mb-6 font-bold text-sm tracking-wide px-4 py-2 rounded-full border border-[#2C4A3C]/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Campsites
-        </button>
+        </a>
     </div>
 
     @if (campsite) {
+    <!-- Hero Header & Title Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6 mt-2">
+        <!-- Tags (Mocked up like screenshot) -->
+        <div class="flex flex-wrap gap-2 mb-4">
+            <span
+                class="bg-[#e9e6df] text-[#2C4A3C] font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">Waterfront</span>
+            <span
+                class="bg-[#e9e6df] text-[#2C4A3C] font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">Kayaking</span>
+            <span
+                class="bg-[#e9e6df] text-[#2C4A3C] font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">No
+                Hookups</span>
+        </div>
+
+        <h1 class="text-4xl md:text-5xl font-black text-[#1a2e1a] tracking-tight mb-2 font-serif">{{ campsite.name }}
+        </h1>
+
+        <div class="flex flex-wrap items-center justify-between text-[#1a2e1a] font-medium text-sm">
+            <div class="flex items-center gap-3">
+                <span class="flex items-center gap-1 text-[#D4A843] font-bold text-base">
+                    <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                        <path
+                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                    {{ campsite.averageRating || 'New' }}
+                    <span class="text-gray-500 font-normal ml-1 underline decoration-gray-300 underline-offset-2">({{
+                        campsite.reviewCount || 0 }} reviews)</span>
+                </span>
+                <span class="text-gray-400">•</span>
+                <span class="flex items-center gap-1 text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {{ campsite.location || 'Lake Tahoe, CA' }}
+                </span>
+            </div>
+
+            <div
+                class="flex items-center border border-[#2C4A3C]/10 rounded-full px-3 py-1 bg-[#faf9f6] shadow-sm gap-3 mt-4 sm:mt-0">
+                <button (click)="toggleLike()" class="flex items-center gap-1 transition-colors px-2 py-1 rounded-full"
+                    [ngClass]="userReaction === 'LIKE' ? 'text-emerald-600 bg-emerald-50' : 'text-gray-700 hover:text-emerald-600'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 01-2-2h-2.514">
+                        </path>
+                    </svg>
+                    <span class="text-sm font-bold">{{ likes }}</span>
+                </button>
+                <div class="w-px h-4 bg-gray-200"></div>
+                <button (click)="toggleDislike()"
+                    class="flex items-center gap-1 transition-colors px-2 py-1 rounded-full"
+                    [ngClass]="userReaction === 'DISLIKE' ? 'text-red-500 bg-red-50' : 'text-gray-700 hover:text-red-500'">
+                    <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.514">
+                        </path>
+                    </svg>
+                    <span class="text-sm font-bold text-red-500">{{ dislikes }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Hero Image Grid -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px] md:h-[500px] rounded-3xl overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-[10px] h-[400px] md:h-[480px]">
             <!-- Main Image (Left) -->
-            <div class="h-full">
+            <button type="button" (click)="openGallery(0)"
+                class="md:col-span-3 md:row-span-2 h-full rounded-2xl md:rounded-l-3xl md:rounded-r-none overflow-hidden hover:brightness-95 transition-all outline-none focus-visible:ring-4 focus-visible:ring-[#2C4A3C]/40 text-left relative group block w-full">
                 <img [src]="campsite.images?.[0] || campsite.image || 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080'"
                     [alt]="campsite.name"
-                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
-            </div>
-            <!-- Secondary Images (Right Stack) -->
-            <div class="hidden md:grid grid-rows-2 gap-4 h-full">
-                <div class="h-full overflow-hidden">
-                    <img [src]="campsite.images?.[1] || campsite.images?.[0] || campsite.image || 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800'"
-                        alt="Gallery 2"
-                        class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]">
+                <span
+                    class="absolute bottom-4 left-4 text-white text-xs font-black uppercase tracking-widest drop-shadow-md bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-sm pointer-events-none">Tap
+                    to enlarge</span>
+            </button>
+            <!-- Secondary Image (Top Right) -->
+            <button type="button" (click)="openGallery(1)"
+                class="hidden md:block md:col-span-1 md:row-span-1 h-full rounded-tr-3xl overflow-hidden hover:brightness-95 transition-all outline-none focus-visible:ring-4 focus-visible:ring-[#2C4A3C]/40 relative group w-full text-left">
+                <img [src]="campsite.images?.[1] || campsite.images?.[0] || campsite.image || 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800'"
+                    alt="Gallery 2"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]">
+            </button>
+            <!-- Tertiary Image (Bottom Right) -->
+            <button type="button" (click)="openGallery(2)"
+                class="hidden md:block md:col-span-1 md:row-span-1 h-full rounded-br-3xl overflow-hidden hover:brightness-95 transition-all outline-none focus-visible:ring-4 focus-visible:ring-[#2C4A3C]/40 relative group w-full text-left">
+                <img [src]="campsite.images?.[2] || campsite.images?.[0] || campsite.image || 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?q=80&w=800'"
+                    alt="Gallery 3"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]">
+                <div *ngIf="campsite.images && campsite.images.length > 3"
+                    class="absolute inset-0 bg-black/50 hover:bg-black/60 flex items-center justify-center transition-colors pointer-events-none">
+                    <span
+                        class="text-white font-bold text-[15px] border-2 border-white/90 px-5 py-2 rounded-xl backdrop-blur-sm shadow-md">+{{
+                        campsite.images.length - 3 }} more</span>
                 </div>
-                <div class="h-full overflow-hidden relative group cursor-pointer">
-                    <img [src]="campsite.images?.[2] || campsite.images?.[0] || campsite.image || 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?q=80&w=800'"
-                        alt="Gallery 3"
-                        class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
-                    <div
-                        class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span class="text-white font-bold text-lg border-2 border-white px-4 py-2 rounded-lg">View All
-                            Photos</span>
-                    </div>
-                </div>
-            </div>
+            </button>
         </div>
     </div>
 
@@ -48,119 +119,116 @@
 
             <!-- Left Column: Details -->
             <div class="lg:col-span-2 space-y-10">
-                <!-- Header Info -->
-                <div class="border-b border-gray-200 pb-6">
-                    <h1 class="text-4xl font-bold text-forest mb-2">{{ campsite.name }}</h1>
-                    <div class="flex items-center gap-4 text-olive">
-                        <span class="flex items-center gap-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            </svg>
-                            {{ campsite.location }}
-                        </span>
-                        <span>•</span>
-                        <span class="flex items-center gap-1 font-semibold text-forest">
-                            ★ {{ campsite.averageRating }}
-                        </span>
-                        <span class="text-gray-500 underline cursor-pointer">({{ campsite.reviewCount }} reviews)</span>
-                    </div>
-                </div>
 
                 <!-- Description -->
-                <div>
-                    <h3 class="text-2xl font-bold text-forest mb-4">About this campsite</h3>
-                    <p class="text-gray-600 leading-relaxed text-lg">
-                        {{ campsite.description }}
+                <div class="border-b border-gray-200 pt-4 pb-10">
+                    <h2 class="text-2xl font-black text-[#1a2e1a] mb-4 font-serif">About this camp</h2>
+                    <p class="text-gray-600 leading-relaxed text-lg whitespace-pre-line">
+                        {{ campsite.description || 'No description yet for this campsite.' }}
                     </p>
                 </div>
 
                 <!-- Amenities -->
-                <div class="border-t border-gray-200 pt-8">
-                    <h3 class="text-2xl font-bold text-forest mb-6">Amenities</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
+                <div class="border-b border-gray-200 py-10">
+                    <h2 class="text-2xl font-black text-[#1a2e1a] mb-6 font-serif">What this place offers</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8">
                         @for (item of mappedAmenities; track item.label) {
-                        <div class="flex items-center gap-3">
-                            <span class="text-2xl w-8">{{ item.icon }}</span>
-                            <span class="text-gray-700 font-medium">{{ item.label }}</span>
+                        <div class="flex items-center gap-4 text-gray-700">
+                            <span class="text-xl text-[#2C4A3C] opacity-80 flex-shrink-0 w-6">{{ item.icon }}</span>
+                            <span class="text-[1.05rem] font-medium">{{ item.label }}</span>
                         </div>
                         }
                     </div>
                 </div>
                 <!-- Reviews Section -->
-                <div class="border-t border-gray-200 pt-8">
-                    <h3 class="text-2xl font-bold text-forest mb-6 flex items-center gap-2">
-                        <span>&#9733; {{ campsite.averageRating || 0 }}</span>
-                        <span>&middot;</span>
-                        <span>{{ campsite.reviewCount || 0 }} reviews</span>
-                    </h3>
+                <div class="border-b border-gray-200 py-10 pt-4">
+                    <h2 class="text-3xl font-black text-[#1a2e1a] mb-10 font-serif flex items-center gap-2">
+                        <svg class="w-7 h-7 text-[#D4A843] fill-current" viewBox="0 0 20 20">
+                            <path
+                                d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                        </svg>
+                        {{ campsite.averageRating || 'New' }}
+                        <span class="font-bold text-[#1a2e1a]">&middot; {{ campsite.reviewCount || 0 }} reviews</span>
+                    </h2>
 
-                    <div *ngIf="isReviewAllowed" class="mb-8 bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
-                        <h4 class="text-lg font-bold text-forest">Share your review</h4>
+                    <div *ngIf="isReviewAllowed"
+                        class="mb-10 bg-[#f7f5f0] border border-[#e9e6df] rounded-2xl p-6 space-y-4">
+                        <h4 class="text-lg font-bold text-[#1a2e1a]">Write a review</h4>
                         <div class="flex items-center gap-2">
                             @for (star of ratingStars; track star) {
-                            <button type="button" (click)="setDraftRating(star)" class="text-2xl leading-none">
-                                <span [class]="star <= reviewDraft.rating ? 'text-amber-500' : 'text-gray-300'">&#9733;</span>
+                            <button type="button" (click)="setDraftRating(star)"
+                                class="text-3xl leading-none transition-transform hover:scale-110">
+                                <span
+                                    [class]="star <= reviewDraft.rating ? 'text-[#D4A843]' : 'text-gray-300'">&#9733;</span>
                             </button>
                             }
-                            <span class="text-sm font-semibold text-gray-600 ml-2">{{ reviewDraft.rating }}/5</span>
+                            <span class="text-sm font-semibold text-gray-600 ml-3">{{ reviewDraft.rating }}/5
+                                stars</span>
                         </div>
-                        <textarea [(ngModel)]="reviewDraft.comment" rows="3" placeholder="Write your review comment..."
-                            class="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#2C4A3C]/20"></textarea>
+                        <textarea [(ngModel)]="reviewDraft.comment" rows="3" placeholder="Share your experience..."
+                            class="w-full px-5 py-4 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#2C4A3C]/40 text-gray-700"></textarea>
                         <button type="button" (click)="submitReview()" [disabled]="isSubmittingReview"
-                            class="px-5 py-2 bg-[#1F4D36] text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed">
-                            {{ isSubmittingReview ? 'Submitting...' : 'Submit Review' }}
+                            class="px-6 py-2.5 bg-[#1F4D36] text-white rounded-lg font-bold shadow-md hover:bg-[#163a28] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            {{ isSubmittingReview ? 'Submitting...' : 'Post Review' }}
                         </button>
-                        <p *ngIf="reviewSubmitError" class="text-sm text-red-600 font-semibold">{{ reviewSubmitError }}</p>
-                        <p *ngIf="reviewSubmitSuccess" class="text-sm text-emerald-700 font-semibold">{{ reviewSubmitSuccess }}</p>
+                        <p *ngIf="reviewSubmitError" class="text-sm text-red-600 font-semibold">{{ reviewSubmitError }}
+                        </p>
+                        <p *ngIf="reviewSubmitSuccess" class="text-sm text-emerald-700 font-semibold">{{
+                            reviewSubmitSuccess }}</p>
                     </div>
 
-                    <p *ngIf="shouldShowReviewLoginHint" class="mb-8 text-gray-500">
-                        Sign in to leave a review for this campsite.
+                    <p *ngIf="shouldShowReviewLoginHint" class="mb-10 text-gray-500 font-medium">
+                        Please <a routerLink="/login" class="text-[#2C4A3C] underline">sign in</a> to leave a review.
                     </p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8" *ngIf="reviews.length > 0">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10" *ngIf="reviews.length > 0">
                         @for (review of reviews; track review.id) {
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-4">
+                        <div>
+                            <div class="flex items-center gap-4 mb-4">
                                 <div
-                                    class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-xl text-forest">
+                                    class="w-12 h-12 rounded-full bg-[#3e6350] flex items-center justify-center text-white font-bold text-xl shadow-sm">
                                     {{ review.userName ? (review.userName.charAt(0) | uppercase) : 'U' }}
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-forest">{{ review.userName || 'Anonymous visitor' }}</h4>
-                                    <p class="text-sm text-gray-500">{{ review.createdAt | date:'mediumDate' }}</p>
-                                    <div class="text-sm mt-1">
+                                    <h4 class="font-bold text-[#1a2e1a] text-[1.1rem]">{{ review.userName || 'Anonymous
+                                        Visitor' }}</h4>
+                                    <p class="text-[0.9rem] text-gray-500 font-medium">{{ review.createdAt | date:'MMMM
+                                        yyyy' }}</p>
+                                    <div class="text-sm mt-0.5 flex">
                                         @for (star of ratingStars; track star) {
-                                        <span [class]="star <= review.rating ? 'text-amber-500' : 'text-gray-300'">&#9733;</span>
+                                        <span
+                                            [class]="star <= review.rating ? 'text-[#D4A843]' : 'text-gray-200'">&#9733;</span>
                                         }
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-gray-600 leading-relaxed">"{{ review.comment }}"</p>
+                            <p class="text-gray-700 leading-relaxed text-[1.05rem]">
+                                {{ review.comment }}
+                            </p>
                         </div>
                         }
                     </div>
-                    <p *ngIf="reviews.length === 0" class="text-gray-500 italic">No reviews yet for this campsite.</p>
+                    <p *ngIf="reviews.length === 0" class="text-gray-500 italic py-6">No reviews yet for this campsite.
+                    </p>
                 </div>
 
                 <!-- Highlights Section -->
                 <div class="border-t border-gray-200 pt-8" *ngIf="highlights.length">
                     <h3 class="text-2xl font-bold text-forest mb-6">Camp Highlights</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div *ngFor="let h of highlights"
-                            [routerLink]="['/campsites', campsite.id, 'highlights', h.id]"
+                        <div *ngFor="let h of highlights" [routerLink]="['/campsites', campsite.id, 'highlights', h.id]"
                             class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all">
                             <div class="h-32 bg-gray-100 overflow-hidden">
-                                <video *ngIf="isHighlightVideo(h.imageUrl); else highlightImage"
-                                    [src]="h.imageUrl" class="w-full h-full object-cover" muted playsinline></video>
+                                <video *ngIf="isHighlightVideo(h.imageUrl); else highlightImage" [src]="h.imageUrl"
+                                    class="w-full h-full object-cover" muted playsinline></video>
                                 <ng-template #highlightImage>
                                     <img [src]="h.imageUrl || 'assets/images/logo.png'" [alt]="h.title"
                                         class="w-full h-full object-cover">
                                 </ng-template>
                             </div>
                             <div class="p-4 space-y-1">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ h.category }}</p>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ h.category
+                                    }}</p>
                                 <h4 class="font-bold text-forest">{{ h.title }}</h4>
                                 <p class="text-xs text-gray-600 line-clamp-3">{{ h.content }}</p>
                             </div>
@@ -172,7 +240,8 @@
                 <div class="border-t border-gray-200 pt-8" *ngIf="virtualTours.length">
                     <h3 class="text-2xl font-bold text-forest mb-6">Virtual Experiences</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div *ngFor="let tour of virtualTours" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
+                        <div *ngFor="let tour of virtualTours"
+                            class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
                             <div class="flex items-center gap-3">
                                 <span class="text-2xl">🌐</span>
                                 <div>
@@ -191,10 +260,12 @@
                 <div class="border-t border-gray-200 pt-8" *ngIf="certifications.length">
                     <h3 class="text-2xl font-bold text-forest mb-6">Safety & Quality Certifications</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div *ngFor="let cert of certifications" class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                        <div *ngFor="let cert of certifications"
+                            class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                             <div class="flex items-center justify-between mb-3">
                                 <div>
-                                    <p class="text-sm font-black text-forest">{{ cert.title || 'Campsite Certification' }}</p>
+                                    <p class="text-sm font-black text-forest">{{ cert.title || 'Campsite Certification'
+                                        }}</p>
                                     <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">
                                         {{ cert.issuingOrganization }}
                                     </p>
@@ -216,45 +287,51 @@
                     </div>
                 </div>
 
-                <!-- Campsite Information / Rules -->
-                <div class="border-t border-gray-200 pt-8">
-                    <h3 class="text-2xl font-bold text-forest mb-6">Campsite Information</h3>
-                    <div class="bg-white rounded-2xl p-8 border border-gray-100">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-600">
-                            <div class="flex items-start gap-4">
-                                <svg class="w-6 h-6 text-olive mt-1 flex-shrink-0" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div>
-                                    <span class="block font-bold text-forest mb-1">Check-in / Check-out</span>
-                                    <span class="block">Check-in: {{ campsite.checkInTime || '14:00' }}</span>
-                                    <span class="block">Check-out: {{ campsite.checkOutTime || '11:00' }}</span>
+                <!-- Things to know -->
+                <div class="py-10">
+                    <div class="bg-[#f7f5f0] border border-[#e9e6df] rounded-[2rem] p-8 sm:p-10 shadow-sm">
+                        <h2 class="text-2xl font-black text-[#1a2e1a] mb-8 font-serif">Things to know</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div>
+                                <h4 class="font-bold flex items-center gap-2 mb-4 text-[#1a2e1a]">
+                                    <svg class="w-5 h-5 text-[#2C4A3C] opacity-80" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Check-in info
+                                </h4>
+                                <div class="text-gray-600 text-sm space-y-3 font-medium">
+                                    <p>Check-in: {{ campsite.checkInTime || '3:00 PM' }}</p>
+                                    <p>Check-out: {{ campsite.checkOutTime || '12:00 PM' }}</p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-4">
-                                <svg class="w-6 h-6 text-olive mt-1 flex-shrink-0" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                </svg>
-                                <div>
-                                    <span class="block font-bold text-forest mb-1">Cancellation Policy</span>
-                                    <span class="block">Free cancellation up to 48 hours before check-in. Partial refund
-                                        thereafter.</span>
+                            <div>
+                                <h4 class="font-bold flex items-center gap-2 mb-4 text-[#1a2e1a]">
+                                    <svg class="w-5 h-5 text-[#2C4A3C] opacity-80" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    Capacity
+                                </h4>
+                                <div class="text-gray-600 text-sm space-y-3 font-medium">
+                                    <p>Up to 6 guests max</p>
+                                    <p>Tents & RVs permitted</p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-4">
-                                <svg class="w-6 h-6 text-olive mt-1 flex-shrink-0" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                </svg>
-                                <div>
-                                    <span class="block font-bold text-forest mb-1">House Rules</span>
-                                    <span class="block whitespace-pre-wrap">{{ campsite.houseRules || 'No smoking in
-                                        cabins. Quiet hours 10PM-7AM. Pets allowed with deposit.' }}</span>
+                            <div>
+                                <h4 class="font-bold flex items-center gap-2 mb-4 text-[#1a2e1a]">
+                                    <svg class="w-5 h-5 text-[#2C4A3C] opacity-80" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Policies
+                                </h4>
+                                <div class="text-gray-600 text-[13px] leading-relaxed font-medium whitespace-pre-line">
+                                    {{ campsite.houseRules || 'Free cancellation for 48 hours.\nQuiet hours from 10:00
+                                    PM to 7:00 AM.' }}
                                 </div>
                             </div>
                         </div>
@@ -304,10 +381,17 @@
                         </div>
                     </div>
 
+                    @if (isAuthenticated) {
                     <button
                         class="w-full bg-[#1F4D36] text-white font-bold text-lg py-3 rounded-lg hover:bg-[#163a28] transition-all transform active:scale-[0.98] mb-4">
                         Reserve
                     </button>
+                    } @else {
+                    <a routerLink="/login"
+                        class="block text-center w-full bg-[#2C4A3C]/10 text-[#1F4D36] font-bold text-lg py-3 rounded-lg hover:bg-[#2C4A3C]/20 transition-all mb-4">
+                        Log in to Reserve
+                    </a>
+                    }
 
                     <p class="text-center text-sm text-gray-500 mb-6">You won't be charged yet</p>
 
@@ -340,5 +424,43 @@
         </div>
     </div>
     }
-</div>
 
+    <!-- Fullscreen Image Gallery Overlay -->
+    <div *ngIf="isGalleryOpen" (click)="onGalleryBackdropClick($event)"
+        class="gallery-backdrop fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center animate-gallery-in">
+        <!-- Close Button -->
+        <button type="button" (click)="closeGallery(); $event.stopPropagation()"
+            class="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors p-2 z-[99999] rounded-full bg-white/10 hover:bg-white/20">
+            <svg class="w-8 h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <!-- Prev Button -->
+        <button type="button" *ngIf="galleryImages.length > 1" (click)="prevImage(); $event.stopPropagation()"
+            class="absolute left-4 md:left-8 text-white hover:text-gray-300 transition-colors p-3 z-[210] rounded-full border-2 border-white/30 hover:bg-white/10">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+        </button>
+
+        <!-- Main Image -->
+        <img [src]="galleryImages[activeGalleryIndex]" (click)="$event.stopPropagation()"
+            class="max-h-[85vh] max-w-[90vw] object-contain select-none rounded-lg shadow-2xl ring-2 ring-white/10"
+            alt="Gallery image">
+
+        <!-- Next Button -->
+        <button type="button" *ngIf="galleryImages.length > 1" (click)="nextImage(); $event.stopPropagation()"
+            class="absolute right-4 md:right-8 text-white hover:text-gray-300 transition-colors p-3 z-[210] rounded-full border-2 border-white/30 hover:bg-white/10">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </button>
+
+        <!-- Image Counter -->
+        <div *ngIf="galleryImages.length > 1"
+            class="absolute bottom-8 text-white font-medium tracking-widest text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm shadow-lg">
+            {{ activeGalleryIndex + 1 }} / {{ galleryImages.length }}
+        </div>
+    </div>
+</div>

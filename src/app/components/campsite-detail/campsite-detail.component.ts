@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -32,6 +32,102 @@ export class CampsiteDetailComponent implements OnInit {
     reviewSubmitError = '';
     reviewSubmitSuccess = '';
     isSubmittingReview = false;
+
+    likes = 12;
+    dislikes = 0;
+
+    
+    userReaction: 'LIKE' | 'DISLIKE' | null = null;
+    isGalleryOpen = false;
+    activeGalleryIndex = 0;
+    galleryImages: string[] = [];
+
+    toggleLike(): void {
+        if (!this.isAuthenticated) return;
+        if (this.userReaction === 'LIKE') {
+            this.userReaction = null;
+            this.likes--;
+        } else {
+            if (this.userReaction === 'DISLIKE') {
+                this.dislikes--;
+            }
+            this.userReaction = 'LIKE';
+            this.likes++;
+        }
+    }
+
+    toggleDislike(): void {
+        if (!this.isAuthenticated) return;
+        if (this.userReaction === 'DISLIKE') {
+            this.userReaction = null;
+            this.dislikes--;
+        } else {
+            if (this.userReaction === 'LIKE') {
+                this.likes--;
+            }
+            this.userReaction = 'DISLIKE';
+            this.dislikes++;
+        }
+    }
+
+    openGallery(index: number = 0): void {
+        const fallbacks = [
+            'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080',
+            'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800'
+        ];
+
+        if (this.campsite?.images?.length) {
+            this.galleryImages = this.campsite.images.filter((u) => !!u && String(u).trim().length > 0);
+        } else if (this.campsite?.image) {
+            this.galleryImages = [this.campsite.image].filter((u) => !!u);
+            if (this.galleryImages.length < 2) {
+                this.galleryImages = [...this.galleryImages, fallbacks[1]];
+            }
+        } else {
+            this.galleryImages = [...fallbacks];
+        }
+
+        if (this.galleryImages.length === 0) {
+            this.galleryImages = [...fallbacks];
+        }
+
+        this.activeGalleryIndex = Math.min(Math.max(0, index), this.galleryImages.length - 1);
+        this.isGalleryOpen = true;
+        document.body.style.overflow = 'hidden';
+        this.cdr.detectChanges();
+    }
+
+    closeGallery(): void {
+        this.isGalleryOpen = false;
+        document.body.style.overflow = '';
+        this.cdr.detectChanges();
+    }
+
+    @HostListener('document:keydown.escape')
+    onEscapeGallery(): void {
+        if (this.isGalleryOpen) {
+            this.closeGallery();
+        }
+    }
+
+    onGalleryBackdropClick(event: MouseEvent): void {
+        if ((event.target as HTMLElement).classList.contains('gallery-backdrop')) {
+            this.closeGallery();
+        }
+    }
+
+    nextImage(): void {
+        if (this.galleryImages.length > 0) {
+            this.activeGalleryIndex = (this.activeGalleryIndex + 1) % this.galleryImages.length;
+        }
+    }
+
+    prevImage(): void {
+        if (this.galleryImages.length > 0) {
+            this.activeGalleryIndex = (this.activeGalleryIndex - 1 + this.galleryImages.length) % this.galleryImages.length;
+        }
+    }
+
 
     private amenityConfig: Record<string, { icon: string; label: string }> = {
         wifi: { icon: '📶', label: 'WiFi (Lodge)' },
@@ -153,6 +249,10 @@ export class CampsiteDetailComponent implements OnInit {
 
     goBack() {
         this.location.back();
+    }
+
+    get isAuthenticated(): boolean {
+        return this.authService.isAuthenticated();
     }
 
     get isReviewAllowed(): boolean {

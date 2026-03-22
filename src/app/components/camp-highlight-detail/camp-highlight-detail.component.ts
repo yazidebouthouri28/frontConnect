@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,6 +10,7 @@ interface HighlightFeedback {
   id: number;
   userName: string;
   comment: string;
+  rating?: number;
   likes: number;
   dislikes: number;
   createdAt: string;
@@ -30,15 +31,105 @@ export class CampHighlightDetailComponent implements OnInit {
   errorMessage = '';
   feedbackDraft = '';
   feedbackError = '';
+  feedbackRating = 0;
+  ratingStars = [1, 2, 3, 4, 5];
   feedbacks: HighlightFeedback[] = [];
+
+  // Reaction bar properties
+  locationName = 'Ain Draham, Tunisia';
+  rating = 4.5;
+  reactionsCount = 1;
+  likes = 1;
+  dislikes = 0;
+
   private readonly feedbackStoragePrefix = 'camp_highlight_feedback_';
+
+
+  userReaction: 'LIKE' | 'DISLIKE' | null = null;
+  isGalleryOpen = false;
+  activeGalleryIndex = 0;
+  galleryImages: string[] = [];
+
+  toggleLike(): void {
+    if (this.userReaction === 'LIKE') {
+      this.userReaction = null;
+      this.likes--;
+    } else {
+      if (this.userReaction === 'DISLIKE') {
+        this.dislikes--;
+      }
+      this.userReaction = 'LIKE';
+      this.likes++;
+    }
+  }
+
+  toggleDislike(): void {
+    if (this.userReaction === 'DISLIKE') {
+      this.userReaction = null;
+      this.dislikes--;
+    } else {
+      if (this.userReaction === 'LIKE') {
+        this.likes--;
+      }
+      this.userReaction = 'DISLIKE';
+      this.dislikes++;
+    }
+  }
+
+  openGallery(index: number = 0): void {
+    if (this.highlight?.imageUrl && !this.isVideoMedia(this.highlight.imageUrl)) {
+      this.galleryImages = [this.highlight.imageUrl];
+    } else if (this.highlight?.imageUrl) {
+      /* Video: still open “gallery” with poster frame not ideal — skip or use logo */
+      this.galleryImages = ['assets/images/logo.png'];
+    } else {
+      this.galleryImages = ['assets/images/logo.png'];
+    }
+
+    this.activeGalleryIndex = Math.min(Math.max(0, index), this.galleryImages.length - 1);
+    this.isGalleryOpen = true;
+    document.body.style.overflow = 'hidden';
+    this.cdr.detectChanges();
+  }
+
+  closeGallery(): void {
+    this.isGalleryOpen = false;
+    document.body.style.overflow = '';
+    this.cdr.detectChanges();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeGallery(): void {
+    if (this.isGalleryOpen) {
+      this.closeGallery();
+    }
+  }
+
+  onGalleryBackdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('gallery-backdrop')) {
+      this.closeGallery();
+    }
+  }
+
+  nextImage(): void {
+    if (this.galleryImages.length > 0) {
+      this.activeGalleryIndex = (this.activeGalleryIndex + 1) % this.galleryImages.length;
+    }
+  }
+
+  prevImage(): void {
+    if (this.galleryImages.length > 0) {
+      this.activeGalleryIndex = (this.activeGalleryIndex - 1 + this.galleryImages.length) % this.galleryImages.length;
+    }
+  }
+
 
   constructor(
     private route: ActivatedRoute,
     private highlightService: CampHighlightService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -96,6 +187,12 @@ export class CampHighlightDetailComponent implements OnInit {
     return /\.(mp4|webm|ogg|mov|m4v)$/.test(normalized);
   }
 
+  setDraftRating(star: number): void {
+    if (star >= 1 && star <= 5) {
+      this.feedbackRating = star;
+    }
+  }
+
   submitFeedback(): void {
     if (!this.canReview || !this.highlightId) return;
 
@@ -112,6 +209,7 @@ export class CampHighlightDetailComponent implements OnInit {
       id: Date.now(),
       userName,
       comment,
+      rating: this.feedbackRating,
       likes: 0,
       dislikes: 0,
       createdAt: new Date().toISOString()
@@ -119,6 +217,7 @@ export class CampHighlightDetailComponent implements OnInit {
 
     this.feedbacks = [feedback, ...this.feedbacks];
     this.feedbackDraft = '';
+    this.feedbackRating = 0;
     this.feedbackError = '';
     this.persistFeedbacks();
   }

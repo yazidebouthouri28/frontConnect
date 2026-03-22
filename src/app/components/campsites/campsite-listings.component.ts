@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Site } from '../../models/camping.models';
@@ -40,7 +40,10 @@ export class CampsiteListingsComponent implements OnInit {
     group: 'Group',
   };
 
-  constructor(private siteService: SiteService) { }
+  constructor(
+    private siteService: SiteService,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
     this.loadSites();
@@ -62,10 +65,12 @@ export class CampsiteListingsComponent implements OnInit {
           .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews)
           .slice(0, 2);
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
         this.loadError = 'Unable to load campsites right now.';
+        this.cdr.detectChanges();
       }
     });
   }
