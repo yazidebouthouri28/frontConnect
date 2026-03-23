@@ -1,7 +1,18 @@
 <section id="campsites" class="py-16 px-4 sm:px-6 lg:px-8">
   <div class="mx-auto max-w-7xl">
+    @if (loadError) {
+    <div class="mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">
+      {{ loadError }}
+    </div>
+    }
 
-    <!-- RECOMMENDED SECTION -->
+    @if (isLoading) {
+    <div class="rounded-3xl border border-forest/10 bg-white px-6 py-12 text-center">
+      <p class="text-forest font-black tracking-widest uppercase text-sm">Loading Campsites...</p>
+    </div>
+    }
+
+    @if (!isLoading && !loadError && recommendedCampsites.length) {
     <div class="mb-20">
       <div class="flex items-center gap-3 mb-8">
         <div class="w-10 h-10 rounded-2xl bg-forest flex items-center justify-center text-white shadow-lg">
@@ -12,7 +23,8 @@
         </div>
         <div>
           <h2 class="text-3xl font-black text-forest tracking-tighter uppercase">Recommended for You</h2>
-          <p class="text-olive font-bold text-sm tracking-widest uppercase opacity-60">Based on your interests</p>
+          <p class="text-olive font-bold text-sm tracking-widest uppercase opacity-60">Based on top campsite ratings
+          </p>
         </div>
       </div>
 
@@ -36,7 +48,8 @@
           </div>
 
           <div class="absolute bottom-12 left-12 right-12 text-white">
-            <p class="text-sage font-black text-xs uppercase tracking-[0.3em] mb-4">★ {{ campsite.rating }} Rating</p>
+            <p class="text-sage font-black text-xs uppercase tracking-[0.3em] mb-4">* {{ campsite.rating }} Rating
+            </p>
             <h3 class="text-4xl font-black mb-6 leading-tight tracking-tighter">{{ campsite.name }}</h3>
             <div class="flex items-center justify-between">
               <div class="bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/20 font-black text-xs">
@@ -52,8 +65,9 @@
         }
       </div>
     </div>
+    }
 
-    <!-- ALL CAMPSITES SECTION -->
+    @if (!isLoading && !loadError) {
     <div class="mb-12 border-t border-forest/5 pt-16">
       <div class="mb-10 text-center md:text-left">
         <h2 class="text-3xl font-black text-forest tracking-tighter uppercase">All Campsites</h2>
@@ -61,6 +75,11 @@
           directory</p>
       </div>
 
+      @if (!campsites.length) {
+      <div class="rounded-2xl border border-forest/10 bg-white px-6 py-10 text-center">
+        <p class="text-forest font-black tracking-widest uppercase text-sm">No campsites available yet.</p>
+      </div>
+      } @else {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @for (campsite of campsites; track campsite.id) {
         <div
@@ -82,16 +101,18 @@
               <span class="text-sm">{{ campsite.location }}</span>
             </div>
             <div class="flex items-center gap-2 mb-4">
-              <span class="font-semibold text-forest">★ {{ campsite.rating }}</span>
+              <span class="font-semibold text-forest">* {{ campsite.rating }}</span>
               <span class="text-sm text-olive">({{ campsite.reviews }} reviews)</span>
             </div>
             <div class="flex flex-wrap gap-2 mb-4">
               @for (a of campsite.amenities; track a) {
-              <span class="bg-sage/20 px-2 py-1 rounded-md text-olive text-sm" [title]="amenityLabels[a]">{{
-                amenityLabels[a] }}</span>
+              <span class="bg-sage/20 px-2 py-1 rounded-md text-olive text-sm" [title]="getAmenityLabel(a)">{{
+                getAmenityLabel(a) }}</span>
               }
             </div>
+            @if (campsite.distance !== null) {
             <div class="text-sm text-olive mb-4">{{ campsite.distance }} miles away</div>
+            }
             <a [routerLink]="['/campsites', campsite.id]"
               class="block w-full text-center bg-olive hover:bg-forest text-cream py-2 px-4 rounded-lg transition-colors min-h-[44px]">View
               Details</a>
@@ -99,6 +120,8 @@
         </div>
         }
       </div>
+      }
     </div>
+    }
   </div>
 </section>

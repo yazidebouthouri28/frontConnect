@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component';
 import { AdminDashboardComponent } from '../admin-dashboard/admin-dashboard.component';
 import { SponsorsManagementComponent } from '../sponsors-management/sponsors-management.component';
@@ -12,6 +12,8 @@ import { EventsAdminManagementComponent } from '../events-management/events-mana
 import { UsersManagementComponent } from '../users-management/users-management.component';
 import { ReportsManagementComponent } from '../reports-management/reports-management.component';
 import { ServicesManagementComponent } from '../services-management/services-management.component';
+import { CampHighlightsManagementComponent } from '../camp-highlights-management/camp-highlights-management.component';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-admin-panel',
@@ -29,7 +31,8 @@ import { ServicesManagementComponent } from '../services-management/services-man
     EventsAdminManagementComponent,
     UsersManagementComponent,
     ReportsManagementComponent,
-    ServicesManagementComponent
+    ServicesManagementComponent,
+    CampHighlightsManagementComponent
   ],
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.css'],
@@ -37,6 +40,11 @@ import { ServicesManagementComponent } from '../services-management/services-man
 export class AdminPanelComponent {
   activeSection = signal('dashboard');
   isMenuOpen = signal(false);
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) { }
 
   setSection(section: string) {
     this.activeSection.set(section);
@@ -52,5 +60,10 @@ export class AdminPanelComponent {
 
   closeMenu() {
     this.isMenuOpen.set(false);
+  }
+
+  onLogout() {
+    this.authService.logout();
+    this.router.navigate(['/auth']);
   }
 }

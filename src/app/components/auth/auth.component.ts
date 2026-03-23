@@ -1,139 +1,279 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CartService } from '../../services/cart.service';
+import { User } from '../../models/api.models';
 
-interface CarouselSlide {
-  headline: string;
-  description: string;
-  image: string;
-}
+type UserRole = User['role'];
 
 @Component({
   selector: 'app-auth',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './auth.component.html',
-  styleUrls: ['./auth.component.css'],
+  styleUrls: ['./auth.component.css']
 })
 export class AuthComponent implements OnInit, OnDestroy {
-  isLogin = signal(true);
-  logoError = false;
-  currentYear = new Date().getFullYear();
-  loginError = '';
-  isSubmittingLogin = false;
 
-  loginEmail = '';
-  loginPassword = '';
-  signupName = '';
-  signupEmail = '';
-  signupDob = '';
-  signupGender = '';
-  signupPhone = '';
-  signupPassword = '';
-  signupConfirmPassword = '';
+  isLoginMode = true;
+  isSidebarAnimatingOut = false;
+  isLoading = false;
+  errorMessage = '';
+  successMessage = '';
+  returnUrl = '/';
 
+  /* Password visibility toggles */
   showLoginPassword = false;
   showSignupPassword = false;
-  showSignupConfirm = false;
 
-  private carouselInterval: ReturnType<typeof setInterval> | null = null;
-  readonly CAROUSEL_INTERVAL_MS = 5000;
+  currentYear = new Date().getFullYear();
 
-  currentSlide = 0;
-  carouselSlides: CarouselSlide[] = [
-    {
-      headline: 'Discover unforgettable camping experiences',
-      description: 'Connect with nature, find the perfect campsite, and join a community of outdoor enthusiasts who share your passion for adventure.',
-      image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1200',
-    },
-    {
-      headline: 'Book campsites and join events',
-      description: 'From family weekends to backcountry trips—browse, book, and get tickets for workshops and camping events near you.',
-      image: 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=1200',
-    },
-    {
-      headline: 'Gear up at the marketplace',
-      description: 'Buy or rent quality camping equipment and earn loyalty points on every purchase. Everything you need for your next trip.',
-      image: 'https://images.unsplash.com/photo-1627820988643-8077d82eed7d?q=80&w=1200',
-    },
-  ];
+  /** Campfire stars + audio */
+  stars: { id: number; x: number; y: number }[] = [];
+  private starIdCounter = 0;
+  private campfireAudio: HTMLAudioElement | null = null;
+  private owlAudio: HTMLAudioElement | null = null;
+  private cricketAudio: HTMLAudioElement | null = null;
+  private readonly isBrowser = typeof window !== 'undefined';
+  private removeAudioUnlockListeners: (() => void) | null = null;
 
-  constructor(private router: Router, private authService: AuthService) { }
+  /* ===== Forms ===== */
+  loginForm = { email: '', password: '' };
 
-  get slide(): CarouselSlide {
-    return this.carouselSlides[this.currentSlide];
-  }
+  registerForm = {
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    phone: '',
+    address: '',
+    country: '',
+    age: null as number | null,
+    role: 'CLIENT' as UserRole,
+    isSeller: false,
+    isBuyer: true,
+    storeName: '',
+    bio: ''
+  };
 
-  ngOnInit() {
-    this.carouselInterval = setInterval(() => this.nextSlide(), this.CAROUSEL_INTERVAL_MS);
-  }
+  constructor(
+    private authService: AuthService,
+    private cartService: CartService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) { }
 
-  ngOnDestroy() {
-    if (this.carouselInterval) clearInterval(this.carouselInterval);
-  }
-
-  nextSlide() {
-    this.currentSlide = (this.currentSlide + 1) % this.carouselSlides.length;
-  }
-
-  switchToSignup() {
-    this.isLogin.set(false);
-  }
-
-  switchToLogin() {
-    this.isLogin.set(true);
-  }
-
-  onSubmitLogin() {
-    if (!this.loginEmail.trim() || !this.loginPassword) {
-      this.loginError = 'Veuillez saisir votre identifiant et mot de passe.';
-      return;
+  /* ===== Lifecycle ===== */
+  ngOnInit(): void {
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+    if (this.router.url.includes('register')) this.isLoginMode = false;
+    if (this.authService.isAuthenticated()) this.router.navigate([this.returnUrl]);
+    if (this.isBrowser) {
+      this.initCampfireAudio();
+      this.startAmbientAudio();
     }
+  }
 
-    this.loginError = '';
-    this.isSubmittingLogin = true;
+  ngOnDestroy(): void {
+    if (this.removeAudioUnlockListeners) {
+      this.removeAudioUnlockListeners();
+      this.removeAudioUnlockListeners = null;
+    }
+    if (this.campfireAudio) {
+      this.campfireAudio.pause();
+      this.campfireAudio = null;
+    }
+    if (this.owlAudio) {
+      this.owlAudio.pause();
+      this.owlAudio = null;
+    }
+    if (this.cricketAudio) {
+      this.cricketAudio.pause();
+      this.cricketAudio = null;
+    }
+  }
 
-    this.authService.login({
-      email: this.loginEmail.trim(),
-      password: this.loginPassword,
-    }).subscribe({
-      next: (auth) => {
-        this.isSubmittingLogin = false;
-        const role = auth.user.role;
+  /* ===== Mode switching ===== */
+  switchToSignup(): void {
+    this.animateSidebarSwitch(false);
+  }
 
-        if (role === 'ADMIN') {
-          this.router.navigate(['/admin']);
-          return;
-        }
+  switchToLogin(): void {
+    this.animateSidebarSwitch(true);
+  }
 
-        const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
-        if (prefsDone === 'true') {
-          this.router.navigate(['/home']);
-        } else {
-          this.router.navigate(['/preferences']);
-        }
+  /* ===== Role change ===== */
+  onRoleChange(): void {
+    this.registerForm.isSeller = this.registerForm.role === 'SELLER';
+  }
+
+  /* ===== Login ===== */
+  login(): void {
+    if (!this.loginForm.email || !this.loginForm.password) {
+      this.errorMessage = 'Please fill in all fields'; return;
+    }
+    this.isLoading = true;
+    this.clearMessages();
+    this.authService.login(this.loginForm).subscribe({
+      next: () => { this.cartService.syncCartAfterLogin(); this.router.navigate([this.returnUrl]); },
+      error: (err) => { this.isLoading = false; this.errorMessage = err.message || 'Login failed.'; }
+    });
+  }
+
+  /* ===== Register ===== */
+  register(): void {
+    if (!this.registerForm.name || !this.registerForm.username ||
+      !this.registerForm.email || !this.registerForm.password) {
+      this.errorMessage = 'Please fill in all required fields'; return;
+    }
+    if (this.registerForm.username.length < 3) { this.errorMessage = 'Username must be at least 3 characters'; return; }
+    if (this.registerForm.password.length < 6) { this.errorMessage = 'Password must be at least 6 characters'; return; }
+
+    this.isLoading = true;
+    this.clearMessages();
+
+    const payload: any = {
+      name: this.registerForm.name,
+      username: this.registerForm.username,
+      email: this.registerForm.email,
+      password: this.registerForm.password,
+      role: this.registerForm.role,
+      isSeller: this.registerForm.role === 'SELLER',
+      isBuyer: this.registerForm.isBuyer,
+      avatar: 'avatar.png'
+    };
+    if (this.registerForm.phone) payload.phone = this.registerForm.phone;
+    if (this.registerForm.address) payload.address = this.registerForm.address;
+    if (this.registerForm.country) payload.country = this.registerForm.country;
+    if (this.registerForm.age) payload.age = this.registerForm.age;
+    if (this.registerForm.storeName) payload.storeName = this.registerForm.storeName;
+    if (this.registerForm.bio) payload.bio = this.registerForm.bio;
+
+    this.authService.register(payload).subscribe({
+      next: () => {
+        this.successMessage = 'Account created! Redirecting…';
+        this.cartService.syncCartAfterLogin();
+        setTimeout(() => this.router.navigate([this.returnUrl]), 1200);
       },
-      error: (error: Error) => {
-        this.isSubmittingLogin = false;
-        this.loginError = error.message || 'Login failed. Please check your credentials.';
-      }
+      error: (err) => { this.isLoading = false; this.errorMessage = err.message || 'Registration failed.'; }
     });
   }
 
-  onSubmitSignup() {
-    if (this.signupPassword !== this.signupConfirmPassword) {
-      alert('Passwords do not match');
-      return;
+  /* ===== Helpers ===== */
+  clearMessages(): void { this.errorMessage = ''; this.successMessage = ''; }
+
+  private animateSidebarSwitch(targetIsLogin: boolean): void {
+    if (this.isLoginMode === targetIsLogin || this.isSidebarAnimatingOut) return;
+
+    // 1. Start the 'slide out' animation
+    this.isSidebarAnimatingOut = true;
+
+    // 2. Wait for the sidebar to fully exit the screen (400ms CSS transition)
+    setTimeout(() => {
+      // 3. Swap the form content while it's hidden out of view
+      this.isLoginMode = targetIsLogin;
+      this.clearMessages();
+
+      // 4. Wait a tiny tick for Angular to render the new DOM elements 
+      //    (so it calculates height/layout properly)
+      setTimeout(() => {
+        // 5. Slide it back in!
+        this.isSidebarAnimatingOut = false;
+      }, 50);
+
+    }, 400); // Wait 400ms for slide out transition
+  }
+
+  private initCampfireAudio(): void {
+    try {
+      this.campfireAudio = new Audio(this.publicUrl('Fire Crackling Sound Effect.mp3'));
+      this.campfireAudio.loop = true;
+      this.campfireAudio.volume = 0.4;
+      this.owlAudio = new Audio(this.publicUrl('Sound Effects - Owl Hooting Noise.mp3'));
+      this.owlAudio.loop = true;
+      this.owlAudio.volume = 0.25;
+      this.cricketAudio = new Audio(this.publicUrl('Cricket  Sound Effect.mp3'));
+      this.cricketAudio.loop = true;
+      this.cricketAudio.volume = 0.2;
+    } catch {
+      this.campfireAudio = null;
+      this.owlAudio = null;
+      this.cricketAudio = null;
     }
-    console.log('Sign up', {
-      name: this.signupName,
-      email: this.signupEmail,
-      dob: this.signupDob,
-      gender: this.signupGender,
-      phone: this.signupPhone,
-      password: this.signupPassword,
+  }
+
+  private publicUrl(fileName: string): string {
+    // Files in Angular's `public/` are served from the site root.
+    return encodeURI(`/${fileName}`);
+  }
+
+  private startAmbientAudio(): void {
+    // Try immediately (works if the browser allows autoplay).
+    this.tryPlayAmbient().then((played) => {
+      if (played) return;
+      // Autoplay blocked: unlock on first user interaction anywhere on the page.
+      this.installAudioUnlockListeners();
     });
+  }
+
+  private async tryPlayAmbient(): Promise<boolean> {
+    const tasks: Promise<unknown>[] = [];
+    if (this.campfireAudio) tasks.push(this.campfireAudio.play());
+    if (this.owlAudio) tasks.push(this.owlAudio.play());
+    if (this.cricketAudio) tasks.push(this.cricketAudio.play());
+    if (tasks.length === 0) return false;
+
+    const results = await Promise.allSettled(tasks);
+    return results.some((r) => r.status === 'fulfilled');
+  }
+
+  private installAudioUnlockListeners(): void {
+    if (!this.isBrowser || this.removeAudioUnlockListeners) return;
+
+    const handler = async () => {
+      const played = await this.tryPlayAmbient();
+      if (played && this.removeAudioUnlockListeners) {
+        this.removeAudioUnlockListeners();
+        this.removeAudioUnlockListeners = null;
+      }
+    };
+
+    window.addEventListener('pointerdown', handler, { passive: true });
+    window.addEventListener('keydown', handler);
+    window.addEventListener('touchstart', handler, { passive: true });
+
+    this.removeAudioUnlockListeners = () => {
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('keydown', handler);
+      window.removeEventListener('touchstart', handler);
+    };
+  }
+
+  onCampfireMove(event: MouseEvent): void {
+    const target = event.currentTarget as HTMLElement | null;
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const baseX = event.clientX - rect.left;
+    const baseY = event.clientY - rect.top;
+
+    const STARS_PER_MOVE = 4;
+    const RADIUS_MIN = 6;
+    const RADIUS_MAX = 18;
+
+    for (let i = 0; i < STARS_PER_MOVE; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = RADIUS_MIN + Math.random() * (RADIUS_MAX - RADIUS_MIN);
+      const x = baseX + Math.cos(angle) * radius;
+      const y = baseY + Math.sin(angle) * radius;
+
+      const id = ++this.starIdCounter;
+      this.stars.push({ id, x, y });
+
+      setTimeout(() => {
+        this.stars = this.stars.filter(star => star.id !== id);
+      }, 700);
+    }
   }
 }

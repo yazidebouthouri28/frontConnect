@@ -14,9 +14,9 @@ interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class WalletService {
-  private apiUrl = `${environment.apiUrl}/wallet`;
+  private apiUrl = `${environment.apiUrl}/api/wallets`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private extractData<T>(response: ApiResponse<T>): T {
     return response.data ?? ({} as any);

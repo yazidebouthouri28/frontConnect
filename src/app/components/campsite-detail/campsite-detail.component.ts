@@ -1,121 +1,347 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-
-interface Review {
-    author: string;
-    avatar: string;
-    rating: number;
-    date: string;
-    text: string;
-}
-
-interface Campsite {
-    id: number;
-    name: string;
-    location: string;
-    images: string[];
-    rating: number;
-    reviews: number;
-    price: number;
-    description: string;
-    amenities: { icon: string; label: string }[];
-    maxGuests: number;
-    reviewsList: Review[];
-}
+import { FormsModule } from '@angular/forms';
+import { SiteService } from '../../services/site.service';
+import { Site, Review, CampHighlight, VirtualTour, Certification } from '../../models/camping.models';
+import { ReviewService } from '../../services/review.service';
+import { CampHighlightService } from '../../services/camp-highlight.service';
+import { VirtualTourService } from '../../services/virtual-tour.service';
+import { CertificationService } from '../../services/certification.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
     selector: 'app-campsite-detail',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule, RouterLink, FormsModule],
     templateUrl: './campsite-detail.component.html',
     styleUrls: ['./campsite-detail.component.css']
 })
 export class CampsiteDetailComponent implements OnInit {
-    campsite: Campsite | undefined;
+    campsite: Site | undefined;
+    isLoading = true;
+    errorMessage = '';
+    mappedAmenities: { icon: string; label: string }[] = [];
 
-    // Mock data - in a real app this would come from a service
-    private campsites: Campsite[] = [
-        {
-            id: 1,
-            name: 'Pine Valley Campground',
-            location: 'Yosemite National Park, CA',
-            images: [
-                'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?q=80&w=1200', // Main
-                'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800',  // Top Right
-                'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=800',  // Bottom Right
-            ],
-            rating: 4.8,
-            reviews: 324,
-            price: 45,
-            description: 'Nestled in the heart of Yosemite, Pine Valley Campground offers a serene escape with breathtaking views of granite cliffs and towering pines. Our spacious ocean-view suites (forest-view cabins) are thoughtfully designed with floor-to-ceilling windows, private terraces, and premium amenities to ensure unparalleled comfort. Unwind in our natural infinity pool that blends seamlessly with the horizon, or indulge in the exclusivity of our private trails, where serenity and breathtaking views come standard.',
-            amenities: [
-                { icon: '🌲', label: 'Nature Trails' },
-                { icon: '🔥', label: 'Campfire Rings' },
-                { icon: '🚿', label: 'Hot Showers' },
-                { icon: '📶', label: 'WiFi (Lodge)' }
-            ],
-            maxGuests: 6,
-            reviewsList: [
-                {
-                    author: 'Sarah Jenkins',
-                    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100',
-                    rating: 5,
-                    date: 'Oct 2025',
-                    text: 'Absolutely stunning location! The facilities were clean and the staff was incredibly helpful. Waking up to the sound of the river was magical.'
-                },
-                {
-                    author: 'Mike Ross',
-                    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100',
-                    rating: 4,
-                    date: 'Sep 2025',
-                    text: 'Great campsite with plenty of space. The only downside was the weak WiFi signal, but honestly, it was nice to disconnect for a while.'
-                }
-            ]
-        },
-        // Fallback for other IDs for demo purposes
-        {
-            id: 2,
-            name: 'Crystal Lake Retreat',
-            location: 'Tahoe National Forest, CA',
-            images: [
-                'https://images.unsplash.com/photo-1763771056927-557d39cb5e02?q=80&w=1200',
-                'https://images.unsplash.com/photo-1492648272180-61e45a8d98a7?q=80&w=800',
-                'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?q=80&w=800'
-            ],
-            rating: 4.9,
-            reviews: 512,
-            price: 55,
-            description: 'Experience the crystal clear waters of Lake Tahoe from your doorstep. Crystal Lake Retreat provides a premium camping experience with secluded spots, private beach access, and boat rentals available.',
-            amenities: [
-                { icon: '🚣', label: 'Boat Rentals' },
-                { icon: '🎣', label: 'Fishing' },
-                { icon: '🔌', label: 'RV Hookups' },
-                { icon: '🛒', label: 'General Store' }
-            ],
-            maxGuests: 8,
-            reviewsList: []
+    reviews: Review[] = [];
+    highlights: CampHighlight[] = [];
+    virtualTours: VirtualTour[] = [];
+    certifications: Certification[] = [];
+    readonly ratingStars = [1, 2, 3, 4, 5];
+    reviewDraft = { rating: 5, comment: '' };
+    reviewSubmitError = '';
+    reviewSubmitSuccess = '';
+    isSubmittingReview = false;
+
+    likes = 12;
+    dislikes = 0;
+
+    
+    userReaction: 'LIKE' | 'DISLIKE' | null = null;
+    isGalleryOpen = false;
+    activeGalleryIndex = 0;
+    galleryImages: string[] = [];
+
+    toggleLike(): void {
+        if (!this.isAuthenticated) return;
+        if (this.userReaction === 'LIKE') {
+            this.userReaction = null;
+            this.likes--;
+        } else {
+            if (this.userReaction === 'DISLIKE') {
+                this.dislikes--;
+            }
+            this.userReaction = 'LIKE';
+            this.likes++;
         }
-    ];
+    }
+
+    toggleDislike(): void {
+        if (!this.isAuthenticated) return;
+        if (this.userReaction === 'DISLIKE') {
+            this.userReaction = null;
+            this.dislikes--;
+        } else {
+            if (this.userReaction === 'LIKE') {
+                this.likes--;
+            }
+            this.userReaction = 'DISLIKE';
+            this.dislikes++;
+        }
+    }
+
+    openGallery(index: number = 0): void {
+        const fallbacks = [
+            'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080',
+            'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800'
+        ];
+
+        if (this.campsite?.images?.length) {
+            this.galleryImages = this.campsite.images.filter((u) => !!u && String(u).trim().length > 0);
+        } else if (this.campsite?.image) {
+            this.galleryImages = [this.campsite.image].filter((u) => !!u);
+            if (this.galleryImages.length < 2) {
+                this.galleryImages = [...this.galleryImages, fallbacks[1]];
+            }
+        } else {
+            this.galleryImages = [...fallbacks];
+        }
+
+        if (this.galleryImages.length === 0) {
+            this.galleryImages = [...fallbacks];
+        }
+
+        this.activeGalleryIndex = Math.min(Math.max(0, index), this.galleryImages.length - 1);
+        this.isGalleryOpen = true;
+        document.body.style.overflow = 'hidden';
+        this.cdr.detectChanges();
+    }
+
+    closeGallery(): void {
+        this.isGalleryOpen = false;
+        document.body.style.overflow = '';
+        this.cdr.detectChanges();
+    }
+
+    @HostListener('document:keydown.escape')
+    onEscapeGallery(): void {
+        if (this.isGalleryOpen) {
+            this.closeGallery();
+        }
+    }
+
+    onGalleryBackdropClick(event: MouseEvent): void {
+        if ((event.target as HTMLElement).classList.contains('gallery-backdrop')) {
+            this.closeGallery();
+        }
+    }
+
+    nextImage(): void {
+        if (this.galleryImages.length > 0) {
+            this.activeGalleryIndex = (this.activeGalleryIndex + 1) % this.galleryImages.length;
+        }
+    }
+
+    prevImage(): void {
+        if (this.galleryImages.length > 0) {
+            this.activeGalleryIndex = (this.activeGalleryIndex - 1 + this.galleryImages.length) % this.galleryImages.length;
+        }
+    }
+
+
+    private amenityConfig: Record<string, { icon: string; label: string }> = {
+        wifi: { icon: '📶', label: 'WiFi (Lodge)' },
+        campfire: { icon: '🔥', label: 'Campfire Rings' },
+        hiking: { icon: '🌲', label: 'Nature Trails' },
+        water: { icon: '🚿', label: 'Hot Showers' },
+        group: { icon: '👥', label: 'Group Accommodation' },
+        parking: { icon: '🅿️', label: 'Free Parking' },
+        pets: { icon: '🐕', label: 'Pets Allowed' },
+        default: { icon: '⛺', label: 'Standard Amenity' }
+    };
 
     constructor(
         private route: ActivatedRoute,
-        private location: Location
+        private location: Location,
+        private siteService: SiteService,
+        private reviewService: ReviewService,
+        private highlightService: CampHighlightService,
+        private virtualTourService: VirtualTourService,
+        private certificationService: CertificationService,
+        private authService: AuthService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit() {
         this.route.params.subscribe(params => {
             const id = +params['id'];
-            // For demo: if ID exists in mock use it, otherwise use ID 1 as default/fallback
-            this.campsite = this.campsites.find(c => c.id === id) || this.campsites[0];
-            // Update name if it was a fallback but keep the ID valid for the view
-            if (!this.campsites.find(c => c.id === id)) {
-                this.campsite = { ...this.campsites[0], id: id, name: 'Sample Campsite ' + id };
+            if (id) {
+                this.loadCampsite(id);
+                this.loadRelatedData(id);
             }
+        });
+    }
+
+    private loadCampsite(id: number) {
+        this.isLoading = true;
+        this.errorMessage = '';
+        this.cdr.detectChanges();
+
+        this.siteService.getSiteById(id).subscribe({
+            next: (site) => {
+                this.campsite = site;
+                this.mapAmenities(site.amenities || []);
+                this.isLoading = false;
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error('Error fetching campsite details', err);
+                this.errorMessage = 'Could not load campsite details';
+                this.isLoading = false;
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    private loadRelatedData(siteId: number) {
+        // Reviews
+        this.reviewService.getReviewsBySite(siteId).subscribe({
+            next: (reviews) => {
+                this.reviews = reviews;
+                this.cdr.detectChanges();
+            },
+            error: () => {
+                this.reviews = [];
+                this.cdr.detectChanges();
+            }
+        });
+
+        // Highlights
+        this.highlightService.getHighlightsBySite(siteId).subscribe({
+            next: (highlights) => {
+                this.highlights = highlights.filter(h => h.isPublished);
+                this.cdr.detectChanges();
+            },
+            error: () => {
+                this.highlights = [];
+                this.cdr.detectChanges();
+            }
+        });
+
+        // Virtual tours
+        this.virtualTourService.getToursBySite(siteId).subscribe({
+            next: (tours) => {
+                this.virtualTours = tours;
+                this.cdr.detectChanges();
+            },
+            error: () => {
+                this.virtualTours = [];
+                this.cdr.detectChanges();
+            }
+        });
+
+        // Certifications
+        this.certificationService.getCertificationsBySite(siteId).subscribe({
+            next: (certs) => {
+                this.certifications = certs;
+                this.cdr.detectChanges();
+            },
+            error: () => {
+                this.certifications = [];
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    private mapAmenities(amenities: string[]) {
+        this.mappedAmenities = amenities.map(amenity => {
+            const key = String(amenity).toLowerCase().trim();
+            const config = this.amenityConfig[key];
+            if (config) {
+                return config;
+            }
+            return {
+                icon: this.amenityConfig['default'].icon,
+                label: amenity.charAt(0).toUpperCase() + amenity.slice(1)
+            };
         });
     }
 
     goBack() {
         this.location.back();
+    }
+
+    get isAuthenticated(): boolean {
+        return this.authService.isAuthenticated();
+    }
+
+    get isReviewAllowed(): boolean {
+        return this.authService.isAuthenticated() && !this.authService.isAdmin();
+    }
+
+    get shouldShowReviewLoginHint(): boolean {
+        return !this.authService.isAuthenticated();
+    }
+
+    setDraftRating(star: number): void {
+        if (star >= 1 && star <= 5) {
+            this.reviewDraft.rating = star;
+        }
+    }
+
+    isHighlightVideo(mediaUrl?: string): boolean {
+        if (!mediaUrl) return false;
+        if (mediaUrl.startsWith('data:')) {
+            return mediaUrl.startsWith('data:video/');
+        }
+        const normalized = mediaUrl.split('?')[0].toLowerCase();
+        return /\.(mp4|webm|ogg|mov|m4v)$/.test(normalized);
+    }
+
+    submitReview(): void {
+        if (!this.campsite || !this.isReviewAllowed || this.isSubmittingReview) {
+            return;
+        }
+
+        const comment = (this.reviewDraft.comment || '').trim();
+        const rating = Number(this.reviewDraft.rating);
+
+        if (!comment) {
+            this.reviewSubmitError = 'Please write your review comment.';
+            this.reviewSubmitSuccess = '';
+            return;
+        }
+
+        if (rating < 1 || rating > 5) {
+            this.reviewSubmitError = 'Please choose a star rating between 1 and 5.';
+            this.reviewSubmitSuccess = '';
+            return;
+        }
+
+        const currentUser = this.authService.getCurrentUser();
+        const numericUserId = currentUser?.id && /^\d+$/.test(String(currentUser.id))
+            ? Number(currentUser.id)
+            : undefined;
+
+        this.isSubmittingReview = true;
+        this.reviewSubmitError = '';
+        this.reviewSubmitSuccess = '';
+
+        this.reviewService.createReview(this.campsite.id, {
+            rating,
+            comment,
+            userId: numericUserId
+        }).subscribe({
+            next: (created) => {
+                const fallbackName = currentUser?.name || currentUser?.username || 'Guest';
+                const reviewWithUser = {
+                    ...created,
+                    userName: created.userName || fallbackName
+                };
+
+                this.reviews = [reviewWithUser, ...this.reviews];
+
+                const reviewCount = this.reviews.length;
+                const totalRating = this.reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+                const averageRating = reviewCount ? Number((totalRating / reviewCount).toFixed(1)) : 0;
+
+                this.campsite = {
+                    ...this.campsite!,
+                    reviewCount,
+                    averageRating
+                };
+
+                this.reviewDraft = { rating: 5, comment: '' };
+                this.reviewSubmitSuccess = 'Your review has been submitted.';
+                this.isSubmittingReview = false;
+                this.cdr.detectChanges();
+            },
+            error: (error) => {
+                this.reviewSubmitError = error?.message || 'Unable to submit review right now.';
+                this.reviewSubmitSuccess = '';
+                this.isSubmittingReview = false;
+                this.cdr.detectChanges();
+            }
+        });
     }
 }

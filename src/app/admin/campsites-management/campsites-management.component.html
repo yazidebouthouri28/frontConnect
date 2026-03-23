@@ -1,5 +1,5 @@
 <div class="p-8 space-y-8 animate-fade-in bg-transparent min-h-screen">
-    <!-- Title & Primary Action -->
+    @if (!selectedSite()) {
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-black text-[#1a2e1a]">Campsite Destinations</h1>
@@ -7,24 +7,162 @@
                 capacity.</p>
         </div>
         <div class="flex gap-3">
-            <button
-                class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-[#1a2e1a] hover:bg-gray-50 transition-colors shadow-sm">
-                Export Data
-            </button>
-            <button
+            <button (click)="openCreateSiteForm()"
                 class="px-4 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold hover:bg-[#1a2e1a] transition-all shadow-sm flex items-center gap-2">
                 <span>+</span> Add New Site
             </button>
         </div>
     </div>
 
-    <!-- Stats Row -->
+    @if (errorMessage) {
+    <div class="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-bold">
+        {{ errorMessage }}
+    </div>
+    }
+
+    @if (showCreateSiteForm) {
+    <div class="fixed inset-0 bg-[#1a2e1a]/65 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-gradient-to-br from-white to-[#f8f5e6] rounded-3xl p-8 max-w-4xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-auto animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black text-[#1a2e1a] tracking-tight">Create New Campsite</h2>
+                <button (click)="closeCreateSiteForm()"
+                    class="w-9 h-9 rounded-full bg-[#2C4A3C]/10 text-[#1a2e1a] font-black hover:bg-[#2C4A3C]/20">x</button>
+            </div>
+            <p class="text-sm text-[#617152] font-medium">Fill key info and upload multiple campsite photos.</p>
+
+            @if (createSiteError) {
+            <div class="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-bold">
+                {{ createSiteError }}
+            </div>
+            }
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Name *</label>
+                    <input [(ngModel)]="newSiteForm.name"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">City / Region *</label>
+                    <input [(ngModel)]="newSiteForm.city"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Capacity</label>
+                    <input [(ngModel)]="newSiteForm.capacity" type="number" min="1"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Price Per Night (DT)</label>
+                    <input [(ngModel)]="newSiteForm.pricePerNight" type="number" min="0"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Type</label>
+                    <select [(ngModel)]="newSiteForm.type"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                        <option value="FOREST">Forest</option>
+                        <option value="MOUNTAIN">Mountain</option>
+                        <option value="BEACH">Beach</option>
+                        <option value="DESERT">Desert</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Country</label>
+                    <input [(ngModel)]="newSiteForm.country"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Check-in Time</label>
+                    <input [(ngModel)]="newSiteForm.checkInTime" type="time"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Check-out Time</label>
+                    <input [(ngModel)]="newSiteForm.checkOutTime" type="time"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Address</label>
+                    <input [(ngModel)]="newSiteForm.address"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">House Rules</label>
+                    <textarea [(ngModel)]="newSiteForm.houseRules" rows="2"
+                        placeholder="e.g. Quiet hours 10PM-7AM, No fires outside designated rings"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Description</label>
+                    <textarea [(ngModel)]="newSiteForm.description" rows="3"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Campsite Images</label>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <input #siteImagesInput type="file" accept="image/*" multiple class="hidden"
+                            (change)="onSiteImagesSelected($event)">
+                        <button type="button" (click)="siteImagesInput.click()"
+                            class="px-4 py-2 bg-[#2C4A3C] text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-[#1a2e1a] transition-all">
+                            + Import Images
+                        </button>
+                        <span class="text-xs text-[#617152] font-bold">{{ newSiteImagePreviews.length }} image(s)
+                            selected</span>
+                    </div>
+                    @if (newSiteImagePreviews.length) {
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                        @for (image of newSiteImagePreviews; track i; let i = $index) {
+                        <div class="relative group rounded-xl overflow-hidden border border-gray-200 bg-white">
+                            <img [src]="image" alt="Campsite image preview" class="w-full h-24 object-cover">
+                            <button type="button" (click)="removeSelectedImage(i)"
+                                class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">
+                                x
+                            </button>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Contact Phone</label>
+                    <input [(ngModel)]="newSiteForm.contactPhone"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Contact Email</label>
+                    <input [(ngModel)]="newSiteForm.contactEmail" type="email"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                </div>
+                <div class="flex items-center gap-2 mt-6">
+                    <input id="siteActive" type="checkbox" [(ngModel)]="newSiteForm.isActive">
+                    <label for="siteActive" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Active
+                        Site</label>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button (click)="closeCreateSiteForm()"
+                    class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700" [disabled]="isCreatingSite">
+                    Cancel
+                </button>
+                <button (click)="submitCreateSite()"
+                    class="px-6 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold disabled:opacity-50"
+                    [disabled]="isCreatingSite">
+                    {{ isCreatingSite ? 'Saving...' : 'Create Site' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div class="flex items-center gap-4 mb-3">
                 <div
                     class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 text-xl">
-                    ⛺
+                    S
                 </div>
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Sites</span>
             </div>
@@ -37,12 +175,12 @@
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div class="flex items-center gap-4 mb-3">
                 <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xl">
-                    👥
+                    CAP
                 </div>
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Overall Cap</span>
             </div>
             <div class="flex items-end gap-3">
-                <p class="text-3xl font-black text-[#1a2e1a]">95</p>
+                <p class="text-3xl font-black text-[#1a2e1a]">{{ totalCapacity }}</p>
             </div>
             <p class="text-[10px] text-gray-400 font-bold mt-1">Total Camper Capacity</p>
         </div>
@@ -51,12 +189,12 @@
             <div class="flex items-center gap-4 mb-3">
                 <div
                     class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 text-xl">
-                    🛠️
+                    M
                 </div>
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Under Maintenance</span>
             </div>
             <div class="flex items-end gap-3">
-                <p class="text-3xl font-black text-[#1a2e1a]">1</p>
+                <p class="text-3xl font-black text-[#1a2e1a]">{{ maintenanceCount }}</p>
             </div>
             <p class="text-[10px] text-gray-400 font-bold mt-1">Requiring Attention</p>
         </div>
@@ -65,36 +203,34 @@
             <div class="flex items-center gap-4 mb-3">
                 <div
                     class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 text-xl">
-                    ⭐
+                    R
                 </div>
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Avg Rating</span>
             </div>
             <div class="flex items-end gap-3">
-                <p class="text-3xl font-black text-[#1a2e1a]">4.8</p>
+                <p class="text-3xl font-black text-[#1a2e1a]">{{ averageRatingValue }}</p>
             </div>
             <p class="text-[10px] text-gray-400 font-bold mt-1">Based on Guest Reviews</p>
         </div>
     </div>
 
-    <!-- Filter Bar Placeholder -->
     <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
         <div class="relative flex-1 w-full">
-            <input type="text" placeholder="Search campsites by name or region..."
+            <input [(ngModel)]="searchTerm" type="text" placeholder="Search campsites by name or region..."
                 class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2e1a]/10 focus:border-[#1a2e1a]/30 transition-all">
-            <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+            <span class="absolute left-3 top-2.5 text-gray-400">Q</span>
         </div>
         <div class="flex gap-2">
-            <select
+            <select [(ngModel)]="selectedRegion"
                 class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-bold text-[#1a2e1a] focus:outline-none cursor-pointer">
-                <option>All Regions</option>
-                <option>Zaghouan</option>
-                <option>Ain Draham</option>
-                <option>Douz</option>
+                <option value="ALL">All Regions</option>
+                @for (region of regions; track region) {
+                <option [value]="region">{{ region }}</option>
+                }
             </select>
         </div>
     </div>
 
-    <!-- Data Table -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left">
@@ -110,14 +246,19 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @for (site of campsites; track site.id) {
+                    @if (isLoading) {
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-sm font-bold text-gray-500">Loading
+                            campsites...</td>
+                    </tr>
+                    } @else {
+                    @for (site of filteredCampsites; track site.id) {
                     <tr class="hover:bg-gray-50/50 transition-colors group">
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-4">
                                 <div
                                     class="w-10 h-10 rounded-lg bg-[#f8f5e6] flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
-                                    {{ site.name.includes('Mountain') ? '⛰️' : site.name.includes('Forest') ? '🌲' :
-                                    site.name.includes('Eco') ? '🌿' : '🏖️' }}
+                                    {{ site.name.charAt(0) }}
                                 </div>
                                 <div>
                                     <p class="font-bold text-[#1a2e1a]">{{ site.name }}</p>
@@ -128,7 +269,7 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-2 text-sm font-bold text-gray-500">
-                                <span class="text-xs">📍</span> {{ site.location }}, Tunisia
+                                <span class="text-xs">L</span> {{ site.location || site.city }}, Tunisia
                             </div>
                         </td>
                         <td class="px-6 py-4 text-center font-bold text-[#1a2e1a]">
@@ -141,27 +282,100 @@
                             <span
                                 class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-current"
                                 [ngClass]="getStatusClass(site.status)">
-                                • {{ site.status }}
+                                * {{ site.status }}
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <button class="text-gray-400 hover:text-[#1a2e1a] p-2 transition-all">
-                                <span class="text-xl">•••</span>
+                            <button (click)="viewDetails(site)"
+                                class="bg-[#2C4A3C]/10 hover:bg-[#2C4A3C] text-[#2C4A3C] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
+                                Manage
                             </button>
                         </td>
                     </tr>
+                    }
+                    @if (!filteredCampsites.length) {
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-sm font-bold text-gray-500">
+                            No campsite found for current filters.
+                        </td>
+                    </tr>
+                    }
                     }
                 </tbody>
             </table>
         </div>
 
-        <!-- Footer Context -->
         <div class="px-8 py-4 bg-emerald-50/30 border-t border-gray-100">
             <div class="flex items-center gap-3">
-                <span class="text-emerald-500 text-lg">🛡️</span>
+                <span class="text-emerald-500 text-lg">OK</span>
                 <p class="text-[10px] font-bold text-gray-500 italic">All destinations are verified for environmental
                     compliance and visitor safety protocols.</p>
             </div>
         </div>
     </div>
+    } @else {
+    <div class="space-y-6 animate-fade-in">
+        <button (click)="closeDetails()"
+            class="flex items-center gap-2 text-[#617152] hover:text-[#1a2e1a] font-bold text-sm transition-colors mb-4">
+            <span>&lt;</span> Back to Destinations
+        </button>
+
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-emerald-900/5 overflow-hidden">
+            <div class="p-8 bg-[#2C4A3C] text-white flex justify-between items-end">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 mb-2">Campsite Management
+                        Portal</p>
+                    <h2 class="text-4xl font-black">{{ selectedSite()?.name }}</h2>
+                    <p class="text-emerald-200/80 font-bold mt-1 flex items-center gap-2">
+                        <span>L</span> {{ selectedSite()?.location || selectedSite()?.city }}, Tunisia
+                    </p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-3xl font-black">{{ selectedSite()?.price || selectedSite()?.pricePerNight }} DT
+                        </p>
+                        <p class="text-[10px] font-bold uppercase text-white/40">Base Per Night</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button (click)="deleteSite(selectedSite()!.id)" title="Delete Campsite"
+                            class="w-10 h-10 rounded-xl bg-white/10 hover:bg-red-500/80 text-white flex items-center justify-center transition-all">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex px-8 border-b border-gray-100 overflow-x-auto">
+                <button (click)="activeTab.set('general')"
+                    [class]="'px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ' + (activeTab() === 'general' ? 'border-[#2C4A3C] text-[#2C4A3C]' : 'border-transparent text-gray-400 hover:text-gray-600')">
+                    General
+                </button>
+                <button (click)="activeTab.set('reviews')"
+                    [class]="'px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ' + (activeTab() === 'reviews' ? 'border-[#2C4A3C] text-[#2C4A3C]' : 'border-transparent text-gray-400 hover:text-gray-600')">
+                    Reviews
+                </button>
+                <button (click)="activeTab.set('tours')"
+                    [class]="'px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ' + (activeTab() === 'tours' ? 'border-[#2C4A3C] text-[#2C4A3C]' : 'border-transparent text-gray-400 hover:text-gray-600')">
+                    Virtual Tours
+                </button>
+                <button (click)="activeTab.set('certs')"
+                    [class]="'px-6 py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ' + (activeTab() === 'certs' ? 'border-[#2C4A3C] text-[#2C4A3C]' : 'border-transparent text-gray-400 hover:text-gray-600')">
+                    Certifications
+                </button>
+            </div>
+
+            <div class="p-8">
+                @if (activeTab() === 'general') {
+                <app-site-general [site]="selectedSite()!" (save)="saveSite($event)" />
+                } @else if (activeTab() === 'reviews') {
+                <app-site-reviews [siteId]="selectedSite()!.id" />
+                } @else if (activeTab() === 'tours') {
+                <app-site-virtual-tours [siteId]="selectedSite()!.id" />
+                } @else if (activeTab() === 'certs') {
+                <app-site-certifications [siteId]="selectedSite()!.id" />
+                }
+            </div>
+        </div>
+    </div>
+    }
 </div>
