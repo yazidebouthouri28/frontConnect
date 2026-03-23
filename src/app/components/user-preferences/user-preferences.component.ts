@@ -253,6 +253,8 @@ export class UserPreferencesComponent {
     }
 
     finish() {
+        console.log('Preferences submitted:', this.selections);
+
         // Get current user email for account-specific tracking
         const userJson = localStorage.getItem('campconnect_user');
         if (userJson) {

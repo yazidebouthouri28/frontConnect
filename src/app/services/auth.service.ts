@@ -15,7 +15,7 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
 
   readonly tokenKey = 'auth_token';
-  readonly userKey  = 'current_user';
+  readonly userKey = 'current_user';
 
   private isBrowser: boolean;
   currentUser$ = this.currentUserSubject.asObservable();
@@ -36,17 +36,17 @@ export class AuthService {
   }
   private storageSet(key: string, value: string): void {
     if (!this.isBrowser) return;
-    try { localStorage.setItem(key, value); } catch {}
+    try { localStorage.setItem(key, value); } catch { }
   }
   private storageRemove(key: string): void {
     if (!this.isBrowser) return;
-    try { localStorage.removeItem(key); } catch {}
+    try { localStorage.removeItem(key); } catch { }
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
   private loadStoredUser(): void {
-    const token    = this.storageGet(this.tokenKey);
+    const token = this.storageGet(this.tokenKey);
     const userJson = this.storageGet(this.userKey);
     if (token && userJson) {
       try { this.currentUserSubject.next(JSON.parse(userJson) as User); }
@@ -66,7 +66,7 @@ export class AuthService {
     };
 
     return this.http.post<any>(`${this.apiUrl}/login`, body).pipe(
-      map(raw  => this.extractAuthResponse(raw)),
+      map(raw => this.extractAuthResponse(raw)),
       tap(auth => this.handleAuthSuccess(auth)),
       catchError(error => {
         const msg = error.error?.message
@@ -80,7 +80,7 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<any>(`${this.apiUrl}/register`, data).pipe(
-      map(raw  => this.extractAuthResponse(raw)),
+      map(raw => this.extractAuthResponse(raw)),
       tap(auth => this.handleAuthSuccess(auth)),
       catchError(error => {
         const msg = error.error?.message
@@ -108,20 +108,21 @@ export class AuthService {
       ?? (VALID_ROLES.includes(rawRole as UserRole) ? (rawRole as UserRole) : 'CLIENT');
 
     const user: User = {
-      id:            String(p.userId ?? p.id),
-      name:          p.name      ?? p.username,
-      username:      p.username,
-      email:         p.email,
-      phone:         p.phone,
-      address:       p.address,
-      country:       p.country,
+      id: String(p.userId ?? p.id),
+      name: p.name ?? p.username,
+      username: p.username,
+      email: p.email,
+      phone: p.phone,
+      address: p.address,
+      country: p.country,
       loyaltyPoints: p.loyaltyPoints ?? 0,
       role,
-      avatar:        p.avatar,
-      bio:           p.bio,
-      coverImage:    p.coverImage,
-      location:      p.location,
-      createdAt:     p.createdAt ?? new Date().toISOString()
+      organizerId: p.organizerId ? String(p.organizerId) : undefined,
+      avatar: p.avatar,
+      bio: p.bio,
+      coverImage: p.coverImage,
+      location: p.location,
+      createdAt: p.createdAt ?? new Date().toISOString()
     };
     return { token: p.token, user };
   }
@@ -164,10 +165,10 @@ export class AuthService {
   getCurrentUser(): User | null { return this.currentUserSubject.value; }
   hasRole(role: string): boolean { return this.getCurrentUser()?.role === role; }
 
-  isAdmin():     boolean { return this.hasRole('ADMIN'); }
-  isSeller():    boolean { return this.hasRole('SELLER'); }
-  isClient():    boolean { return this.hasRole('CLIENT') || this.hasRole('USER' as any); }
+  isAdmin(): boolean { return this.hasRole('ADMIN'); }
+  isSeller(): boolean { return this.hasRole('SELLER'); }
+  isClient(): boolean { return this.hasRole('CLIENT') || this.hasRole('USER' as any); }
   isOrganizer(): boolean { return this.hasRole('ORGANIZER'); }
-  isCamper():    boolean { return this.hasRole('CAMPER'); }
-  isSponsor():   boolean { return this.hasRole('SPONSOR'); }
+  isCamper(): boolean { return this.hasRole('CAMPER'); }
+  isSponsor(): boolean { return this.hasRole('SPONSOR'); }
 }

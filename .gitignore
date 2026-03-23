@@ -1,40 +1,33 @@
-# ----------------------
-# Node / Frontend
-# ----------------------
-
-# Node modules
+# Dependencies
 node_modules/
 
-# Build output
+# Angular build & cache
+.angular/
 dist/
-build/
-out/
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Editor directories and files
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
 # Environment files
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
+<<<<<<< Updated upstream
+# Misc build logs
+build_error.txt
+build_log.txt
+build_output.txt
+build_output_final.txt
+build_output_final_v2.txt
+blank.txt
+=======
 # Dependency directories
 jspm_packages/
 
@@ -49,3 +42,8 @@ jspm_packages/
 
 # Optional coverage directory
 coverage/
+
+# Angular cache
+.angular/
+>>>>>>> Stashed changes
+node_modules

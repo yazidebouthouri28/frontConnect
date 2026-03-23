@@ -100,7 +100,7 @@ export class ProfileComponent implements OnInit {
     }
 
     addHighlight() {
-        // TODO: Implement highlight addition feature
+        console.log('Add highlight clicked');
     }
 
     goBack() {

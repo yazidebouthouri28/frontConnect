@@ -1,25 +1,40 @@
-# CampConnect – Camping & Outdoor Community Platform
+# CampConnect (Angular)
 
-## Overview
+Frontend-only Angular application for CampConnect — camping community, campsite discovery, marketplace, events, and admin panel.
 
-This project was developed as part of the PIDEV – 4th Year Engineering Program at **Esprit School of Engineering** (Academic Year 2025–2026).
+## Stack
 
-It consists of a full-stack web application that allows campers, organizers, sellers, and sponsors to connect, discover campsites, book outdoor events, purchase camping gear, and engage with a nature-loving community across Tunisia.
+- **Angular 19** (standalone components)
+- **Tailwind CSS 3**
+- **TypeScript 5.6**
 
-## Tech Stack
+## Commands
 
-### Frontend
-- Angular 19
-- TypeScript
-- Tailwind CSS
+```bash
+# Install dependencies
+npm install
 
-### Backend
-- Spring Boot 3
-- Spring Security (JWT)
-- Hibernate / JPA
-- MariaDB
+# Development server (http://localhost:4200)
+npm start
 
-## Academic Context
+# Production build
+npm run build
+```
 
-Developed at **Esprit School of Engineering – Tunisia**
-PIDEV – 4SE3 | 2025–2026
+## Structure
+
+- **`/`** — Home (hero, campsites, forum, events, marketplace, map, user dashboard)
+- **`/admin`** — Admin panel (dashboard, sponsors, moderation, placeholders for other sections)
+- **`/home`** — Same as `/` (redirect)
+
+Use the **"Mode Admin"** button (bottom-right on the main site) to open the admin panel.
+
+## Project layout
+
+- `src/app/app.component.ts` — Root with router outlet
+- `src/app/app.routes.ts` — Routes (main layout + admin)
+- `src/app/components/` — Main UI (navigation, footer, hero, campsites, forum, events, marketplace, map, user dashboard)
+- `src/app/admin/` — Admin (sidebar, dashboard, sponsors, moderation)
+- `src/styles.css` — Global styles and Tailwind
+
+Design tokens: forest `#2C4A3C`, olive `#5D7B5F`, sage `#A8B9A3`, cream `#F5F2E8` (see `tailwind.config.js`).

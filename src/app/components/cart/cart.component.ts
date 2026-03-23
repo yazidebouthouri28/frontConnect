@@ -1,41 +1,58 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
-import { CartService } from '../../services/cart.service';
-import { CartItem } from '../../models/api.models';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+interface CartItem {
+    id: number;
+    name: string;
+    image: string;
+    type: 'Purchase' | 'Rental';
+    rentalDuration?: string;
+    quantity: number;
+    price: number;
+}
+
+import { Location } from '@angular/common';
 
 @Component({
     selector: 'app-cart',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule],
     templateUrl: './cart.component.html',
     styleUrls: ['./cart.component.css']
 })
-export class CartComponent implements OnInit {
-    cartItems: CartItem[] = [];
-    walletBalance = 250.00;
-    shipping = 15.00;
-    taxRate = 0.10;
-
-    constructor(
-        private location: Location,
-        private router: Router,
-        private cartService: CartService
-    ) {}
-
-    ngOnInit(): void {
-        // Subscribe to cart updates
-        this.cartService.cart$.subscribe(items => {
-            this.cartItems = items;
-        });
-    }
+export class CartComponent {
+    constructor(private location: Location) { }
 
     goBack() {
         this.location.back();
     }
 
+    cartItems: CartItem[] = [
+        {
+            id: 1,
+            name: 'Waterproof Hiking Boots - Men\'s',
+            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1080',
+            type: 'Purchase',
+            quantity: 2,
+            price: 286.20
+        },
+        {
+            id: 2,
+            name: 'Camping Cookware Set - 4 Pieces',
+            image: 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=1080',
+            type: 'Rental',
+            rentalDuration: '7 days',
+            quantity: 3,
+            price: 36.00
+        }
+    ];
+
+    walletBalance = 250.00;
+    shipping = 15.00;
+    taxRate = 0.10;
+
     get subtotal(): number {
-        return this.cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        return this.cartItems.reduce((acc, item) => acc + item.price, 0);
     }
 
     get tax(): number {
@@ -51,26 +68,28 @@ export class CartComponent implements OnInit {
     }
 
     incrementQuantity(item: CartItem) {
-        this.cartService.updateQuantity(item.productId, item.quantity + 1).subscribe();
+        item.quantity++;
+        // In a real app, unit price would be separate from total line price, 
+        // but for this mock we'll just adjust the price based on ratio or keep it simple
+        // Let's assume 'price' in the mock is the line total for simplicity of the screenshot matching
+        // For functionality, we'd want unit price. Let's infer unit price.
+        const unitPrice = item.price / (item.quantity - 1);
+        item.price += unitPrice;
     }
 
     decrementQuantity(item: CartItem) {
         if (item.quantity > 1) {
-            this.cartService.updateQuantity(item.productId, item.quantity - 1).subscribe();
+            const unitPrice = item.price / item.quantity;
+            item.quantity--;
+            item.price -= unitPrice;
         }
     }
 
     removeItem(item: CartItem) {
-        this.cartService.removeFromCart(item.productId).subscribe();
+        this.cartItems = this.cartItems.filter(i => i.id !== item.id);
     }
 
     clearCart() {
-        if (confirm('Are you sure you want to clear your cart?')) {
-            this.cartService.clearCart().subscribe();
-        }
-    }
-
-    proceedToCheckout() {
-        this.router.navigate(['/cart']);
+        this.cartItems = [];
     }
 }

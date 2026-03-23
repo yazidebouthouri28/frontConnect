@@ -58,7 +58,7 @@
       <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Market Operations</h3>
       }
       <ul class="space-y-1.5">
-        @for (item of navItems.slice(3, 8); track item.id) {
+        @for (item of navItems.slice(3, 9); track item.id) {
         <li>
           <button (click)="selectSection(item.id)" type="button"
             class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"
@@ -84,7 +84,7 @@
       <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Intelligence</h3>
       }
       <ul class="space-y-1.5">
-        @for (item of navItems.slice(8); track item.id) {
+        @for (item of navItems.slice(9); track item.id) {
         <li>
           <button (click)="selectSection(item.id)" type="button"
             class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"

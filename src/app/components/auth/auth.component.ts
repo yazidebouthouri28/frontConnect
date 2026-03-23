@@ -1,25 +1,14 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { CartService } from '../../services/cart.service';
 
 interface CarouselSlide {
   headline: string;
   description: string;
   image: string;
 }
-
-// Maps frontend display roles → backend enum values
-const ROLE_TO_BACKEND: Record<string, string> = {
-  'CLIENT':    'USER',
-  'CAMPER':    'PARTICIPANT',
-  'SELLER':    'SELLER',
-  'ORGANIZER': 'ORGANIZER',
-  'SPONSOR':   'SPONSOR',
-  'ADMIN':     'ADMIN'
-};
 
 @Component({
   selector: 'app-auth',
@@ -32,32 +21,22 @@ export class AuthComponent implements OnInit, OnDestroy {
   isLogin = signal(true);
   logoError = false;
   currentYear = new Date().getFullYear();
+  loginError = '';
+  isSubmittingLogin = false;
 
-  // Login
   loginEmail = '';
   loginPassword = '';
-  loginError = '';
-  isLoginLoading = false;
-
-  // Signup
   signupName = '';
   signupEmail = '';
-  signupUsername = '';
-  signupPhone = '';
-  signupGender = '';
   signupDob = '';
+  signupGender = '';
+  signupPhone = '';
   signupPassword = '';
   signupConfirmPassword = '';
-  signupRole = 'CAMPER';
-  signupError = '';
-  signupSuccess = '';
-  isSignupLoading = false;
 
   showLoginPassword = false;
   showSignupPassword = false;
   showSignupConfirm = false;
-
-  returnUrl = '/';
 
   private carouselInterval: ReturnType<typeof setInterval> | null = null;
   readonly CAROUSEL_INTERVAL_MS = 5000;
@@ -81,22 +60,13 @@ export class AuthComponent implements OnInit, OnDestroy {
     },
   ];
 
-  constructor(
-    private authService: AuthService,
-    private cartService: CartService,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {}
+  constructor(private router: Router, private authService: AuthService) { }
 
   get slide(): CarouselSlide {
     return this.carouselSlides[this.currentSlide];
   }
 
   ngOnInit() {
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate([this.returnUrl]);
-    }
     this.carouselInterval = setInterval(() => this.nextSlide(), this.CAROUSEL_INTERVAL_MS);
   }
 
@@ -108,81 +78,62 @@ export class AuthComponent implements OnInit, OnDestroy {
     this.currentSlide = (this.currentSlide + 1) % this.carouselSlides.length;
   }
 
-  switchToSignup() { this.isLogin.set(false); }
-  switchToLogin()  { this.isLogin.set(true);  }
+  switchToSignup() {
+    this.isLogin.set(false);
+  }
 
-  // ── Login ─────────────────────────────────────────────────────────────────
+  switchToLogin() {
+    this.isLogin.set(true);
+  }
+
   onSubmitLogin() {
-    this.loginError = '';
-    if (!this.loginEmail || !this.loginPassword) {
-      this.loginError = 'Please fill in all fields.';
+    if (!this.loginEmail.trim() || !this.loginPassword) {
+      this.loginError = 'Veuillez saisir votre identifiant et mot de passe.';
       return;
     }
-    this.isLoginLoading = true;
-    this.authService.login({ email: this.loginEmail, password: this.loginPassword }).subscribe({
+
+    this.loginError = '';
+    this.isSubmittingLogin = true;
+
+    this.authService.login({
+      email: this.loginEmail.trim(),
+      password: this.loginPassword,
+    }).subscribe({
       next: (auth) => {
-        this.cartService.syncCartAfterLogin();
-        if (auth.user.role === 'ADMIN') {
+        this.isSubmittingLogin = false;
+        const role = auth.user.role;
+
+        if (role === 'ADMIN') {
           this.router.navigate(['/admin']);
+          return;
+        }
+
+        const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
+        if (prefsDone === 'true') {
+          this.router.navigate(['/home']);
         } else {
-          this.router.navigate([this.returnUrl || '/home']);
+          this.router.navigate(['/preferences']);
         }
       },
-      error: (err) => {
-        this.isLoginLoading = false;
-        this.loginError = err.message || 'Invalid email or password.';
+      error: (error: Error) => {
+        this.isSubmittingLogin = false;
+        this.loginError = error.message || 'Login failed. Please check your credentials.';
       }
     });
   }
 
-  // ── Signup ────────────────────────────────────────────────────────────────
   onSubmitSignup() {
-    this.signupError = '';
-    this.signupSuccess = '';
-
-    if (!this.signupName || !this.signupEmail || !this.signupPassword) {
-      this.signupError = 'Please fill in all required fields.';
-      return;
-    }
     if (this.signupPassword !== this.signupConfirmPassword) {
-      this.signupError = 'Passwords do not match.';
+      alert('Passwords do not match');
       return;
     }
-    if (this.signupPassword.length < 6) {
-      this.signupError = 'Password must be at least 6 characters.';
-      return;
-    }
-
-    // Auto-generate username from name if not provided
-    const username = this.signupUsername ||
-      this.signupName.toLowerCase().replace(/\s+/g, '.') + Math.floor(Math.random() * 100);
-
-    const backendRole = ROLE_TO_BACKEND[this.signupRole] || 'PARTICIPANT';
-
-    const payload: any = {
-      name:     this.signupName,
-      username: username,
-      email:    this.signupEmail,
+    console.log('Sign up', {
+      name: this.signupName,
+      email: this.signupEmail,
+      dob: this.signupDob,
+      gender: this.signupGender,
+      phone: this.signupPhone,
       password: this.signupPassword,
-      role:     backendRole,
-      isSeller: this.signupRole === 'SELLER',
-      isBuyer:  true,
-      avatar:   'avatar.png'
-    };
-    if (this.signupPhone)  payload.phone  = this.signupPhone;
-    if (this.signupGender) payload.gender = this.signupGender;
-
-    this.isSignupLoading = true;
-    this.authService.register(payload).subscribe({
-      next: () => {
-        this.signupSuccess = 'Account created! Redirecting…';
-        this.cartService.syncCartAfterLogin();
-        setTimeout(() => this.router.navigate(['/home']), 1200);
-      },
-      error: (err) => {
-        this.isSignupLoading = false;
-        this.signupError = err.message || 'Registration failed. Please try again.';
-      }
     });
   }
 }

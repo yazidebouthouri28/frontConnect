@@ -55,6 +55,7 @@ export interface User {
   age?: number;             // Spring Boot field
   loyaltyPoints?: number;
   role: UserRole;           // uses named type — fixes TS2322
+  organizerId?: string;     // Added for organizer-specific actions
   isSeller?: boolean;       // Spring Boot field
   isBuyer?: boolean;        // Spring Boot field
   storeName?: string;       // Spring Boot field
