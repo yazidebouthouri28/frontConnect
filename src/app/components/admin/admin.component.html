@@ -337,7 +337,7 @@
             </div>
             <p class="text-sm text-gray-500 mb-4">{{ cat.description }}</p>
             <div class="flex gap-2">
-              <button (click)="editingCategory = { ...cat }" class="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs font-black">✏️ Edit</button>
+              <button (click)="setEditingCategory(cat)" class="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs font-black">✏️ Edit</button>
               <button (click)="deleteCategory(cat.id)" class="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-black">🗑️ Delete</button>
             </div>
           </div>
@@ -460,7 +460,7 @@
               </td>
               <td class="px-6 py-4 text-right">
                 <div class="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button (click)="editingCoupon = { ...coupon }" class="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs font-black">Edit</button>
+                  <button (click)="setEditingCoupon(coupon)" class="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs font-black">Edit</button>
                   <button (click)="toggleCouponStatus(coupon.id)" class="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-lg text-xs font-black">Toggle</button>
                   <button (click)="deleteCoupon(coupon.id)" class="px-3 py-1 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-black">Delete</button>
                 </div>

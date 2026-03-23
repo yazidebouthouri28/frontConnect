@@ -30,40 +30,27 @@ export class AdminComponent implements OnInit {
     { id: 'refunds',    label: 'Refunds',    icon: '💸' },
   ];
 
-  // ── Dashboard ──────────────────────────────────────────
   dashboard: any = {};
-
-  // ── Users ───────────────────────────────────────────────
   users: any[]    = [];
   usersTotal      = 0;
   usersPage       = 0;
   usersSize       = 20;
   userSearchQuery = '';
-
-  // ── Products ────────────────────────────────────────────
   products: any[] = [];
   productsTotal   = 0;
   productsPage    = 0;
   productsSize    = 20;
   showPendingOnly = false;
-
-  // ── Orders ──────────────────────────────────────────────
   orders: any[]       = [];
   ordersPage          = 0;
   ordersSize          = 20;
   selectedOrderStatus = '';
   orderStatuses       = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
-
-  // ── Categories ──────────────────────────────────────────
   categories: any[]    = [];
   newCategory          = { name: '', slug: '', description: '', isActive: true };
   editingCategory: any = null;
-
-  // ── Reviews ─────────────────────────────────────────────
   pendingReviews: any[] = [];
   reviewsPage           = 0;
-
-  // ── Coupons ─────────────────────────────────────────────
   coupons: any[]     = [];
   couponsPage        = 0;
   showCouponForm     = false;
@@ -73,8 +60,6 @@ export class AdminComponent implements OnInit {
     minOrderAmount: 0, maxUsageCount: 100,
     startDate: '', expiryDate: '', isActive: true
   };
-
-  // ── Refunds ─────────────────────────────────────────────
   refunds: any[]        = [];
   pendingRefunds: any[] = [];
   refundsPage           = 0;
@@ -88,9 +73,6 @@ export class AdminComponent implements OnInit {
   ngOnInit(): void {
     this.loadDashboard();
   }
-
-  // ── Private HTTP wrappers ────────────────────────────────
-  // authInterceptor attaches Bearer token automatically — no manual headers needed here
 
   private buildParams(params?: Record<string, any>): HttpParams {
     let p = new HttpParams();
@@ -119,8 +101,6 @@ export class AdminComponent implements OnInit {
   private delete<T>(path: string) {
     return this.http.delete<any>(`${this.apiUrl}${path}`);
   }
-
-  // ── UI helpers ───────────────────────────────────────────
 
   showSuccess(msg: string) {
     this.successMessage = msg;
@@ -163,7 +143,13 @@ export class AdminComponent implements OnInit {
     return map[status?.toUpperCase()] ?? 'bg-gray-100 text-gray-500 border-gray-200';
   }
 
-  // ── Dashboard ───────────────────────────────────────────
+  setEditingCategory(cat: any) {
+    this.editingCategory = { ...cat };
+  }
+
+  setEditingCoupon(coupon: any) {
+    this.editingCoupon = { ...coupon };
+  }
 
   loadDashboard() {
     this.isLoading = true;
@@ -173,14 +159,11 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  // ── Users ───────────────────────────────────────────────
-
   loadUsers() {
     this.isLoading = true;
     const path   = this.userSearchQuery ? '/users/search' : '/users';
     const params: Record<string, any> = { page: this.usersPage, size: this.usersSize };
     if (this.userSearchQuery) params['query'] = this.userSearchQuery;
-
     this.get(path, params).subscribe({
       next: (res) => {
         this.users      = res.data?.content ?? [];
@@ -220,8 +203,6 @@ export class AdminComponent implements OnInit {
       error: () => this.showError('Failed to update role'),
     });
   }
-
-  // ── Products ────────────────────────────────────────────
 
   loadProducts() {
     this.isLoading = true;
@@ -265,8 +246,6 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  // ── Orders ──────────────────────────────────────────────
-
   loadOrders() {
     this.isLoading = true;
     const path     = this.selectedOrderStatus
@@ -300,8 +279,6 @@ export class AdminComponent implements OnInit {
       error: () => this.showError('Failed to cancel order'),
     });
   }
-
-  // ── Categories ──────────────────────────────────────────
 
   loadCategories() {
     this.get('/categories').subscribe({
@@ -342,8 +319,6 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  // ── Reviews ─────────────────────────────────────────────
-
   loadPendingReviews() {
     this.get('/reviews/pending', { page: this.reviewsPage, size: 20 }).subscribe({
       next:  (res) => (this.pendingReviews = res.data?.content ?? []),
@@ -372,8 +347,6 @@ export class AdminComponent implements OnInit {
       error: () => this.showError('Failed to delete review'),
     });
   }
-
-  // ── Coupons ─────────────────────────────────────────────
 
   loadCoupons() {
     this.get('/coupons', { page: this.couponsPage, size: 20 }).subscribe({
@@ -425,8 +398,6 @@ export class AdminComponent implements OnInit {
       error: () => this.showError('Failed to delete coupon'),
     });
   }
-
-  // ── Refunds ─────────────────────────────────────────────
 
   loadRefunds() {
     this.get('/refunds', { page: this.refundsPage, size: 20 }).subscribe({

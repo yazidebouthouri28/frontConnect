@@ -1,14 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface Sponsor {
+    id: number;
     name: string;
     logo: string;
     description: string;
     website: string;
-    tier: 'gold' | 'silver' | 'bronze' | 'community';
+    tier: 'GOLD' | 'SILVER' | 'BRONZE' | 'PLATINUM' | 'DIAMOND' | 'TITLE_SPONSOR';
 }
-
 interface SponsorTier {
     name: string;
     icon: string;
@@ -24,7 +26,33 @@ interface SponsorTier {
     templateUrl: './sponsors.component.html',
     styleUrls: ['./sponsors.component.css'],
 })
-export class SponsorsComponent {
+export class SponsorsComponent implements OnInit {
+
+    goldSponsors: Sponsor[] = [];
+    silverSponsors: Sponsor[] = [];
+    bronzeSponsors: Sponsor[] = [];
+    communityPartners: { name: string; icon: string }[] = [];
+
+    constructor(private http: HttpClient) {}
+
+ngOnInit() {
+    console.log('Sponsors component loaded');
+    this.http.get<any>(`${environment.apiUrl}/api/sponsors`).subscribe({
+  next: (res) => {
+    console.log('Sponsors response:', res);
+    const sponsors: Sponsor[] = res.data ?? [];
+    console.log('Sponsors array:', sponsors);
+    console.log('Gold:', sponsors.filter(s => s.tier === 'GOLD'));
+    this.goldSponsors   = sponsors.filter(s => s.tier === 'GOLD');
+    this.silverSponsors = sponsors.filter(s => s.tier === 'SILVER');
+    this.bronzeSponsors = sponsors.filter(s => s.tier === 'BRONZE');
+    this.communityPartners = sponsors
+        .filter(s => s.tier === 'PLATINUM' || s.tier === 'DIAMOND')
+        .map(s => ({ name: s.name, icon: '🤝' }));
+},
+error: (err) => console.error('Failed to load sponsors', err)
+    });
+}
 
     sponsorTiers: SponsorTier[] = [
         {
@@ -65,109 +93,5 @@ export class SponsorsComponent {
                 'Name on event program',
             ],
         },
-    ];
-
-    goldSponsors: Sponsor[] = [
-        {
-            name: 'Ooredoo Tunisia',
-            logo: 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?q=80&w=200',
-            description: 'Leading telecom operator in Tunisia, connecting adventurers across the country with reliable network coverage even in remote camping locations.',
-            website: 'https://www.ooredoo.tn',
-            tier: 'gold',
-        },
-        {
-            name: 'Tunisie Telecom',
-            logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200',
-            description: 'Tunisia\'s national telecommunications company, proud supporter of outdoor activities and eco-tourism across all 24 governorates.',
-            website: 'https://www.tunisietelecom.tn',
-            tier: 'gold',
-        },
-        {
-            name: 'ONTT – Office National du Tourisme',
-            logo: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=200',
-            description: 'The National Tourism Office of Tunisia, promoting eco-tourism, adventure travel, and sustainable camping throughout Tunisia\'s diverse landscapes.',
-            website: 'https://www.tourisme.gov.tn',
-            tier: 'gold',
-        },
-    ];
-
-    silverSponsors: Sponsor[] = [
-        {
-            name: 'Baya Camping Gear',
-            logo: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=200',
-            description: 'Tunisian-made outdoor equipment designed for the Mediterranean climate. Tents, sleeping bags, and hiking gear built to last.',
-            website: '#',
-            tier: 'silver',
-        },
-        {
-            name: 'Carthage Adventures',
-            logo: 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=200',
-            description: 'Premier adventure tour operator offering guided hiking, mountain biking, and camping excursions from Tabarka to Djerba.',
-            website: '#',
-            tier: 'silver',
-        },
-        {
-            name: 'Délice Danone',
-            logo: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?q=80&w=200',
-            description: 'Tunisia\'s leading dairy brand, fueling campers and hikers with nutritious snacks and refreshing drinks on every trail.',
-            website: '#',
-            tier: 'silver',
-        },
-        {
-            name: 'Aziza Supermarket',
-            logo: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?q=80&w=200',
-            description: 'Your one-stop shop for camping supplies, trail snacks, and outdoor essentials available in over 100 locations across Tunisia.',
-            website: '#',
-            tier: 'silver',
-        },
-    ];
-
-    bronzeSponsors: Sponsor[] = [
-        {
-            name: 'Café Meddeb',
-            logo: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=200',
-            description: 'Handcrafted Tunisian coffee blends perfect for early morning campfire brews.',
-            website: '#',
-            tier: 'bronze',
-        },
-        {
-            name: 'Nabeul Pottery Co.',
-            logo: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?q=80&w=200',
-            description: 'Traditional Tunisian pottery and artisan crafts, bringing local culture to every campsite.',
-            website: '#',
-            tier: 'bronze',
-        },
-        {
-            name: 'Sahara Solar',
-            logo: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=200',
-            description: 'Portable solar chargers and eco-friendly power solutions for off-grid camping.',
-            website: '#',
-            tier: 'bronze',
-        },
-        {
-            name: 'Medina Maps',
-            logo: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=200',
-            description: 'Detailed trail maps and GPS guides for Tunisia\'s most scenic hiking routes.',
-            website: '#',
-            tier: 'bronze',
-        },
-        {
-            name: 'Djerba Watersports',
-            logo: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=200',
-            description: 'Kayaking, windsurfing, and beach camping experiences on the beautiful island of Djerba.',
-            website: '#',
-            tier: 'bronze',
-        },
-    ];
-
-    communityPartners: { name: string; icon: string }[] = [
-        { name: 'Scouts Tunisiens', icon: '⚜️' },
-        { name: 'Association Tourisme Vert', icon: '🌿' },
-        { name: 'Club Alpin Tunisien', icon: '🏔️' },
-        { name: 'SOS Nature Tunisie', icon: '🌍' },
-        { name: 'Fédération Randonnée', icon: '🥾' },
-        { name: 'Youth Hostel Tunisia', icon: '🏠' },
-        { name: 'Éco-Village Sejnane', icon: '🏕️' },
-        { name: 'Patrimoine Vert', icon: '🌳' },
     ];
 }

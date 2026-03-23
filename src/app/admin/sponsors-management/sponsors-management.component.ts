@@ -1,74 +1,166 @@
-import { Component } from '@angular/core';
-import { CommonModule, NgClass } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Sponsor {
-  id: number;
-  name: string;
-  companyName: string;
-  category: string;
-  requestDate: string;
-  status: 'pending' | 'approved' | 'rejected';
-  budget: number;
-  icon?: string;
-  engagement: number;
-}
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-sponsors-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgClass],
+  imports: [CommonModule, FormsModule],
   templateUrl: './sponsors-management.component.html',
   styleUrls: ['./sponsors-management.component.css'],
 })
-export class SponsorsManagementComponent {
-  filterStatus: 'all' | 'pending' | 'approved' | 'rejected' = 'all';
+export class SponsorsManagementComponent implements OnInit {
+
   searchTerm = '';
+  sponsors: any[] = [];
+  isLoading = true;
+  errorMessage: string | null = null;
 
-  sponsors: Sponsor[] = [
-    { id: 1, name: 'Tarek Ben Ammar', companyName: 'Carthage Adventure SA', category: 'Camping Equipment', requestDate: '2026-02-15', status: 'pending', budget: 15000, icon: '⛺', engagement: 85 },
-    { id: 2, name: 'Sonia Mabrouk', companyName: 'Atlas Eco-Travel', category: 'Travel Agency', requestDate: '2026-02-12', status: 'pending', budget: 25000, icon: '🌍', engagement: 92 },
-    { id: 3, name: 'Mohamed Dridi', companyName: 'North Gear Pro', category: 'Mountain Gear', requestDate: '2026-02-05', status: 'approved', budget: 20000, icon: '🏔️', engagement: 78 },
-    { id: 4, name: 'Leila Trabelsi', companyName: 'Nature & Découverte TN', category: 'Outdoor Retail', requestDate: '2026-01-28', status: 'approved', budget: 30000, icon: '🌿', engagement: 95 },
-    { id: 5, name: 'Anis Karray', companyName: 'Camping Services Tunisia', category: 'Camping Services', requestDate: '2026-01-15', status: 'rejected', budget: 8500, icon: '⚒️', engagement: 45 },
-    { id: 6, name: 'Yasmine Belhassen', companyName: 'Sahara Glamping Experts', category: 'Luxury Camping', requestDate: '2026-02-16', status: 'pending', budget: 45000, icon: '✨', engagement: 88 },
-  ];
+  showRequestsModal = false;
+  pendingRequests: any[] = [];
+  isLoadingRequests = false;
 
-  get filteredSponsors(): Sponsor[] {
-    return this.sponsors.filter((s) => {
-      const matchStatus = this.filterStatus === 'all' || s.status === this.filterStatus;
-      const matchSearch =
-        !this.searchTerm ||
-        s.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        s.companyName.toLowerCase().includes(this.searchTerm.toLowerCase());
-      return matchStatus && matchSearch;
+  showEditModal = false;
+  selectedSponsor: any = null;
+  editForm: any = {};
+  isSaving = false;
+
+  showDeleteModal = false;
+  isDeleting = false;
+
+  private apiUrl = 'http://localhost:8089/api/sponsors';
+  totalSponsorsCount = 0;
+
+  tierOptions = ['GOLD', 'SILVER', 'BRONZE', 'PLATINUM', 'DIAMOND', 'TITLE_SPONSOR'];
+
+  constructor(private http: HttpClient) {}
+ngOnInit() {
+  this.loadSponsors();
+  this.http.get<any>(`${this.apiUrl}/all`).subscribe({
+    next: (res) => this.totalSponsorsCount = (res.data || []).length,
+    error: () => {}
+  });
+}
+
+loadSponsors() {
+  this.isLoading = true;
+  this.errorMessage = null;
+  this.http.get<any>(this.apiUrl).subscribe({
+    next: (response) => {
+      this.sponsors = response.data || [];
+      this.isLoading = false;
+    },
+    error: (err) => {
+      this.errorMessage = 'Failed to load sponsors. Please try again.';
+      console.error(err);
+      this.isLoading = false;
+    }
+  });
+}
+
+  get filteredSponsors() {
+    return this.sponsors.filter(s =>
+      !this.searchTerm ||
+      (s.name || '').toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      (s.email || '').toLowerCase().includes(this.searchTerm.toLowerCase())
+    );
+  }
+
+  get activeSponsorsCount(): number {
+    return this.sponsors.filter(s => s.isActive).length;
+  }
+
+  openRequestsModal() {
+    this.showRequestsModal = true;
+    this.isLoadingRequests = true;
+    this.http.get<any>(`${this.apiUrl}/requests`).subscribe({
+      next: (res) => {
+        this.pendingRequests = res.data || [];
+        this.isLoadingRequests = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.isLoadingRequests = false;
+      }
     });
   }
 
-  get pendingCount(): number {
-    return this.sponsors.filter((s) => s.status === 'pending').length;
-  }
-  get approvedCount(): number {
-    return this.sponsors.filter((s) => s.status === 'approved').length;
-  }
-  get totalBudget(): number {
-    return this.sponsors.filter((s) => s.status === 'approved').reduce((sum, s) => sum + s.budget, 0);
+  closeRequestsModal() {
+    this.showRequestsModal = false;
+    this.pendingRequests = [];
   }
 
-  statusClass(s: string): string {
-    const map: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-700',
-      approved: 'bg-green-100 text-green-700',
-      rejected: 'bg-red-100 text-red-700',
-    };
-    return map[s] ?? '';
+  approveRequest(userId: number) {
+    this.http.put(`${this.apiUrl}/requests/${userId}/approve`, {}).subscribe({
+      next: () => {
+        this.pendingRequests = this.pendingRequests.filter(r => r.id !== userId);
+        this.loadSponsors();
+      },
+      error: (err) => console.error(err)
+    });
   }
-  statusLabel(s: string): string {
-    const map: Record<string, string> = {
-      pending: 'Pending',
-      approved: 'Approved',
-      rejected: 'Rejected',
-    };
-    return map[s] ?? s;
+
+  rejectRequest(userId: number) {
+    this.http.put(`${this.apiUrl}/requests/${userId}/reject`, {}).subscribe({
+      next: () => this.pendingRequests = this.pendingRequests.filter(r => r.id !== userId),
+      error: (err) => console.error(err)
+    });
+  }
+
+  openEditModal(sponsor: any) {
+    this.selectedSponsor = sponsor;
+    this.editForm = { ...sponsor };
+    this.showEditModal = true;
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.selectedSponsor = null;
+    this.editForm = {};
+  }
+
+  saveSponsor() {
+    if (!this.selectedSponsor) return;
+    this.isSaving = true;
+    this.http.put<any>(`${this.apiUrl}/${this.selectedSponsor.id}`, this.editForm).subscribe({
+      next: (response) => {
+        const updated = response.data;
+        const index = this.sponsors.findIndex(s => s.id === this.selectedSponsor.id);
+        if (index !== -1) this.sponsors[index] = updated;
+        this.isSaving = false;
+        this.closeEditModal();
+      },
+      error: (err) => {
+        console.error('Update failed:', err);
+        this.isSaving = false;
+      }
+    });
+  }
+
+  openDeleteModal(sponsor: any) {
+    this.selectedSponsor = sponsor;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.selectedSponsor = null;
+  }
+
+  confirmDelete() {
+    if (!this.selectedSponsor) return;
+    this.isDeleting = true;
+    this.http.delete<any>(`${this.apiUrl}/${this.selectedSponsor.id}`).subscribe({
+      next: () => {
+        this.sponsors = this.sponsors.filter(s => s.id !== this.selectedSponsor.id);
+        this.isDeleting = false;
+        this.closeDeleteModal();
+      },
+      error: (err) => {
+        console.error('Delete failed:', err);
+        this.isDeleting = false;
+      }
+    });
   }
 }
