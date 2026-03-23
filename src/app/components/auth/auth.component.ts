@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { RegisterRequest, UserRole } from '../../models/api.models';
 
 interface CarouselSlide {
   headline: string;
@@ -122,18 +123,54 @@ export class AuthComponent implements OnInit, OnDestroy {
     });
   }
 
-  onSubmitSignup() {
-    if (this.signupPassword !== this.signupConfirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
-    console.log('Sign up', {
-      name: this.signupName,
-      email: this.signupEmail,
-      dob: this.signupDob,
-      gender: this.signupGender,
-      phone: this.signupPhone,
-      password: this.signupPassword,
-    });
+onSubmitSignup() {
+  if (this.signupPassword !== this.signupConfirmPassword) {
+    alert('Passwords do not match');
+    return;
   }
+
+  // Compute age from dob if needed (optional)
+  let age: number | undefined;
+  if (this.signupDob) {
+    const birthDate = new Date(this.signupDob);
+    const today = new Date();
+    age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+  }
+
+  const userData: RegisterRequest = {
+    name: this.signupName,
+    username: this.signupEmail,   // using email as username – adjust if needed
+    email: this.signupEmail,
+    password: this.signupPassword,
+    phone: this.signupPhone,      // optional, can be omitted if empty
+    age: age,                     // optional – remove if backend doesn't need it
+    role: 'PARTICIPANT' as UserRole    // or UserRole.CLIENT if it's an enum
+  };
+
+  console.log('Sign up', userData);
+
+  this.authService.register(userData).subscribe({
+    next: (auth) => {
+      const role = auth.user.role;
+      if (role === 'ADMIN') {
+        this.router.navigate(['/admin']);
+        return;
+      }
+      const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
+      if (prefsDone === 'true') {
+        this.router.navigate(['/home']);
+      } else {
+        this.router.navigate(['/preferences']);
+      }
+    },
+    error: (error) => {
+      console.error('Signup error', error);
+      alert(error.message || 'Registration failed. Please try again.');
+    }
+  });
+}
 }
