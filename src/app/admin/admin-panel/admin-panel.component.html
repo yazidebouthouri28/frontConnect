@@ -1,5 +1,6 @@
 <div class="flex h-screen bg-[#F5F2E8] overflow-hidden font-sans">
-  <app-admin-sidebar [activeSection]="activeSection()" (onSectionChange)="setSection($event)" />
+  <app-admin-sidebar [activeSection]="activeSection()" (onSectionChange)="setSection($event)"
+    (logoutClicked)="onLogout()" />
   <main class="flex-1 flex flex-col overflow-hidden">
     <!-- Top Header Refined -->
     <header
@@ -42,10 +43,10 @@
               class="w-full text-left px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50 hover:text-[#1a2e1a] transition-all flex items-center gap-3">
               <span>⚙️</span> Settings
             </button>
-            <a routerLink="/login" (click)="closeMenu()"
-              class="block w-full text-left px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-all flex items-center gap-3">
+            <button (click)="onLogout()"
+              class="w-full text-left px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-all flex items-center gap-3">
               <span>🚪</span> Log out
-            </a>
+            </button>
           </div>
           }
 
@@ -93,6 +94,9 @@
       }
       @case ('events') {
       <app-events-admin-management />
+      }
+      @case ('camp_highlights') {
+      <app-camp-highlights-management />
       }
       @case ('moderation') {
       <app-moderation-panel />

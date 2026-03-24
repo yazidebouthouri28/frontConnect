@@ -7,57 +7,70 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "campconnect-angular": {
+    "campconnect": {
       "projectType": "application",
-      "schematics": {},
       "root": "",
+      "sourceRoot": "src",
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/campconnect-angular",
+            "outputPath": "dist/frontConnect",
             "index": "src/index.html",
-            "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "main": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
-            "inlineStyleLanguage": "css",
-            "assets": ["src/favicon.ico", "src/assets"],
-            "styles": ["src/styles.css"],
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
             "scripts": []
           },
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "500kB", "maximumError": "1MB" },
-                { "type": "anyComponentStyle", "maximumWarning": "2kB", "maximumError": "4kB" }
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                }
               ],
               "outputHashing": "all"
             },
             "development": {
               "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "extractLicenses": false
             }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
-          "configurations": {
-            "production": { "buildTarget": "campconnect-angular:build:production" },
-            "development": { "buildTarget": "campconnect-angular:build:development" }
           },
           "defaultConfiguration": "development"
         },
+"serve": {
+  "builder": "@angular-devkit/build-angular:dev-server",
+  "configurations": {
+    "production": {
+      "buildTarget": "campconnect:build:production"
+    },
+    "development": {
+      "buildTarget": "campconnect:build:development"
+    }
+  },
+  "defaultConfiguration": "development"
+}
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
-            "inlineStyleLanguage": "css",
-            "assets": ["src/favicon.ico", "src/assets"],
-            "styles": ["src/styles.css"],
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
             "scripts": []
           }
         }
