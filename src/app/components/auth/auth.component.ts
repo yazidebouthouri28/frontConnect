@@ -24,13 +24,11 @@ export class AuthComponent implements OnInit, OnDestroy {
   successMessage = '';
   returnUrl = '/';
 
-  /* Password visibility toggles */
   showLoginPassword = false;
   showSignupPassword = false;
 
   currentYear = new Date().getFullYear();
 
-  /** Campfire stars + audio */
   stars: { id: number; x: number; y: number }[] = [];
   private starIdCounter = 0;
   private campfireAudio: HTMLAudioElement | null = null;
@@ -39,7 +37,6 @@ export class AuthComponent implements OnInit, OnDestroy {
   private readonly isBrowser = typeof window !== 'undefined';
   private removeAudioUnlockListeners: (() => void) | null = null;
 
-  /* ===== Forms ===== */
   loginForm = { email: '', password: '' };
 
   registerForm = {
@@ -51,7 +48,7 @@ export class AuthComponent implements OnInit, OnDestroy {
     address: '',
     country: '',
     age: null as number | null,
-    role: 'CLIENT' as UserRole,
+    role: 'CAMPER' as string,              // default changed from CLIENT to CAMPER
     isSeller: false,
     isBuyer: true,
     storeName: '',
@@ -65,7 +62,6 @@ export class AuthComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute
   ) { }
 
-  /* ===== Lifecycle ===== */
   ngOnInit(): void {
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
     if (this.router.url.includes('register')) this.isLoginMode = false;
@@ -95,7 +91,6 @@ export class AuthComponent implements OnInit, OnDestroy {
     }
   }
 
-  /* ===== Mode switching ===== */
   switchToSignup(): void {
     this.animateSidebarSwitch(false);
   }
@@ -104,12 +99,10 @@ export class AuthComponent implements OnInit, OnDestroy {
     this.animateSidebarSwitch(true);
   }
 
-  /* ===== Role change ===== */
   onRoleChange(): void {
     this.registerForm.isSeller = this.registerForm.role === 'SELLER';
   }
 
-  /* ===== Login ===== */
   login(): void {
     if (!this.loginForm.email || !this.loginForm.password) {
       this.errorMessage = 'Please fill in all fields'; return;
@@ -117,12 +110,25 @@ export class AuthComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.clearMessages();
     this.authService.login(this.loginForm).subscribe({
-      next: () => { this.cartService.syncCartAfterLogin(); this.router.navigate([this.returnUrl]); },
+      next: (auth) => {
+        this.isLoading = false;
+        const role = auth.user.role;
+        if (role === 'ADMIN') {
+          this.router.navigate(['/admin']);
+          return;
+        }
+        const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
+        if (prefsDone === 'true') {
+          this.router.navigate(['/home']);
+        } else {
+          this.router.navigate(['/preferences']);
+        }
+        this.cartService.syncCartAfterLogin();
+      },
       error: (err) => { this.isLoading = false; this.errorMessage = err.message || 'Login failed.'; }
     });
   }
 
-  /* ===== Register ===== */
   register(): void {
     if (!this.registerForm.name || !this.registerForm.username ||
       !this.registerForm.email || !this.registerForm.password) {
@@ -134,12 +140,21 @@ export class AuthComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.clearMessages();
 
+    // Map frontend role to backend Role enum
+    const roleMapping: { [key: string]: string } = {
+      'SELLER': 'SELLER',
+      'ORGANIZER': 'ORGANIZER',
+      'SPONSOR': 'SPONSOR',
+      'CAMPER': 'PARTICIPANT'
+    };
+    const backendRole = roleMapping[this.registerForm.role] || 'USER';
+
     const payload: any = {
       name: this.registerForm.name,
       username: this.registerForm.username,
       email: this.registerForm.email,
       password: this.registerForm.password,
-      role: this.registerForm.role,
+      role: backendRole,
       isSeller: this.registerForm.role === 'SELLER',
       isBuyer: this.registerForm.isBuyer,
       avatar: 'avatar.png'
@@ -152,38 +167,42 @@ export class AuthComponent implements OnInit, OnDestroy {
     if (this.registerForm.bio) payload.bio = this.registerForm.bio;
 
     this.authService.register(payload).subscribe({
-      next: () => {
+      next: (auth) => {
+        this.isLoading = false;
         this.successMessage = 'Account created! Redirecting…';
+        const role = auth.user.role;
+        if (role === 'ADMIN') {
+          setTimeout(() => this.router.navigate(['/admin']), 1200);
+          return;
+        }
+        const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
+        if (prefsDone === 'true') {
+          setTimeout(() => this.router.navigate(['/home']), 1200);
+        } else {
+          setTimeout(() => this.router.navigate(['/preferences']), 1200);
+        }
         this.cartService.syncCartAfterLogin();
-        setTimeout(() => this.router.navigate([this.returnUrl]), 1200);
       },
       error: (err) => { this.isLoading = false; this.errorMessage = err.message || 'Registration failed.'; }
     });
   }
 
-  /* ===== Helpers ===== */
   clearMessages(): void { this.errorMessage = ''; this.successMessage = ''; }
 
   private animateSidebarSwitch(targetIsLogin: boolean): void {
     if (this.isLoginMode === targetIsLogin || this.isSidebarAnimatingOut) return;
 
-    // 1. Start the 'slide out' animation
     this.isSidebarAnimatingOut = true;
 
-    // 2. Wait for the sidebar to fully exit the screen (400ms CSS transition)
     setTimeout(() => {
-      // 3. Swap the form content while it's hidden out of view
       this.isLoginMode = targetIsLogin;
       this.clearMessages();
 
-      // 4. Wait a tiny tick for Angular to render the new DOM elements 
-      //    (so it calculates height/layout properly)
       setTimeout(() => {
-        // 5. Slide it back in!
         this.isSidebarAnimatingOut = false;
       }, 50);
 
-    }, 400); // Wait 400ms for slide out transition
+    }, 400);
   }
 
   private initCampfireAudio(): void {
@@ -205,15 +224,12 @@ export class AuthComponent implements OnInit, OnDestroy {
   }
 
   private publicUrl(fileName: string): string {
-    // Files in Angular's `public/` are served from the site root.
-    return encodeURI(`/${fileName}`);
+    return encodeURI(`assets/${fileName}`);
   }
 
   private startAmbientAudio(): void {
-    // Try immediately (works if the browser allows autoplay).
     this.tryPlayAmbient().then((played) => {
       if (played) return;
-      // Autoplay blocked: unlock on first user interaction anywhere on the page.
       this.installAudioUnlockListeners();
     });
   }

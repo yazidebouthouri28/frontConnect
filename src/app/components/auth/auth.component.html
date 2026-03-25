@@ -4,7 +4,7 @@
     <section class="auth-visual" (mousemove)="onCampfireMove($event)">
       <div class="campfire-glow"></div>
       <video class="campfire-video" autoplay muted loop playsinline>
-        <source src="campfire.mp4" type="video/mp4">
+        <source src="assets/campfire.mp4" type="video/mp4">
       </video>
 
       <div class="campfire-stars">
@@ -24,17 +24,17 @@
       <div class="auth-sidebar" [class.auth-sidebar-hidden]="isSidebarAnimatingOut"
         [class.auth-sidebar-signup]="!isLoginMode">
 
-        <header class="auth-sidebar-header">
-          <a routerLink="/" class="brand-link">
-            <span class="brand-icon">
-              <img class="brand-logo" src="assets/images/logo.png" alt="CampConnect logo" />
-            </span>
-            <span class="brand-name">CampConnect</span>
-          </a>
-          <span class="auth-mode-pill">
-            {{ isLoginMode ? 'Welcome back' : 'Join the camp' }}
-          </span>
-        </header>
+<header class="auth-sidebar-header">
+  <a routerLink="/" class="brand-link">
+    <span class="brand-icon">
+      <img class="brand-logo" src="assets/images/logo.png" alt="CampConnect logo" />
+    </span>
+    <span class="brand-name">CampConnect</span>
+  </a>
+  <span class="auth-mode-pill">
+    {{ isLoginMode ? 'Welcome back' : 'Join the camp' }}
+  </span>
+</header>
 
         <!-- LOGIN FORM -->
         <ng-container *ngIf="isLoginMode; else signupForm">
@@ -157,42 +157,32 @@
             </div>
 
             <!-- Role Selection -->
-            <div class="role-selection-box">
-              <label class="auth-label">Select Your Role *</label>
-              <p class="role-helper">Choose how you'll use CampConnect.</p>
-              <div class="role-grid">
-                <label class="role-card" [class.role-card-selected]="registerForm.role === 'CLIENT'">
-                  <input type="radio" name="role" value="CLIENT" [(ngModel)]="registerForm.role"
-                    (change)="onRoleChange()" class="hidden" />
-                  <span class="role-card-icon">🛒</span>
-                  <span class="role-card-name">Client</span>
-                </label>
-                <label class="role-card" [class.role-card-selected]="registerForm.role === 'SELLER'">
-                  <input type="radio" name="role" value="SELLER" [(ngModel)]="registerForm.role"
-                    (change)="onRoleChange()" class="hidden" />
-                  <span class="role-card-icon">🏪</span>
-                  <span class="role-card-name">Seller</span>
-                </label>
-                <label class="role-card" [class.role-card-selected]="registerForm.role === 'ORGANIZER'">
-                  <input type="radio" name="role" value="ORGANIZER" [(ngModel)]="registerForm.role"
-                    (change)="onRoleChange()" class="hidden" />
-                  <span class="role-card-icon">📅</span>
-                  <span class="role-card-name">Organizer</span>
-                </label>
-                <label class="role-card" [class.role-card-selected]="registerForm.role === 'SPONSOR'">
-                  <input type="radio" name="role" value="SPONSOR" [(ngModel)]="registerForm.role"
-                    (change)="onRoleChange()" class="hidden" />
-                  <span class="role-card-icon">🤝</span>
-                  <span class="role-card-name">Sponsor</span>
-                </label>
-                <label class="role-card" [class.role-card-selected]="registerForm.role === 'CAMPER'">
-                  <input type="radio" name="role" value="CAMPER" [(ngModel)]="registerForm.role"
-                    (change)="onRoleChange()" class="hidden" />
-                  <span class="role-card-icon">⛺</span>
-                  <span class="role-card-name">Camper</span>
-                </label>
-              </div>
-            </div>
+<div class="role-grid">
+  <label class="role-card" [class.role-card-selected]="registerForm.role === 'SELLER'">
+    <input type="radio" name="role" value="SELLER" [(ngModel)]="registerForm.role"
+      (change)="onRoleChange()" class="hidden" />
+    <span class="role-card-icon">🏪</span>
+    <span class="role-card-name">Seller and Buyer</span>
+  </label>
+  <label class="role-card" [class.role-card-selected]="registerForm.role === 'ORGANIZER'">
+    <input type="radio" name="role" value="ORGANIZER" [(ngModel)]="registerForm.role"
+      (change)="onRoleChange()" class="hidden" />
+    <span class="role-card-icon">📅</span>
+    <span class="role-card-name">Organizer</span>
+  </label>
+  <label class="role-card" [class.role-card-selected]="registerForm.role === 'SPONSOR'">
+    <input type="radio" name="role" value="SPONSOR" [(ngModel)]="registerForm.role"
+      (change)="onRoleChange()" class="hidden" />
+    <span class="role-card-icon">🤝</span>
+    <span class="role-card-name">Sponsor</span>
+  </label>
+  <label class="role-card" [class.role-card-selected]="registerForm.role === 'CAMPER'">
+    <input type="radio" name="role" value="CAMPER" [(ngModel)]="registerForm.role"
+      (change)="onRoleChange()" class="hidden" />
+    <span class="role-card-icon">⛺</span>
+    <span class="role-card-name">Camper</span>
+  </label>
+</div>
 
             <!-- Seller store name (conditional) -->
             <div *ngIf="registerForm.role === 'SELLER'" class="seller-box">

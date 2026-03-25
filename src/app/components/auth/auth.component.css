@@ -176,10 +176,12 @@
 
 .auth-sidebar-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  position: relative;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .brand-link {
@@ -187,7 +189,7 @@
   align-items: center;
   gap: 0.55rem;
   text-decoration: none;
-  margin: 0 auto;
+  /* no auto margins */
 }
 
 .brand-icon {
@@ -218,8 +220,7 @@
 }
 
 .auth-mode-pill {
-  position: absolute;
-  right: 0;
+  display: inline-flex;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -229,6 +230,7 @@
   color: var(--golden-light);
   background: rgba(212, 168, 67, 0.08);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ===== Forms ===== */
@@ -549,6 +551,7 @@
   margin-bottom: 0.4rem;
   color: var(--golden-light);
 }
+
 
 /* ===== Animations ===== */
 @keyframes star-trail {

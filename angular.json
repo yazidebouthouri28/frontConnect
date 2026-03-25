@@ -48,18 +48,22 @@
           },
           "defaultConfiguration": "development"
         },
-"serve": {
-  "builder": "@angular-devkit/build-angular:dev-server",
-  "configurations": {
-    "production": {
-      "buildTarget": "campconnect:build:production"
-    },
-    "development": {
-      "buildTarget": "campconnect:build:development"
-    }
-  },
-  "defaultConfiguration": "development"
-}
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "campconnect:build:development",
+            "proxyConfig": "proxy.conf.json"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "campconnect:build:production"
+            },
+            "development": {
+              "buildTarget": "campconnect:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
