@@ -24,16 +24,17 @@
 
   <!-- Navigation Links -->
   <nav class="flex-1 px-4 py-2 space-y-6 overflow-y-auto custom-sidebar-scroll">
+    @for (section of navSections; track section.title) {
     <div>
       @if (!isCollapsed) {
-      <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Core Management</h3>
+      <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">{{ section.title }}</h3>
       }
       <ul class="space-y-1.5">
-        @for (item of navItems.slice(0, 3); track item.id) {
+        @for (item of section.items; track item.id) {
         <li>
           <button (click)="selectSection(item.id)" type="button"
-            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative"
-            [ngClass]="activeSection() === item.id ? 'bg-[#5D7B5F] text-white shadow-xl shadow-black/10' : 'text-white/60 hover:bg-white/5 hover:text-white'"
+            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"
+            [ngClass]="activeSection() === item.id ? 'bg-[#5D7B5F] text-white shadow-xl shadow-black/10' : ''"
             [attr.title]="isCollapsed ? item.label : null">
             @if (item.icon) {
             <svg class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" fill="none"
@@ -52,58 +53,7 @@
         }
       </ul>
     </div>
-
-    <div>
-      @if (!isCollapsed) {
-      <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Market Operations</h3>
-      }
-      <ul class="space-y-1.5">
-        @for (item of navItems.slice(3, 8); track item.id) {
-        <li>
-          <button (click)="selectSection(item.id)" type="button"
-            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"
-            [ngClass]="activeSection() === item.id ? 'bg-[#5D7B5F] text-white shadow-xl shadow-black/10' : ''"
-            [attr.title]="isCollapsed ? item.label : null">
-            @if (item.icon) {
-            <svg class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-            </svg>
-            }
-            @if (!isCollapsed) {
-            <span class="font-bold text-sm tracking-tight">{{ item.label }}</span>
-            }
-          </button>
-        </li>
-        }
-      </ul>
-    </div>
-
-    <div>
-      @if (!isCollapsed) {
-      <h3 class="px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-4">Intelligence</h3>
-      }
-      <ul class="space-y-1.5">
-        @for (item of navItems.slice(8); track item.id) {
-        <li>
-          <button (click)="selectSection(item.id)" type="button"
-            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative text-white/60 hover:bg-white/5 hover:text-white"
-            [ngClass]="activeSection() === item.id ? 'bg-[#5D7B5F] text-white shadow-xl shadow-black/10' : ''"
-            [attr.title]="isCollapsed ? item.label : null">
-            @if (item.icon) {
-            <svg class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-            </svg>
-            }
-            @if (!isCollapsed) {
-            <span class="font-bold text-sm tracking-tight">{{ item.label }}</span>
-            }
-          </button>
-        </li>
-        }
-      </ul>
-    </div>
+    }
   </nav>
 
   <!-- Profile Section -->

@@ -201,6 +201,8 @@ export interface Site {
   longitude: number;
   averageRating: number;
   image: string;
+  /** Platform verification (certification approved). */
+  verified?: boolean;
   capacity?: number;
   price?: number;
   status?: string;
@@ -232,6 +234,9 @@ export interface Review {
   userId?: number;
   userName?: string;
   userAvatar?: string;
+  likes?: number;
+  dislikes?: number;
+  userReactions?: Record<string, 'LIKE' | 'DISLIKE'>;
 }
 
 export interface VirtualTour {

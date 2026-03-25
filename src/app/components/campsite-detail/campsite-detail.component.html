@@ -25,7 +25,10 @@
                 Hookups</span>
         </div>
 
-        <h1 class="text-4xl md:text-5xl font-black text-[#1a2e1a] tracking-tight mb-2 font-serif">{{ campsite.name }}
+        <h1 class="text-4xl md:text-5xl font-black text-[#1a2e1a] tracking-tight mb-2 font-serif flex items-center gap-3 flex-wrap">{{ campsite.name }}
+          <span *ngIf="campsite.verified" class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#1877F2] text-white shadow-md shrink-0" title="Verified campsite">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+          </span>
         </h1>
 
         <div class="flex flex-wrap items-center justify-between text-[#1a2e1a] font-medium text-sm">
@@ -118,7 +121,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
             <!-- Left Column: Details -->
-            <div class="lg:col-span-2 space-y-10">
+            <div class="lg:col-span-2 flex flex-col gap-10">
 
                 <!-- Description -->
                 <div class="border-b border-gray-200 pt-4 pb-10">
@@ -140,8 +143,27 @@
                         }
                     </div>
                 </div>
+                <div class="border-b border-gray-200 py-10">
+                    <div class="bg-[#f7f5f0] border border-[#e9e6df] rounded-2xl p-5 sm:p-6">
+                        <h3 class="text-xl font-black text-[#1a2e1a] mb-4">Location & Navigation</h3>
+                        <div class="flex flex-wrap gap-3 mb-4">
+                            <a [href]="directionsUrl" target="_blank" rel="noopener"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2346c7] text-white font-bold text-sm">
+                                Get Directions
+                            </a>
+                            <button type="button" *ngIf="virtualTours.length" (click)="openFirstVirtualTour()"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f7f69] text-white font-bold text-sm">
+                                Virtual Tour
+                            </button>
+                        </div>
+                        <div class="rounded-xl overflow-hidden border border-[#e9e6df] h-[260px]">
+                            <iframe [src]="mapEmbedUrl" width="100%" height="100%" style="border:0;" loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
+                    </div>
+                </div>
                 <!-- Reviews Section -->
-                <div class="border-b border-gray-200 py-10 pt-4">
+                <div class="border-b border-gray-200 py-10 pt-4 order-[98]">
                     <h2 class="text-3xl font-black text-[#1a2e1a] mb-10 font-serif flex items-center gap-2">
                         <svg class="w-7 h-7 text-[#D4A843] fill-current" viewBox="0 0 20 20">
                             <path
@@ -184,27 +206,83 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10" *ngIf="reviews.length > 0">
                         @for (review of reviews; track review.id) {
                         <div>
+                            @if (editingReviewId === review.id) {
+                            <div class="mb-4 bg-[#f7f5f0] border border-[#e9e6df] rounded-2xl p-5 space-y-4 shadow-sm">
+                                <h4 class="text-lg font-bold text-[#1a2e1a]">Edit your review</h4>
+                                <div class="flex items-center gap-2">
+                                    @for (star of ratingStars; track star) {
+                                    <button type="button" (click)="setEditDraftRating(star)"
+                                        class="text-3xl leading-none transition-transform hover:scale-110">
+                                        <span [class]="star <= editingReviewDraft.rating ? 'text-[#D4A843]' : 'text-gray-300'">&#9733;</span>
+                                    </button>
+                                    }
+                                    <span class="text-sm font-semibold text-gray-600 ml-3">{{ editingReviewDraft.rating }}/5 stars</span>
+                                </div>
+                                <textarea [(ngModel)]="editingReviewDraft.comment" rows="3"
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#2C4A3C]/40 text-gray-700 bg-white transition-shadow shadow-sm hover:shadow"></textarea>
+                                <div class="flex items-center gap-3">
+                                    <button type="button" (click)="saveEditReview()" [disabled]="isSavingEdit"
+                                        class="px-5 py-2.5 bg-[#1F4D36] text-white rounded-lg font-bold shadow-md hover:bg-[#163a28] transition-colors disabled:opacity-50 flex items-center gap-2">
+                                        {{ isSavingEdit ? 'Saving...' : 'Save' }}
+                                    </button>
+                                    <button type="button" (click)="cancelEditReview()" [disabled]="isSavingEdit"
+                                        class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition-colors disabled:opacity-50 text-sm">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                            } @else {
                             <div class="flex items-center gap-4 mb-4">
                                 <div
                                     class="w-12 h-12 rounded-full bg-[#3e6350] flex items-center justify-center text-white font-bold text-xl shadow-sm">
                                     {{ review.userName ? (review.userName.charAt(0) | uppercase) : 'U' }}
                                 </div>
-                                <div>
-                                    <h4 class="font-bold text-[#1a2e1a] text-[1.1rem]">{{ review.userName || 'Anonymous
-                                        Visitor' }}</h4>
-                                    <p class="text-[0.9rem] text-gray-500 font-medium">{{ review.createdAt | date:'MMMM
-                                        yyyy' }}</p>
-                                    <div class="text-sm mt-0.5 flex">
-                                        @for (star of ratingStars; track star) {
-                                        <span
-                                            [class]="star <= review.rating ? 'text-[#D4A843]' : 'text-gray-200'">&#9733;</span>
-                                        }
+                                <div class="flex-1 flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-[#1a2e1a] text-[1.1rem]">{{ review.userName || 'Anonymous Visitor' }}</h4>
+                                        <p class="text-[0.9rem] text-gray-500 font-medium">{{ review.createdAt | date:'MMMM yyyy' }}</p>
+                                        <div class="text-sm mt-0.5 flex">
+                                            @for (star of ratingStars; track star) {
+                                            <span [class]="star <= review.rating ? 'text-[#D4A843]' : 'text-gray-200'">&#9733;</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2" *ngIf="isReviewAuthor(review)">
+                                        <button (click)="startEditReview(review)" title="Edit Review" class="text-gray-400 hover:text-[#2C4A3C] transition-colors p-1.5 rounded-md hover:bg-gray-100">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                        </button>
+                                        <button (click)="deleteReview(review)" title="Delete Review" class="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-gray-700 leading-relaxed text-[1.05rem]">
+                            <p class="text-gray-700 leading-relaxed text-[1.05rem] mb-4">
                                 {{ review.comment }}
                             </p>
+                            <div class="flex items-center gap-3">
+                                <button type="button" (click)="likeReview(review.id)"
+                                  class="px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 text-sm transition-colors"
+                                  [ngClass]="getReviewReaction(review.id) === 'LIKE' ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-200' : 'bg-gray-50 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700'">
+                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 01-2-2h-2.514">
+                                    </path>
+                                  </svg>
+                                  {{ review.likes || 0 }}
+                                </button>
+                                <button type="button" (click)="dislikeReview(review.id)"
+                                  class="px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 text-sm transition-colors"
+                                  [ngClass]="getReviewReaction(review.id) === 'DISLIKE' ? 'bg-red-100 text-red-800 ring-2 ring-red-200' : 'bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700'">
+                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.514">
+                                    </path>
+                                  </svg>
+                                  {{ review.dislikes || 0 }}
+                                </button>
+                            </div>
+                            }
                         </div>
                         }
                     </div>
@@ -237,7 +315,7 @@
                 </div>
 
                 <!-- Virtual Tours Section -->
-                <div class="border-t border-gray-200 pt-8" *ngIf="virtualTours.length">
+                <div id="virtual-tours" class="border-t border-gray-200 pt-8" *ngIf="virtualTours.length">
                     <h3 class="text-2xl font-bold text-forest mb-6">Virtual Experiences</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div *ngFor="let tour of virtualTours"
@@ -382,7 +460,7 @@
                     </div>
 
                     @if (isAuthenticated) {
-                    <button
+                    <button type="button" (click)="reserveNow()"
                         class="w-full bg-[#1F4D36] text-white font-bold text-lg py-3 rounded-lg hover:bg-[#163a28] transition-all transform active:scale-[0.98] mb-4">
                         Reserve
                     </button>

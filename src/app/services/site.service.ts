@@ -10,6 +10,7 @@ interface SiteApiResponse {
     name: string;
     description?: string;
     type?: string;
+    verified?: boolean;
     address?: string;
     city?: string;
     country?: string;
@@ -56,6 +57,7 @@ interface SiteSummaryApiResponse {
     name: string;
     description?: string;
     type?: string;
+    verified?: boolean;
     address?: string;
     city?: string;
     country?: string;
@@ -159,6 +161,7 @@ export class SiteService {
             name: site.name,
             description: site.description ?? '',
             type: site.type ?? '',
+            verified: site.verified === true,
             address: site.address ?? '',
             city: site.city ?? '',
             country: site.country ?? '',

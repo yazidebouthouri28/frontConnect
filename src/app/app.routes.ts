@@ -21,6 +21,11 @@ export const routes: Routes = [
     path: 'campsites/:id',
     loadComponent: () => import('./components/campsite-detail/campsite-detail.component').then(m => m.CampsiteDetailComponent)
   },
+  {
+    path: 'campsites/:id/reserve',
+    loadComponent: () => import('./components/campsite-reservation/campsite-reservation.component').then(m => m.CampsiteReservationComponent),
+    canActivate: [AuthGuard]
+  },
 
   // Event routes
   {

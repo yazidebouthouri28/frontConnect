@@ -39,6 +39,12 @@ export class CampHighlightService {
 
     constructor(private http: HttpClient) { }
 
+    getAllHighlights(): Observable<CampHighlight[]> {
+        return this.http.get<CampHighlightApiResponse[]>(`${this.apiUrl}/all`).pipe(
+            map((highlights) => highlights.map((highlight) => this.fromApi(highlight)))
+        );
+    }
+
     getHighlightsBySite(siteId: number): Observable<CampHighlight[]> {
         return this.http.get<CampHighlightApiResponse[]>(`${this.apiUrl}/site/${siteId}`).pipe(
             map((highlights) => highlights.map((highlight) => this.fromApi(highlight)))

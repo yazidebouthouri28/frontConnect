@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SiteService } from '../../services/site.service';
 import { Site, Review, CampHighlight, VirtualTour, Certification } from '../../models/camping.models';
@@ -9,6 +9,7 @@ import { CampHighlightService } from '../../services/camp-highlight.service';
 import { VirtualTourService } from '../../services/virtual-tour.service';
 import { CertificationService } from '../../services/certification.service';
 import { AuthService } from '../../services/auth.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
     selector: 'app-campsite-detail',
@@ -32,6 +33,10 @@ export class CampsiteDetailComponent implements OnInit {
     reviewSubmitError = '';
     reviewSubmitSuccess = '';
     isSubmittingReview = false;
+
+    editingReviewId: number | null = null;
+    editingReviewDraft = { rating: 5, comment: '' };
+    isSavingEdit = false;
 
     likes = 12;
     dislikes = 0;
@@ -142,6 +147,7 @@ export class CampsiteDetailComponent implements OnInit {
 
     constructor(
         private route: ActivatedRoute,
+        private router: Router,
         private location: Location,
         private siteService: SiteService,
         private reviewService: ReviewService,
@@ -149,6 +155,7 @@ export class CampsiteDetailComponent implements OnInit {
         private virtualTourService: VirtualTourService,
         private certificationService: CertificationService,
         private authService: AuthService,
+        private sanitizer: DomSanitizer,
         private cdr: ChangeDetectorRef
     ) { }
 
@@ -175,12 +182,62 @@ export class CampsiteDetailComponent implements OnInit {
                 this.cdr.detectChanges();
             },
             error: (err) => {
-                console.error('Error fetching campsite details', err);
-                this.errorMessage = 'Could not load campsite details';
-                this.isLoading = false;
-                this.cdr.detectChanges();
+                this.siteService.getAllSites().subscribe({
+                    next: (sites) => {
+                        const fallbackSite = sites.find((site) => site.id === id);
+                        if (fallbackSite) {
+                            this.campsite = fallbackSite;
+                            this.mapAmenities(fallbackSite.amenities || []);
+                            this.errorMessage = '';
+                        } else {
+                            console.error('Error fetching campsite details', err);
+                            this.errorMessage = 'Could not load campsite details';
+                        }
+                        this.isLoading = false;
+                        this.cdr.detectChanges();
+                    },
+                    error: () => {
+                        console.error('Error fetching campsite details', err);
+                        this.errorMessage = 'Could not load campsite details';
+                        this.isLoading = false;
+                        this.cdr.detectChanges();
+                    }
+                });
             }
         });
+    }
+
+    private getReviewReactionsStorageKey(): string {
+        return `campsite_review_reactions_${this.campsite?.id || 0}`;
+    }
+
+    private loadReviewReactions(): void {
+        if (typeof window === 'undefined') return;
+        try {
+            const raw = localStorage.getItem(this.getReviewReactionsStorageKey());
+            const reactions = raw ? JSON.parse(raw) : {};
+            this.reviews = this.reviews.map(r => ({
+                ...r,
+                likes: reactions[r.id]?.likes || 0,
+                dislikes: reactions[r.id]?.dislikes || 0,
+                userReactions: reactions[r.id]?.userReactions || {}
+            }));
+        } catch { }
+    }
+
+    private persistReviewReactions(): void {
+        if (typeof window === 'undefined') return;
+        try {
+            const reactions: Record<number, any> = {};
+            this.reviews.forEach(r => {
+                reactions[r.id] = { 
+                    likes: (r as any).likes || 0, 
+                    dislikes: (r as any).dislikes || 0,
+                    userReactions: (r as any).userReactions || {}
+                };
+            });
+            localStorage.setItem(this.getReviewReactionsStorageKey(), JSON.stringify(reactions));
+        } catch { }
     }
 
     private loadRelatedData(siteId: number) {
@@ -188,6 +245,7 @@ export class CampsiteDetailComponent implements OnInit {
         this.reviewService.getReviewsBySite(siteId).subscribe({
             next: (reviews) => {
                 this.reviews = reviews;
+                this.loadReviewReactions();
                 this.cdr.detectChanges();
             },
             error: () => {
@@ -249,6 +307,46 @@ export class CampsiteDetailComponent implements OnInit {
 
     goBack() {
         this.location.back();
+    }
+
+    reserveNow(): void {
+        if (!this.campsite?.id) return;
+        this.router.navigate(['/campsites', this.campsite.id, 'reserve']);
+    }
+
+    openFirstVirtualTour(): void {
+        if (!this.virtualTours.length) {
+            return;
+        }
+
+        const firstTour = this.virtualTours[0];
+        const sceneImages = (firstTour.scenes || [])
+            .map((scene) => scene.panoramaUrl || scene.imageUrl || '')
+            .filter((url) => !!url && String(url).trim().length > 0);
+
+        if (sceneImages.length > 0) {
+            this.galleryImages = sceneImages;
+            this.activeGalleryIndex = 0;
+            this.isGalleryOpen = true;
+            document.body.style.overflow = 'hidden';
+            this.cdr.detectChanges();
+            return;
+        }
+
+        const target = document.getElementById('virtual-tours');
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    get directionsUrl(): string {
+        if (!this.campsite?.location) return 'https://www.google.com/maps';
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.campsite.location)}`;
+    }
+
+    get mapEmbedUrl(): SafeResourceUrl {
+        const query = this.campsite?.location || this.campsite?.city || this.campsite?.name || 'campsite';
+        return this.sanitizer.bypassSecurityTrustResourceUrl(
+            `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=12&output=embed`
+        );
     }
 
     get isAuthenticated(): boolean {
@@ -343,5 +441,152 @@ export class CampsiteDetailComponent implements OnInit {
                 this.cdr.detectChanges();
             }
         });
+    }
+
+    getReviewReaction(reviewId: number): 'LIKE' | 'DISLIKE' | null {
+        const target = this.reviews.find(r => r.id === reviewId) as any;
+        if (!target || !target.userReactions) return null;
+        const currentUser = this.authService.getCurrentUser();
+        const userId = currentUser ? String(currentUser.id) : 'guest';
+        return target.userReactions[userId] || null;
+    }
+
+    likeReview(reviewId: number): void {
+        const target = this.reviews.find(r => r.id === reviewId) as any;
+        if (!target) return;
+        
+        const currentUser = this.authService.getCurrentUser();
+        const userId = currentUser ? String(currentUser.id) : 'guest';
+        target.userReactions = target.userReactions || {};
+        const currentReaction = target.userReactions[userId];
+
+        if (currentReaction === 'LIKE') {
+            target.likes = Math.max(0, target.likes - 1);
+            delete target.userReactions[userId];
+        } else {
+            target.likes = (target.likes || 0) + 1;
+            if (currentReaction === 'DISLIKE') {
+                target.dislikes = Math.max(0, target.dislikes - 1);
+            }
+            target.userReactions[userId] = 'LIKE';
+        }
+        
+        this.persistReviewReactions();
+        this.cdr.detectChanges();
+    }
+
+    dislikeReview(reviewId: number): void {
+        const target = this.reviews.find(r => r.id === reviewId) as any;
+        if (!target) return;
+        
+        const currentUser = this.authService.getCurrentUser();
+        const userId = currentUser ? String(currentUser.id) : 'guest';
+        target.userReactions = target.userReactions || {};
+        const currentReaction = target.userReactions[userId];
+
+        if (currentReaction === 'DISLIKE') {
+            target.dislikes = Math.max(0, target.dislikes - 1);
+            delete target.userReactions[userId];
+        } else {
+            target.dislikes = (target.dislikes || 0) + 1;
+            if (currentReaction === 'LIKE') {
+                target.likes = Math.max(0, target.likes - 1);
+            }
+            target.userReactions[userId] = 'DISLIKE';
+        }
+        
+        this.persistReviewReactions();
+        this.cdr.detectChanges();
+    }
+
+    isReviewAuthor(review: Review): boolean {
+        const currentUser = this.authService.getCurrentUser();
+        return !!currentUser && !!review.userId && String(currentUser.id) === String(review.userId);
+    }
+
+    startEditReview(review: Review): void {
+        this.editingReviewId = review.id;
+        this.editingReviewDraft = { rating: review.rating, comment: review.comment || '' };
+    }
+
+    cancelEditReview(): void {
+        this.editingReviewId = null;
+        this.editingReviewDraft = { rating: 5, comment: '' };
+    }
+
+    setEditDraftRating(star: number): void {
+        if (star >= 1 && star <= 5) {
+            this.editingReviewDraft.rating = star;
+        }
+    }
+
+    saveEditReview(): void {
+        if (!this.editingReviewId || !this.campsite) return;
+        const comment = this.editingReviewDraft.comment.trim();
+        if (!comment) {
+            alert('Please write a comment for your review.');
+            return;
+        }
+
+        const currentReviewId = this.editingReviewId;
+        const existingReview = this.reviews.find(r => r.id === currentReviewId);
+        
+        this.isSavingEdit = true;
+        this.reviewService.updateReview(currentReviewId, this.campsite.id, {
+            rating: this.editingReviewDraft.rating,
+            comment
+        }).subscribe({
+            next: (updated) => {
+                const updatedReview = {
+                    ...existingReview,
+                    ...updated,
+                    userName: existingReview?.userName,
+                    userAvatar: existingReview?.userAvatar,
+                    likes: existingReview?.likes,
+                    dislikes: existingReview?.dislikes,
+                    userReactions: existingReview?.userReactions
+                };
+                
+                this.reviews = this.reviews.map(r => r.id === currentReviewId ? updatedReview : r);
+                this.updateCampsiteRatingStats();
+                this.cancelEditReview();
+                this.isSavingEdit = false;
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error("Failed to update review", err);
+                alert(err?.message || 'Unable to update review.');
+                this.isSavingEdit = false;
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    deleteReview(review: Review): void {
+        if (!confirm('Are you sure you want to delete this review?')) return;
+        
+        this.reviewService.deleteReview(review.id).subscribe({
+            next: () => {
+                this.reviews = this.reviews.filter(r => r.id !== review.id);
+                this.updateCampsiteRatingStats();
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error("Failed to delete review", err);
+                alert(err?.message || 'Unable to delete review.');
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    private updateCampsiteRatingStats(): void {
+        if (!this.campsite) return;
+        const reviewCount = this.reviews.length;
+        const totalRating = this.reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0);
+        this.campsite = {
+            ...this.campsite,
+            reviewCount,
+            averageRating: reviewCount ? Number((totalRating / reviewCount).toFixed(1)) : 0
+        };
     }
 }

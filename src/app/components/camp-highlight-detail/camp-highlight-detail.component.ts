@@ -13,6 +13,7 @@ interface HighlightFeedback {
   rating?: number;
   likes: number;
   dislikes: number;
+  userReactions?: Record<string, 'LIKE' | 'DISLIKE'>;
   createdAt: string;
 }
 
@@ -222,17 +223,57 @@ export class CampHighlightDetailComponent implements OnInit {
     this.persistFeedbacks();
   }
 
+  getFeedbackReaction(feedbackId: number): 'LIKE' | 'DISLIKE' | null {
+    const target = this.feedbacks.find(f => f.id === feedbackId);
+    if (!target || !target.userReactions) return null;
+    const currentUser = this.authService.getCurrentUser();
+    const userId = currentUser ? String(currentUser.id) : 'guest';
+    return target.userReactions[userId] || null;
+  }
+
   likeFeedback(feedbackId: number): void {
     const target = this.feedbacks.find((feedback) => feedback.id === feedbackId);
     if (!target) return;
-    target.likes += 1;
+    
+    const currentUser = this.authService.getCurrentUser();
+    const userId = currentUser ? String(currentUser.id) : 'guest';
+    target.userReactions = target.userReactions || {};
+    const currentReaction = target.userReactions[userId];
+
+    if (currentReaction === 'LIKE') {
+      target.likes = Math.max(0, target.likes - 1);
+      delete target.userReactions[userId];
+    } else {
+      target.likes += 1;
+      if (currentReaction === 'DISLIKE') {
+        target.dislikes = Math.max(0, target.dislikes - 1);
+      }
+      target.userReactions[userId] = 'LIKE';
+    }
+    
     this.persistFeedbacks();
   }
 
   dislikeFeedback(feedbackId: number): void {
     const target = this.feedbacks.find((feedback) => feedback.id === feedbackId);
     if (!target) return;
-    target.dislikes += 1;
+    
+    const currentUser = this.authService.getCurrentUser();
+    const userId = currentUser ? String(currentUser.id) : 'guest';
+    target.userReactions = target.userReactions || {};
+    const currentReaction = target.userReactions[userId];
+
+    if (currentReaction === 'DISLIKE') {
+      target.dislikes = Math.max(0, target.dislikes - 1);
+      delete target.userReactions[userId];
+    } else {
+      target.dislikes += 1;
+      if (currentReaction === 'LIKE') {
+        target.likes = Math.max(0, target.likes - 1);
+      }
+      target.userReactions[userId] = 'DISLIKE';
+    }
+
     this.persistFeedbacks();
   }
 

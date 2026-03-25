@@ -87,12 +87,7 @@ import { User } from '../../models/api.models';
               </span>
             </a>
 
-            <!-- Dashboard Quick Access (logged in users) -->
-            <a *ngIf="currentUser"
-               routerLink="/dashboard"
-               class="text-cream-beige hover:text-sage-green transition-colors p-2 hidden md:block">
-              <span class="text-xl">📊</span>
-            </a>
+
 
             <!-- User Profile / Auth -->
             <div class="relative profile-dropdown-container" *ngIf="currentUser; else loginButton">
@@ -313,7 +308,7 @@ export class NavigationComponent implements OnInit {
 
   // Role checks - strictly check for the specific role only
   get isSeller(): boolean {
-    return this.currentUser?.role === 'SELLER' || this.currentUser?.role === 'ADMIN';
+    return this.currentUser?.role === 'SELLER';
   }
 
   get isAdmin(): boolean {

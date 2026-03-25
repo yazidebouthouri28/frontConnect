@@ -114,6 +114,13 @@ export class CertificationService {
         return this.http.delete<void>(`${this.certUrl}/${id}`);
     }
 
+    updateItemScore(itemId: number, score: number): Observable<CertificationItem> {
+        return this.http.patch<CertificationItemApiResponse>(
+            `${this.itemUrl}/${itemId}`,
+            { score }
+        ).pipe(map((updated) => this.fromItemApi(updated, updated.certificationId ?? 0)));
+    }
+
     // Items
     addCertificationItem(item: Partial<CertificationItem> & { certificationId: number }): Observable<CertificationItem> {
         const payload: CertificationItemApiRequest = {

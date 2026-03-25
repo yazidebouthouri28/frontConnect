@@ -1,12 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ReservationRecord, ReservationService } from '../../services/reservation.service';
 
-interface Reservation {
-    id: string;
+interface ReservationCard {
+    id: number;
+    reservationNumber: string;
     customer: string;
-    type: 'Campsite' | 'Gear Rental' | 'Tour';
+    type: 'Campsite';
     date: string;
-    status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Completed';
+    status: string;
     amount: number;
     checkIn: string;
     checkOut: string;
@@ -20,15 +22,71 @@ interface Reservation {
     templateUrl: './reservations-management.component.html',
     styleUrls: ['./reservations-management.component.css']
 })
-export class ReservationsManagementComponent {
-    reservations: Reservation[] = [
-        { id: 'RES-001', customer: 'Ahmed Ben Salem', type: 'Campsite', date: '2026-02-20', status: 'Confirmed', amount: 135, checkIn: '14:00', checkOut: '11:00', guests: 2 },
-        { id: 'RES-002', customer: 'Mariem Guezguez', type: 'Gear Rental', date: '2026-02-22', status: 'Pending', amount: 45, checkIn: '10:00', checkOut: '17:00', guests: 1 },
-        { id: 'RES-003', customer: 'Yassine Trabelsi', type: 'Tour', date: '2026-02-15', status: 'Completed', amount: 250, checkIn: '08:00', checkOut: '18:00', guests: 4 },
-        { id: 'RES-004', customer: 'Selim Riahi', type: 'Campsite', date: '2026-03-05', status: 'Cancelled', amount: 90, checkIn: '14:00', checkOut: '11:00', guests: 3 },
-        { id: 'RES-005', customer: 'Amel Karoui', type: 'Campsite', date: '2026-02-18', status: 'Confirmed', amount: 180, checkIn: '14:00', checkOut: '11:00', guests: 2 },
-        { id: 'RES-006', customer: 'Khaled Jendoubi', type: 'Tour', date: '2026-02-28', status: 'Pending', amount: 320, checkIn: '07:30', checkOut: '19:00', guests: 12 },
-    ];
+export class ReservationsManagementComponent implements OnInit {
+    reservations: ReservationCard[] = [];
+    isLoading = false;
+    message = '';
+
+    constructor(private reservationService: ReservationService) {}
+
+    ngOnInit(): void {
+        this.loadReservations();
+    }
+
+    loadReservations(): void {
+        this.isLoading = true;
+        this.message = '';
+        this.reservationService.getAllReservations().subscribe({
+            next: (records) => {
+                this.reservations = records.map((r) => this.toCard(r));
+                this.isLoading = false;
+            },
+            error: () => {
+                this.reservations = [];
+                this.message = 'Unable to load reservations right now.';
+                this.isLoading = false;
+            }
+        });
+    }
+
+    confirmReservation(id: number): void {
+        this.reservationService.confirmReservation(id).subscribe({
+            next: () => this.loadReservations(),
+            error: () => this.message = 'Unable to confirm this reservation.'
+        });
+    }
+
+    cancelReservation(id: number): void {
+        this.reservationService.cancelReservation(id).subscribe({
+            next: () => this.loadReservations(),
+            error: () => this.message = 'Unable to cancel this reservation.'
+        });
+    }
+
+    private toCard(r: ReservationRecord): ReservationCard {
+        const checkInDate = r.checkInDate ? new Date(r.checkInDate) : null;
+        const checkOutDate = r.checkOutDate ? new Date(r.checkOutDate) : null;
+        return {
+            id: Number(r.id),
+            reservationNumber: r.reservationNumber || `RES-${r.id}`,
+            customer: r.userName || 'Guest',
+            type: 'Campsite',
+            date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '',
+            status: this.normalizeStatus(r.status),
+            amount: Number(r.totalPrice || 0),
+            checkIn: checkInDate ? checkInDate.toLocaleDateString() : '-',
+            checkOut: checkOutDate ? checkOutDate.toLocaleDateString() : '-',
+            guests: Number(r.numberOfGuests || 1)
+        };
+    }
+
+    private normalizeStatus(status?: string): string {
+        const value = String(status || 'PENDING').toUpperCase();
+        if (value === 'CONFIRMED') return 'Confirmed';
+        if (value === 'CANCELLED') return 'Cancelled';
+        if (value === 'COMPLETED') return 'Completed';
+        return 'Pending';
+    }
 
     getStatusClass(status: string): string {
         switch (status) {
