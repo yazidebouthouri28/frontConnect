@@ -231,86 +231,68 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                    <tr
-                        class="bg-gray-50/50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                        <th class="px-6 py-4">Destination Identity</th>
-                        <th class="px-6 py-4">Region / Location</th>
-                        <th class="px-6 py-4 text-center">Capacity</th>
-                        <th class="px-6 py-4 text-center">Base Price</th>
-                        <th class="px-6 py-4 text-center">Operational Status</th>
-                        <th class="px-6 py-4 text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @if (isLoading) {
-                    <tr>
-                        <td colspan="6" class="px-6 py-10 text-center text-sm font-bold text-gray-500">Loading
-                            campsites...</td>
-                    </tr>
-                    } @else {
-                    @for (site of filteredCampsites; track site.id) {
-                    <tr class="hover:bg-gray-50/50 transition-colors group">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-10 h-10 rounded-lg bg-[#f8f5e6] flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
-                                    {{ site.name.charAt(0) }}
-                                </div>
-                                <div>
-                                    <p class="font-bold text-[#1a2e1a]">{{ site.name }}</p>
-                                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Site ID:
-                                        #00{{ site.id }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-2 text-sm font-bold text-gray-500">
-                                <span class="text-xs">L</span> {{ site.location || site.city }}, Tunisia
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-center font-bold text-[#1a2e1a]">
-                            {{ site.capacity }} Slots
-                        </td>
-                        <td class="px-6 py-4 text-center font-black text-[#1a2e1a]">
-                            {{ site.price }} DT
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span
-                                class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-current"
-                                [ngClass]="getStatusClass(site.status)">
-                                * {{ site.status }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <button (click)="viewDetails(site)"
-                                class="bg-[#2C4A3C]/10 hover:bg-[#2C4A3C] text-[#2C4A3C] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
-                                Manage
-                            </button>
-                        </td>
-                    </tr>
-                    }
-                    @if (!filteredCampsites.length) {
-                    <tr>
-                        <td colspan="6" class="px-6 py-10 text-center text-sm font-bold text-gray-500">
-                            No campsite found for current filters.
-                        </td>
-                    </tr>
-                    }
-                    }
-                </tbody>
-            </table>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        @if (isLoading) {
+        <div class="col-span-full py-10 text-center text-sm font-bold text-gray-500">
+            Loading campsites...
         </div>
-
-        <div class="px-8 py-4 bg-emerald-50/30 border-t border-gray-100">
-            <div class="flex items-center gap-3">
-                <span class="text-emerald-500 text-lg">OK</span>
-                <p class="text-[10px] font-bold text-gray-500 italic">All destinations are verified for environmental
-                    compliance and visitor safety protocols.</p>
+        } @else {
+        @for (site of filteredCampsites; track site.id) {
+        <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col">
+            <div class="flex justify-between items-start mb-8">
+                <div
+                    class="w-14 h-14 bg-[#f8f5e6] text-[#1a2e1a] rounded-2xl flex items-center justify-center text-3xl font-black group-hover:scale-110 transition-transform">
+                    {{ site.name.charAt(0) }}
+                </div>
+                <span
+                    class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-current"
+                    [ngClass]="getStatusClass(site.status)">
+                    * {{ site.status }}
+                </span>
             </div>
+
+            <h3 class="font-black text-[#1a2e1a] text-xl mb-2 line-clamp-1 flex items-center gap-2" [title]="site.name">
+              {{ site.name }}
+              <span *ngIf="site.verified" class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#1877F2] text-white shadow shrink-0" title="Verified campsite">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+              </span>
+            </h3>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest mb-6 border-b border-gray-50 pb-4">Site ID: #00{{ site.id }}</p>
+
+            <div class="space-y-4 mb-8 flex-1">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black text-gray-300 uppercase">Region / Location</span>
+                    <span class="text-xs font-bold text-[#1a2e1a]"><span class="text-[10px] text-gray-400">L </span>{{ site.location || site.city }}, Tunisia</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black text-gray-300 uppercase">Capacity</span>
+                    <span class="text-xs font-black text-[#1a2e1a]">{{ site.capacity }} Slots</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black text-gray-300 uppercase">Base Price</span>
+                    <span class="text-xs font-black text-[#1a2e1a]">{{ site.price }} DT</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button (click)="viewDetails(site)"
+                    class="flex-1 py-3 bg-[#2C4A3C] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#1a2e1a] transition-all">Manage</button>
+            </div>
+        </div>
+        }
+        @if (!filteredCampsites.length) {
+        <div class="col-span-full py-10 text-center text-sm font-bold text-gray-500">
+            No campsite found for current filters.
+        </div>
+        }
+        }
+    </div>
+
+    <div class="px-8 py-4 bg-emerald-50/30 border border-emerald-100 rounded-xl mt-6">
+        <div class="flex items-center gap-3">
+            <span class="text-emerald-500 text-lg">OK</span>
+            <p class="text-[10px] font-bold text-gray-500 italic">All destinations are verified for environmental
+                compliance and visitor safety protocols.</p>
         </div>
     </div>
     } @else {

@@ -25,12 +25,19 @@ export class AppComponent implements OnInit {
   constructor(private router: Router) {}
 
   ngOnInit() {
+    this.updateLayoutVisibility(this.router.url);
+
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        // List of routes that should NOT show the navbar (layout)
-        const noLayoutRoutes = ['/auth', '/login', '/register'];
-        this.showLayout = !noLayoutRoutes.some(route => event.urlAfterRedirects.includes(route));
+        this.updateLayoutVisibility(event.urlAfterRedirects);
       });
+  }
+
+  private updateLayoutVisibility(url: string) {
+    const noLayoutRoutes = ['/auth', '/login', '/register'];
+    this.showLayout = !noLayoutRoutes.some(route =>
+      url === route || url.startsWith(`${route}/`)
+    );
   }
 }

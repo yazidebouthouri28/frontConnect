@@ -104,6 +104,7 @@ export class CampsitesManagementComponent implements OnInit {
                 );
                 this.selectedSite.set(this.campsites.find((camp) => camp.id === updated.id) ?? null);
                 this.cdr.detectChanges();
+                window.alert('Campsite updated successfully!');
             },
             error: (error) => {
                 this.errorMessage = this.getErrorMessage(error, 'Unable to save campsite changes.');

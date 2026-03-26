@@ -1,6 +1,13 @@
-import { Component, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+
+interface StoredUser {
+  name?: string;
+  email?: string;
+  role?: string;
+  avatar?: string;
+}
 
 @Component({
   selector: 'app-navigation',
@@ -14,19 +21,43 @@ export class NavigationComponent {
   profileDropdownOpen = false;
   logoError = false;
 
-  constructor(private router: Router) { }
+  constructor(private router: Router) {}
+
+  get currentUser(): StoredUser | null {
+    if (typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    const rawUser = localStorage.getItem('campconnect_user');
+    if (!rawUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawUser) as StoredUser;
+    } catch {
+      return null;
+    }
+  }
 
   get isLoggedIn(): boolean {
-    return !!localStorage.getItem('campconnect_user');
+    return this.currentUser !== null;
   }
 
   get userName(): string {
-    try {
-      const user = JSON.parse(localStorage.getItem('campconnect_user') || '{}');
-      return user.name || '';
-    } catch {
-      return '';
-    }
+    return this.currentUser?.name ?? '';
+  }
+
+  get isSeller(): boolean {
+    return this.currentUser?.role === 'SELLER';
+  }
+
+  get isSponsor(): boolean {
+    return this.currentUser?.role === 'SPONSOR';
+  }
+
+  get isAdmin(): boolean {
+    return this.currentUser?.role === 'ADMIN';
   }
 
   toggleMobileMenu() {
@@ -38,8 +69,12 @@ export class NavigationComponent {
   }
 
   logout() {
-    localStorage.removeItem('campconnect_user');
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('campconnect_user');
+    }
+
     this.profileDropdownOpen = false;
+    this.mobileMenuOpen = false;
     this.router.navigate(['/login']);
   }
 

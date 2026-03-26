@@ -1,115 +1,76 @@
-<div class="flex h-screen bg-[#F5F2E8] overflow-hidden font-sans">
-  <app-admin-sidebar [activeSection]="activeSection()" (onSectionChange)="setSection($event)"
+<div class="flex min-h-screen bg-[#F5F2E8] overflow-hidden font-sans">
+  <app-admin-sidebar
+    [activeSection]="activeSection()"
+    (onSectionChange)="setSection($event)"
     (logoutClicked)="onLogout()" />
-  <main class="flex-1 flex flex-col overflow-hidden">
-    <!-- Top Header Refined -->
-    <header
-      class="h-16 bg-[#2C4A3C] flex items-center justify-between px-8 shrink-0 relative border-b border-white/5 shadow-lg z-30 text-white">
+
+  <div class="flex-1 min-w-0 flex flex-col">
+    <header class="h-16 border-b border-[#d8d1c1] bg-[#2f5642] text-white/90 px-8 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-4">
-        <span
-          class="text-xs font-black text-white uppercase tracking-widest bg-white/10 px-3 py-1 rounded-md border border-white/10">Live
-          Node</span>
-        <span class="h-4 w-px bg-white/10"></span>
-        <span class="text-xs font-bold text-white/40">System Time: Feb 17, 2026</span>
+        <span class="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-black tracking-[0.2em] uppercase">
+          Live Node
+        </span>
+        <span class="text-sm font-semibold text-white/60">|</span>
+        <span class="text-sm font-semibold text-white/70">System Time: {{ systemTimeLabel }}</span>
       </div>
-
-      <div class="flex items-center gap-6">
-        <!-- Notification Mock -->
-        <button
-          class="relative w-10 h-10 flex items-center justify-center text-white/40 hover:text-white transition-colors rounded-xl hover:bg-white/5">
-          <span class="text-xl">🔔</span>
-          <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#2C4A3C]"></span>
+      <div class="flex items-center gap-5">
+        <button type="button" class="text-xl text-[#d9c26f] hover:text-white transition-colors" aria-label="Notifications">
+          !
         </button>
-
-        <div class="relative">
-          <button (click)="toggleMenu()"
-            class="flex items-center gap-3 p-1.5 pl-3 rounded-2xl bg-white/10 border border-white/10 hover:border-white/20 transition-all group">
-            <span class="text-xs font-black text-white uppercase tracking-tight">Admin Profile</span>
-            <div
-              class="w-8 h-8 rounded-xl bg-white text-[#2C4A3C] flex items-center justify-center text-xs font-black group-hover:scale-105 transition-transform">
-              AD
-            </div>
-          </button>
-
-          @if (isMenuOpen()) {
-          <div
-            class="absolute top-14 right-0 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 z-50 animate-slide-up">
-            <div class="px-5 py-2 mb-2">
-              <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account Authority</p>
-              <p class="text-xs font-black text-[#1a2e1a]">Senior Administrator</p>
-            </div>
-            <div class="h-px bg-gray-50 my-2"></div>
-            <button (click)="closeMenu()"
-              class="w-full text-left px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50 hover:text-[#1a2e1a] transition-all flex items-center gap-3">
-              <span>⚙️</span> Settings
-            </button>
-            <button (click)="onLogout()"
-              class="w-full text-left px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-all flex items-center gap-3">
-              <span>🚪</span> Log out
-            </button>
-          </div>
-          }
-
-          @if (isMenuOpen()) {
-          <div class="fixed inset-0 z-40" (click)="closeMenu()"></div>
-          }
-        </div>
+        <button
+          type="button"
+          class="flex items-center gap-3 rounded-2xl bg-white/10 border border-white/10 pl-5 pr-3 py-2 hover:bg-white/15 transition-colors">
+          <span class="text-sm font-black uppercase tracking-tight">Admin Profile</span>
+          <span class="w-10 h-10 rounded-full bg-white text-[#2f5642] flex items-center justify-center text-sm font-black">AD</span>
+        </button>
       </div>
     </header>
 
-    <div class="flex-1 overflow-y-auto">
-      @switch (renderContent()) {
-      @case ('dashboard') {
-      <app-admin-dashboard />
+    <main class="flex-1 overflow-y-auto">
+      @switch (activeSection()) {
+        @case ('dashboard') {
+          <app-admin-dashboard />
+        }
+        @case ('users') {
+          <app-users-management />
+        }
+        @case ('sponsors') {
+          <app-sponsors-management />
+        }
+        @case ('campsites') {
+          <app-campsites-management />
+        }
+        @case ('camp_highlights') {
+          <app-camp-highlights-management />
+        }
+        @case ('events') {
+          <app-events-admin-management />
+        }
+        @case ('products_categories') {
+          <app-marketplace-management [section]="activeSection()" />
+        }
+        @case ('inventory') {
+          <app-marketplace-management [section]="activeSection()" />
+        }
+        @case ('orders') {
+          <app-marketplace-management [section]="activeSection()" />
+        }
+        @case ('rentals_management') {
+          <app-marketplace-management [section]="activeSection()" />
+        }
+        @case ('reservations') {
+          <app-reservations-management />
+        }
+        @case ('reports') {
+          <app-reports-management />
+        }
+        @case ('moderation') {
+          <app-moderation-panel />
+        }
+        @default {
+          <app-admin-dashboard />
+        }
       }
-      @case ('sponsors') {
-      <app-sponsors-management />
-      }
-      @case ('products_categories') {
-      <app-marketplace-management [section]="activeSection()" />
-      }
-      @case ('inventory') {
-      <app-marketplace-management [section]="activeSection()" />
-      }
-      @case ('orders') {
-      <app-marketplace-management [section]="activeSection()" />
-      }
-      @case ('rentals_management') {
-      <app-marketplace-management [section]="activeSection()" />
-      }
-      @case ('services') {
-      <app-services-management />
-      }
-      @case ('users') {
-      <app-users-management />
-      }
-      @case ('reports') {
-      <app-reports-management />
-      }
-      @case ('reservations') {
-      <app-reservations-management />
-      }
-      @case ('campsites') {
-      <app-campsites-management />
-      }
-      @case ('events') {
-      <app-events-admin-management />
-      }
-      @case ('camp_highlights') {
-      <app-camp-highlights-management />
-      }
-      @case ('moderation') {
-      <app-moderation-panel />
-      }
-      @default {
-      <div class="p-6">
-        <div class="bg-white rounded-xl p-12 text-center shadow-md border border-sage/30">
-          <h2 class="text-2xl font-bold text-forest mb-2">Section in development</h2>
-          <p class="text-olive">This section will be available soon</p>
-        </div>
-      </div>
-      }
-      }
-    </div>
-  </main>
+    </main>
+  </div>
 </div>

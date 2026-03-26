@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { ApiResponse } from '../models/api.models';
 import { Site } from '../models/camping.models';
 
 interface SiteApiResponse {
@@ -10,6 +11,7 @@ interface SiteApiResponse {
     name: string;
     description?: string;
     type?: string;
+    verified?: boolean;
     address?: string;
     city?: string;
     country?: string;
@@ -56,6 +58,7 @@ interface SiteSummaryApiResponse {
     name: string;
     description?: string;
     type?: string;
+    verified?: boolean;
     address?: string;
     city?: string;
     country?: string;
@@ -75,6 +78,15 @@ interface SiteSummaryApiResponse {
     houseRules?: string;
 }
 
+interface SitePageResponse<T> {
+    content?: T[];
+}
+
+type SiteDto = SiteApiResponse | SiteSummaryApiResponse;
+type SiteListPayload = SiteDto[] | SitePageResponse<SiteDto>;
+type SiteListResponse = ApiResponse<SiteListPayload> | SiteListPayload;
+type SiteItemResponse = ApiResponse<SiteDto> | SiteDto;
+
 @Injectable({
     providedIn: 'root'
 })
@@ -83,46 +95,53 @@ export class SiteService {
     private summaryUrl = `${this.apiUrl}/summary`;
     private readonly readTimeoutMs = 8000;
     private readonly writeTimeoutMs = 30000;
+    private readonly allSitesPageSize = 100;
 
     constructor(private http: HttpClient) { }
 
     getAllSites(): Observable<Site[]> {
-        return this.http.get<SiteSummaryApiResponse[]>(this.summaryUrl).pipe(
+        return this.http.get<SiteListResponse>(this.summaryUrl).pipe(
             timeout(this.readTimeoutMs),
-            map((sites) => sites.map((site) => this.fromApi(site))),
+            map((response) => this.toSiteList(response)),
             catchError(() =>
-                this.http.get<SiteApiResponse[]>(this.apiUrl).pipe(
+                this.http.get<SiteListResponse>(this.apiUrl, {
+                    params: {
+                        page: '0',
+                        size: String(this.allSitesPageSize)
+                    }
+                }).pipe(
                     timeout(this.readTimeoutMs),
-                    map((sites) => sites.map((site) => this.fromApi(site)))
+                    map((response) => this.toSiteList(response))
                 )
             )
         );
     }
 
     getSiteById(id: number): Observable<Site> {
-        return this.http.get<SiteApiResponse>(`${this.apiUrl}/${id}`).pipe(
+        return this.http.get<SiteItemResponse>(`${this.apiUrl}/${id}`).pipe(
             timeout(this.readTimeoutMs),
-            map((site) => this.fromApi(site))
+            map((response) => this.toSite(response))
         );
     }
 
     createSite(site: Site): Observable<Site> {
-        return this.http.post<SiteApiResponse>(this.apiUrl, this.toApi(site)).pipe(
+        return this.http.post<SiteItemResponse>(this.apiUrl, this.toApi(site)).pipe(
             timeout(this.writeTimeoutMs),
-            map((created) => this.fromApi(created))
+            map((response) => this.toSite(response))
         );
     }
 
     updateSite(id: number, site: Site): Observable<Site> {
-        return this.http.put<SiteApiResponse>(`${this.apiUrl}/${id}`, this.toApi(site)).pipe(
+        return this.http.put<SiteItemResponse>(`${this.apiUrl}/${id}`, this.toApi(site)).pipe(
             timeout(this.writeTimeoutMs),
-            map((updated) => this.fromApi(updated))
+            map((response) => this.toSite(response))
         );
     }
 
     deleteSite(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
-            timeout(this.writeTimeoutMs)
+        return this.http.delete<ApiResponse<void> | void>(`${this.apiUrl}/${id}`).pipe(
+            timeout(this.writeTimeoutMs),
+            map(() => undefined)
         );
     }
 
@@ -132,20 +151,42 @@ export class SiteService {
             formData.append('files', file, file.name);
         }
 
-        return this.http.post<SiteApiResponse>(`${this.apiUrl}/${id}/images`, formData).pipe(
+        return this.http.post<SiteItemResponse>(`${this.apiUrl}/${id}/images`, formData).pipe(
             timeout(this.writeTimeoutMs),
-            map((updated) => this.fromApi(updated))
+            map((response) => this.toSite(response))
         );
     }
 
     removeSiteImage(id: number, url: string): Observable<Site> {
-        return this.http.delete<SiteApiResponse>(`${this.apiUrl}/${id}/images`, { params: { url } }).pipe(
+        return this.http.delete<SiteItemResponse>(`${this.apiUrl}/${id}/images`, { params: { url } }).pipe(
             timeout(this.writeTimeoutMs),
-            map((updated) => this.fromApi(updated))
+            map((response) => this.toSite(response))
         );
     }
 
-    private fromApi(site: SiteApiResponse | SiteSummaryApiResponse): Site {
+    private toSiteList(response: SiteListResponse): Site[] {
+        const payload = this.unwrapResponse(response);
+        if (Array.isArray(payload)) {
+            return payload.map((site) => this.fromApi(site));
+        }
+
+        if (this.hasContent(payload)) {
+            return (payload.content ?? []).map((site) => this.fromApi(site));
+        }
+
+        throw new Error('Unexpected site list response shape');
+    }
+
+    private toSite(response: SiteItemResponse): Site {
+        const payload = this.unwrapResponse(response);
+        if (payload === null || payload === undefined || Array.isArray(payload)) {
+            throw new Error('Unexpected site response shape');
+        }
+
+        return this.fromApi(payload);
+    }
+
+    private fromApi(site: SiteDto): Site {
         const fullSite = site as SiteApiResponse;
         const images = fullSite.images?.length ? fullSite.images : (site.image ? [site.image] : []);
         const primaryImage = images[0] ?? site.image ?? '';
@@ -159,6 +200,7 @@ export class SiteService {
             name: site.name,
             description: site.description ?? '',
             type: site.type ?? '',
+            verified: site.verified === true,
             address: site.address ?? '',
             city: site.city ?? '',
             country: site.country ?? '',
@@ -181,6 +223,36 @@ export class SiteService {
             houseRules: fullSite.houseRules ?? '',
             status: site.isActive === false ? 'Maintenance' : 'Available'
         };
+    }
+
+    private unwrapResponse<T>(response: ApiResponse<T> | T): T {
+        if (this.isApiResponse(response)) {
+            if (response.success === false) {
+                throw new Error(response.message ?? 'Site request failed');
+            }
+
+            if (response.data === undefined || response.data === null) {
+                throw new Error(response.message ?? 'Site response is missing data');
+            }
+
+            return response.data;
+        }
+
+        return response;
+    }
+
+    private isApiResponse<T>(response: ApiResponse<T> | T): response is ApiResponse<T> {
+        return response !== null
+            && typeof response === 'object'
+            && !Array.isArray(response)
+            && ('success' in response || 'data' in response);
+    }
+
+    private hasContent<T>(payload: T[] | SitePageResponse<T>): payload is SitePageResponse<T> {
+        return payload !== null
+            && typeof payload === 'object'
+            && !Array.isArray(payload)
+            && Array.isArray(payload.content);
     }
 
     private toApi(site: Site): SiteApiRequest {

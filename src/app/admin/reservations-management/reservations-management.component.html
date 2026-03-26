@@ -118,7 +118,7 @@
                             </div>
                             <div>
                                 <h3 class="font-black text-[#1a2e1a] leading-tight">{{ res.customer }}</h3>
-                                <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">{{ res.id }}
+                                <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">{{ res.reservationNumber }}
                                 </p>
                             </div>
                         </div>
@@ -161,18 +161,19 @@
                     </div>
 
                     <div class="p-4 bg-white border-t border-gray-100 flex gap-2">
-                        <button
+                        <button type="button" (click)="confirmReservation(res.id)"
                             class="flex-1 px-4 py-2 bg-[#2C4A3C] text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#1a2e1a] transition-all">
-                            Verify Deployment
+                            Confirm
                         </button>
-                        <button
-                            class="px-3 py-2 bg-gray-50 text-gray-400 rounded-lg hover:text-[#1a2e1a] transition-all">
-                            📄
+                        <button type="button" (click)="cancelReservation(res.id)"
+                            class="px-3 py-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-all">
+                            Cancel
                         </button>
                     </div>
                 </div>
                 }
             </div>
+            <p *ngIf="!isLoading && reservations.length === 0" class="px-8 py-6 text-sm text-gray-500">No reservations found.</p>
         </div>
 
         <!-- Context Footer -->
@@ -187,4 +188,5 @@
             </div>
         </div>
     </div>
+    <p *ngIf="message" class="text-sm text-red-600 font-semibold">{{ message }}</p>
 </div>

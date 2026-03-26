@@ -7,6 +7,24 @@ export const routes: Routes = [
 
   // Home page – only accessible after login
   { path: 'home', loadComponent: () => import('./components/home-hub/home-hub.component').then(m => m.HomeHubComponent), canActivate: [AuthGuard] },
+  // Campsite routes
+  {
+    path: 'campsites',
+    loadComponent: () => import('./components/campsites/campsite-listings.component').then(m => m.CampsiteListingsComponent)
+  },
+  {
+    path: 'campsites/:siteId/highlights/:highlightId',
+    loadComponent: () => import('./components/camp-highlight-detail/camp-highlight-detail.component').then(m => m.CampHighlightDetailComponent)
+  },
+  {
+    path: 'campsites/:id',
+    loadComponent: () => import('./components/campsite-detail/campsite-detail.component').then(m => m.CampsiteDetailComponent)
+  },
+  {
+    path: 'campsites/:id/reserve',
+    loadComponent: () => import('./components/campsite-reservation/campsite-reservation.component').then(m => m.CampsiteReservationComponent),
+    canActivate: [AuthGuard]
+  },
 
   // --- Campsites ---
   { path: 'campsites', loadComponent: () => import('./components/campsites/campsite-listings.component').then(m => m.CampsiteListingsComponent) },

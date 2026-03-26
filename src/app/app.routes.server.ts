@@ -7,6 +7,10 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server
   },
   {
+    path: 'campsites/:id/reserve',
+    renderMode: RenderMode.Server
+  },
+  {
     path: 'campsites/:siteId/highlights/:highlightId',
     renderMode: RenderMode.Server
   },

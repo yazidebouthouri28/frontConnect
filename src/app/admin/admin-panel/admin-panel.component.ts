@@ -1,18 +1,17 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component';
 import { AdminDashboardComponent } from '../admin-dashboard/admin-dashboard.component';
 import { SponsorsManagementComponent } from '../sponsors-management/sponsors-management.component';
-import { ModerationPanelComponent } from '../moderation-panel/moderation-panel.component';
-import { MarketplaceManagementComponent } from '../marketplace-management/marketplace-management.component';
-import { ReservationsManagementComponent } from '../reservations-management/reservations-management.component';
 import { CampsitesManagementComponent } from '../campsites-management/campsites-management.component';
-import { EventsAdminManagementComponent } from '../events-management/events-management.component';
 import { UsersManagementComponent } from '../users-management/users-management.component';
-import { ReportsManagementComponent } from '../reports-management/reports-management.component';
-import { ServicesManagementComponent } from '../services-management/services-management.component';
 import { CampHighlightsManagementComponent } from '../camp-highlights-management/camp-highlights-management.component';
+import { EventsAdminManagementComponent } from '../events-management/events-management.component';
+import { MarketplaceManagementComponent } from '../marketplace-management/marketplace-management.component';
+import { ReportsManagementComponent } from '../reports-management/reports-management.component';
+import { ReservationsManagementComponent } from '../reservations-management/reservations-management.component';
+import { ModerationPanelComponent } from '../moderation-panel/moderation-panel.component';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -20,46 +19,36 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
     AdminSidebarComponent,
     AdminDashboardComponent,
     SponsorsManagementComponent,
-    ModerationPanelComponent,
-    MarketplaceManagementComponent,
-    ReservationsManagementComponent,
     CampsitesManagementComponent,
-    EventsAdminManagementComponent,
     UsersManagementComponent,
+    CampHighlightsManagementComponent,
+    EventsAdminManagementComponent,
+    MarketplaceManagementComponent,
     ReportsManagementComponent,
-    ServicesManagementComponent,
-    CampHighlightsManagementComponent
+    ReservationsManagementComponent,
+    ModerationPanelComponent
   ],
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.css'],
 })
 export class AdminPanelComponent {
   activeSection = signal('dashboard');
-  isMenuOpen = signal(false);
+  systemTimeLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(new Date());
 
   constructor(
     private authService: AuthService,
     private router: Router
-  ) { }
+  ) {}
 
   setSection(section: string) {
     this.activeSection.set(section);
-  }
-
-  renderContent() {
-    return this.activeSection();
-  }
-
-  toggleMenu() {
-    this.isMenuOpen.update(v => !v);
-  }
-
-  closeMenu() {
-    this.isMenuOpen.set(false);
   }
 
   onLogout() {

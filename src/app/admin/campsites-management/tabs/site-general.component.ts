@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Site } from '../../../models/camping.models';
@@ -88,7 +88,7 @@ export class SiteGeneralComponent {
 
   isUploadingImages = false;
 
-  constructor(private siteService: SiteService) { }
+  constructor(private siteService: SiteService, private cdr: ChangeDetectorRef) { }
 
   async onImagesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
@@ -109,9 +109,11 @@ export class SiteGeneralComponent {
         this.site.images = updated.images ?? [];
         this.site.image = this.site.images[0] ?? '';
         this.isUploadingImages = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isUploadingImages = false;
+        this.cdr.detectChanges();
       }
     });
     input.value = '';
@@ -128,9 +130,11 @@ export class SiteGeneralComponent {
         this.site.images = updated.images ?? [];
         this.site.image = this.site.images[0] ?? '';
         this.isUploadingImages = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isUploadingImages = false;
+        this.cdr.detectChanges();
       }
     });
   }
