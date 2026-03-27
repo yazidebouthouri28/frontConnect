@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Warehouse, CreateWarehouseDto } from '../models/api.models';
@@ -14,7 +14,7 @@ interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class WarehouseService {
-  private apiUrl = `${environment.apiUrl}/api/warehouses`;
+  private apiUrl = `${environment.apiUrl}/warehouses`;
 
   constructor(private http: HttpClient) { }
 
@@ -32,23 +32,17 @@ export class WarehouseService {
       .pipe(map(res => this.extractData(res)));
   }
 
-  create(warehouse: CreateWarehouseDto): Observable<Warehouse> {
-    return this.http.post<ApiResponse<Warehouse>>(this.apiUrl, warehouse)
+  create(data: CreateWarehouseDto): Observable<Warehouse> {
+    return this.http.post<ApiResponse<Warehouse>>(this.apiUrl, data)
       .pipe(map(res => this.extractData(res)));
   }
 
-  update(id: string, warehouse: Partial<CreateWarehouseDto>): Observable<Warehouse> {
-    return this.http.put<ApiResponse<Warehouse>>(`${this.apiUrl}/${id}`, warehouse)
+  update(id: string, data: Partial<CreateWarehouseDto>): Observable<Warehouse> {
+    return this.http.put<ApiResponse<Warehouse>>(`${this.apiUrl}/${id}`, data)
       .pipe(map(res => this.extractData(res)));
   }
 
   delete(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`)
-      .pipe(map(() => undefined));
-  }
-
-  getActive(): Observable<Warehouse[]> {
-    return this.http.get<ApiResponse<Warehouse[]>>(`${this.apiUrl}?isActive=true`)
-      .pipe(map(res => this.extractData(res)));
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

@@ -1,4 +1,4 @@
-// ========== API Response Models ==========
+// ========== API Response Models [SYNC-2026-03-25] ==========
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -14,6 +14,8 @@ export type UserRole =
   | 'SELLER'
   | 'ORGANIZER'
   | 'CAMPER'
+  | 'USER'
+  | 'PARTICIPANT'
   | 'SPONSOR'
   | 'ADMIN';
 
@@ -64,7 +66,19 @@ export interface User {
   coverImage?: string;
   location?: string;
   status?: 'online' | 'offline' | 'typing';
+  followers?: number | string;
+  following?: number;
+  gallery?: string[];
+  achievements?: Achievement[];
+  hashtags?: string[];
   createdAt: string;
+}
+
+export interface Achievement {
+  title: string;
+  icon: string;
+  description?: string;
+  date?: string;
 }
 
 // ========== PRODUCT ==========
@@ -202,7 +216,7 @@ export interface Order {
   customerEmail?: string;
   sellerId: string;
   status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
-  type: 'PURCHASE' | 'RENTAL';
+  type: 'PURCHASE' | 'RENTAL' | 'Reservation' | 'Purchase' | 'Rental';
   items: OrderItem[];
   subtotal: number;
   tax: number;
@@ -220,7 +234,7 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   price: number;
-  type: 'PURCHASE' | 'RENTAL';
+  type: 'PURCHASE' | 'RENTAL' | 'Reservation' | 'Purchase' | 'Rental';
   rentalDays?: number;
 }
 
@@ -228,7 +242,7 @@ export interface CreateOrderDto {
   items: {
     productId: string;
     quantity: number;
-    type: 'PURCHASE' | 'RENTAL';
+    type: 'PURCHASE' | 'RENTAL' | 'Reservation' | 'Purchase' | 'Rental';
     rentalDays?: number;
   }[];
   shippingAddress: string;
@@ -290,8 +304,12 @@ export interface CartItem {
   price: number;
   quantity: number;
   image: string;
-  type: 'PURCHASE' | 'RENTAL';
+  type: 'PURCHASE' | 'RENTAL' | 'Reservation' | 'Purchase' | 'Rental';
   rentalDays?: number;
+  rentalDuration?: string; // and this
+  id?: string | number;   // legacy compatibility
+  name?: string;           // legacy compatibility
+  details?: any;          // for reservations
 }
 
 export interface Cart {

@@ -2,17 +2,17 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { API_BASE } from './product.service';
+import { environment } from '../../environments/environment';
 
 const unwrap = (res: any) => res?.data?.content || res?.data || res || [];
 const unwrapOne = (res: any) => res?.data || res;
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
-  private adminUrl = `${API_BASE}/admin/orders`;
-  private url = `${API_BASE}/orders`;
+  private adminUrl = `${environment.apiUrl}/admin/orders`;
+  private url = `${environment.apiUrl}/orders`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // ── Admin ──────────────────────────────────────────────
 

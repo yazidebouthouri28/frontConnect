@@ -79,7 +79,7 @@ interface SiteSummaryApiResponse {
     providedIn: 'root'
 })
 export class SiteService {
-    private apiUrl = `${environment.apiUrl}/api/sites`;
+    private apiUrl = `${environment.apiUrl}/sites`;
     private summaryUrl = `${this.apiUrl}/summary`;
     private readonly readTimeoutMs = 8000;
     private readonly writeTimeoutMs = 30000;

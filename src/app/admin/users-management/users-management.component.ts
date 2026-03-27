@@ -1,62 +1,113 @@
-import { Component } from '@angular/core';
-import { CommonModule, NgClass } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule, NgClass, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    role: 'Admin' | 'Organizer' | 'Camper' | 'Seller';
-    joinedDate: string;
-    status: 'Active' | 'Suspended' | 'Pending';
-    avatar: string;
-}
+import { BackendUserService, UserDTO } from '../../services/backend-user.service';
 
 @Component({
     selector: 'app-users-management',
     standalone: true,
-    imports: [CommonModule, FormsModule, NgClass],
+    imports: [CommonModule, FormsModule, NgClass, DatePipe],
     templateUrl: './users-management.component.html',
     styleUrl: './users-management.component.css'
 })
-export class UsersManagementComponent {
+export class UsersManagementComponent implements OnInit {
+    private backendUserService = inject(BackendUserService);
+
     searchTerm = '';
-    filterRole: 'All' | 'Admin' | 'Organizer' | 'Camper' | 'Seller' = 'All';
+    filterRole: 'All' | 'ADMIN' | 'ORGANIZER' | 'USER' | 'Seller' = 'All';
+    users: UserDTO[] = [];
+    loading = true;
+    error = '';
 
-    users: User[] = [
-        { id: 1, name: 'Ahmed Ben Salem', email: 'ahmed.b@gmail.com', role: 'Admin', joinedDate: '2025-05-12', status: 'Active', avatar: 'AH' },
-        { id: 2, name: 'Mariem Guezguez', email: 'mariem.g@yahoo.tn', role: 'Organizer', joinedDate: '2025-08-20', status: 'Active', avatar: 'MG' },
-        { id: 3, name: 'Yassine Trabelsi', email: 'yassine.t@gmail.com', role: 'Camper', joinedDate: '2025-11-05', status: 'Active', avatar: 'YT' },
-        { id: 4, name: 'Selim Riahi', email: 'selim.r@outdoor.tn', role: 'Seller', joinedDate: '2026-01-15', status: 'Pending', avatar: 'SR' },
-        { id: 5, name: 'Leila Jendoubi', email: 'leila.j@gmail.com', role: 'Camper', joinedDate: '2026-02-01', status: 'Suspended', avatar: 'LJ' },
-        { id: 6, name: 'Unknown Saboteur', email: 'malicious@proxy.tn', role: 'Camper', joinedDate: '2026-02-14', status: 'Suspended', avatar: 'US' },
-    ];
+    ngOnInit(): void {
+        this.loadUsers();
+    }
 
-    get filteredUsers(): User[] {
-        return this.users.filter(u => {
-            const matchSearch = u.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                u.email.toLowerCase().includes(this.searchTerm.toLowerCase());
-            const matchRole = this.filterRole === 'All' || u.role === this.filterRole;
-            return matchSearch && matchRole;
+    loadUsers(): void {
+        this.loading = true;
+        this.backendUserService.getAllUsers().subscribe({
+            next: (response) => {
+                // The API might wrap it in success/data or just return the array depending on the exact implementation in UserController.
+                // Based on standard wrapper ApiResponse.success(users):
+                if (response && response.data) {
+                    this.users = response.data;
+                } else {
+                    this.users = response as any;
+                }
+                this.loading = false;
+            },
+            error: (err) => {
+                console.error('Error fetching users', err);
+                this.error = 'Failed to load users from server.';
+                this.loading = false;
+            }
         });
     }
 
-    getStatusClass(status: string): string {
-        switch (status) {
-            case 'Active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'Pending': return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'Suspended': return 'bg-red-100 text-red-700 border-red-200';
-            default: return 'bg-gray-100 text-gray-700';
-        }
+    get filteredUsers(): UserDTO[] {
+        if (!this.users) return [];
+        return this.users.filter(u => {
+            const searchStr = this.searchTerm.toLowerCase();
+            const matchSearch = (u.name && u.name.toLowerCase().includes(searchStr)) ||
+                (u.email && u.email.toLowerCase().includes(searchStr)) ||
+                (u.username && u.username.toLowerCase().includes(searchStr));
+
+            if (this.filterRole === 'All') return matchSearch;
+
+            // Special handling for Sellers since they are essentially USERs with isSeller = true in this system's DTO
+            if (this.filterRole === 'Seller') {
+                return matchSearch && (u as any).isSeller === true;
+            }
+
+            let targetRole = this.filterRole.toUpperCase();
+            // Map the UI "Camper" option to the backend "USER" role
+            if (targetRole === 'CAMPER') targetRole = 'USER';
+
+            return matchSearch && (u.role?.toUpperCase() === targetRole);
+        });
+    }
+
+    getStatusClass(isActive: boolean): string {
+        if (isActive) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        return 'bg-red-100 text-red-700 border-red-200';
     }
 
     getRoleClass(role: string): string {
-        switch (role) {
-            case 'Admin': return 'text-purple-600 bg-purple-50';
-            case 'Organizer': return 'text-blue-600 bg-blue-50';
-            case 'Seller': return 'text-amber-600 bg-amber-50';
-            case 'Camper': return 'text-emerald-600 bg-emerald-50';
+        switch (role?.toUpperCase()) {
+            case 'ADMIN': return 'text-purple-600 bg-purple-50';
+            case 'ORGANIZER': return 'text-blue-600 bg-blue-50';
+            case 'USER': return 'text-emerald-600 bg-emerald-50'; // Camper
             default: return 'text-gray-600 bg-gray-50';
+        }
+    }
+
+    toggleUserStatus(user: UserDTO): void {
+        if (!user.id) return;
+
+        if (user.isActive) {
+            const reason = prompt('Please provide a reason for suspension:');
+            if (reason) {
+                this.backendUserService.suspendUser(user.id, reason).subscribe({
+                    next: () => this.loadUsers(),
+                    error: (err) => alert('Failed to suspend user: ' + (err.error?.message || err.message))
+                });
+            }
+        } else {
+            if (confirm(`Are you sure you want to unsuspend ${user.name}?`)) {
+                this.backendUserService.unsuspendUser(user.id).subscribe({
+                    next: () => this.loadUsers(),
+                    error: (err) => alert('Failed to unsuspend user: ' + (err.error?.message || err.message))
+                });
+            }
+        }
+    }
+
+    changeRole(user: UserDTO, newRole: string): void {
+        if (confirm(`Change ${user.name}'s role to ${newRole}?`)) {
+            this.backendUserService.updateUserRole(user.id, newRole).subscribe({
+                next: () => this.loadUsers(),
+                error: (err) => alert('Failed to update role: ' + (err.error?.message || err.message))
+            });
         }
     }
 }

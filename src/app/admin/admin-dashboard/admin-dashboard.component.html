@@ -2,8 +2,14 @@
   <!-- Title & Primary Action -->
   <div class="flex justify-between items-center">
     <div>
-      <h1 class="text-2xl font-black text-[#1a2e1a]">Dashboard Overview</h1>
-      <p class="text-sm text-[#617152] font-medium">Real-time health and engagement of the ConnectCamp ecology.</p>
+      <h1 class="text-2xl font-black text-[#1a2e1a]">
+        {{ user()?.role === 'ORGANIZER' ? 'Organizer' : 'Dashboard' }} Overview
+      </h1>
+      <p class="text-sm text-[#617152] font-medium">
+        {{ user()?.role === 'ORGANIZER' 
+          ? 'Manage your events, B2B services, and worker applications.' 
+          : 'Real-time health and engagement of the ConnectCamp ecology.' }}
+      </p>
     </div>
     <div class="flex gap-3">
       <button
@@ -13,12 +19,12 @@
     </div>
   </div>
 
-  <!-- Stats Grid (Premium Implementation matching screenshot) -->
+  <!-- Stats Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    @for (stat of stats; track stat.title) {
+    @for (stat of stats(); track stat.title) {
     <div
       class="bg-white rounded-2xl p-7 border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all"
-      [class.bg-[#1a2e1a]="stat.title === 'Operational Yield'" [class.text-white="stat.title === 'Operational Yield'" ]>
+      [class.bg-[#1a2e1a]="stat.title === 'Operational Yield'" [class.text-white="stat.title === 'Operational Yield'"]>
 
       <div class="flex justify-between items-start mb-6">
         <div class="flex items-center gap-3">
@@ -33,7 +39,7 @@
           </span>
         </div>
 
-        @if (stat.title !== 'Operational Yield') {
+        @if (stat.title !== 'Operational Yield' && stat.trend) {
         <div class="text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1.5 rounded-full border border-gray-50"
           [class.text-emerald-500]="stat.trend === 'up'" [class.bg-emerald-50]="stat.trend === 'up'"
           [class.text-amber-500]="stat.trend === 'down'" [class.bg-amber-50]="stat.trend === 'down'">
@@ -51,16 +57,12 @@
           {{ stat.subtitle }}
         </p>
       </div>
-
-      <!-- Pulse Effect for alerts -->
-      @if (stat.title === 'Resource Alert') {
-      <div class="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
-      }
     </div>
     }
   </div>
 
-  <!-- Charts & Distribution Area -->
+  @if (user()?.role === 'ADMIN') {
+  <!-- Charts & Distribution Area (Admin Only) -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
     <div class="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
       <div class="flex justify-between items-center mb-8">
@@ -116,31 +118,32 @@
       </div>
     </div>
   </div>
+  }
 
   <!-- Recent Activity Section -->
   <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
     <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
-      <h3 class="text-sm font-black text-[#1a2e1a] uppercase tracking-widest italic">Temporal Ledger (Activity)</h3>
+      <h3 class="text-sm font-black text-[#1a2e1a] uppercase tracking-widest italic">
+        {{ user()?.role === 'ORGANIZER' ? 'Portal activity' : 'Temporal Ledger (Activity)' }}
+      </h3>
       <button
-        class="text-[10px] font-black text-emerald-600 hover:text-[#1a2e1a] transition-colors uppercase tracking-widest">Global
-        Export →</button>
+        class="text-[10px] font-black text-emerald-600 hover:text-[#1a2e1a] transition-colors uppercase tracking-widest">
+        {{ user()?.role === 'ORGANIZER' ? 'History →' : 'Global Export →' }}
+      </button>
     </div>
     <div class="divide-y divide-gray-50">
-      @for (activity of activities; track activity.user) {
+      @for (activity of activities(); track activity.user) {
       <div class="flex items-center gap-6 p-6 hover:bg-gray-50/50 transition-colors group">
         <div
           class="w-10 h-10 bg-[#f8f5e6] rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
           📍
         </div>
         <div class="flex-1">
-          <p class="text-[#1a2e1a] font-bold text-sm"><span class="font-black italic">{{ activity.user }}</span> {{
-            activity.action }}</p>
+          <p class="text-[#1a2e1a] font-bold text-sm">
+            <span class="font-black italic">{{ activity.user }}</span> {{ activity.action }}
+          </p>
           <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">{{ activity.time }} • Verified
             Entry</p>
-        </div>
-        <div class="hidden md:flex gap-2">
-          <button
-            class="px-3 py-1 bg-white border border-gray-200 rounded-lg text-[9px] font-black uppercase text-gray-400 hover:text-[#1a2e1a] hover:border-gray-400 transition-all">Audit</button>
         </div>
       </div>
       }
@@ -148,30 +151,54 @@
   </div>
 
   <!-- Action Shortcuts -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <a routerLink="/admin"
-      class="group p-8 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    @if (user()?.role === 'ADMIN') {
+    <button (click)="changeSection('campsites')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
       <div
         class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
         ⛺</div>
-      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter">Approve Campsites</h4>
-      <p class="text-xs text-gray-400 font-bold italic">12 pending environmental reviews</p>
-    </a>
-    <a routerLink="/admin"
-      class="group p-8 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Approve Campsites</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">Pending environmental reviews</p>
+    </button>
+
+    <button (click)="changeSection('moderation')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
       <div
         class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
         🛡️</div>
-      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter">Governance Node</h4>
-      <p class="text-xs text-gray-400 font-bold italic">8 community reports requiring moderation</p>
-    </a>
-    <a routerLink="/admin"
-      class="group p-8 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Governance Node</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">Moderation & reports</p>
+    </button>
+    }
+
+    <button (click)="changeSection('events')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
       <div
-        class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
-        💼</div>
-      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter">Sponsorship Review</h4>
-      <p class="text-xs text-gray-400 font-bold italic">5 new partnership manifestos</p>
-    </a>
+        class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+        🗓️</div>
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Manage Events</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">Event planning & tracking</p>
+    </button>
+
+    <button (click)="changeSection(user()?.role === 'ORGANIZER' ? 'services_orgs' : 'services_users')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+      <div
+        class="w-12 h-12 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+        🛠️</div>
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">
+        {{ user()?.role === 'ORGANIZER' ? 'B2B Services' : 'Manage Services' }}
+      </h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">Select partner equipment & services</p>
+    </button>
+
+    <button (click)="changeSection('candidatures')"
+      class="text-left group p-6 bg-white border border-gray-200 rounded-2xl transition-all shadow-sm hover:border-[#1a2e1a] hover:shadow-xl">
+      <div
+        class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+        📝</div>
+      <h4 class="font-black text-[#1a2e1a] mb-2 uppercase tracking-tighter text-sm">Manage Applications</h4>
+      <p class="text-[10px] text-gray-400 font-bold italic">Review worker candidates</p>
+    </button>
   </div>
 </div>

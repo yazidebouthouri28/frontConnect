@@ -1,6 +1,6 @@
-<div class="min-h-screen bg-[#F9F7F2] pb-12 font-sans text-forest">
-    <!-- Admin Bar (Visible to Organizers) -->
-    <div *ngIf="isOrganizer"
+<div [class.min-h-screen]="!isModal" class="bg-[#F9F7F2] pb-12 font-sans text-forest">
+    <!-- Admin Bar (Visible only to owners or if we want to show it explicitly) -->
+    <div *ngIf="isOrganizer && canManage && !viewOnly"
         class="sticky top-0 z-50 bg-[#2D3A2D]/90 backdrop-blur-md border-b border-white/10 px-6 py-3 flex items-center justify-between shadow-lg">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -34,7 +34,7 @@
     </div>
 
     <!-- Back Button Header -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" *ngIf="!isModal">
         <button (click)="onBack()"
             class="flex items-center gap-2 text-forest hover:text-olive transition-colors mb-6 font-semibold">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,6 +42,25 @@
             </svg>
             Back to Events
         </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isProcessing && !event" class="flex flex-col items-center justify-center py-24 space-y-4">
+        <div class="w-12 h-12 border-4 border-olive/20 border-t-olive rounded-full animate-spin"></div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-olive/40 italic">Pitching your camp...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div *ngIf="!isProcessing && !event && errorMessage" 
+        class="max-w-7xl mx-auto px-4 py-24 text-center">
+        <div class="bg-white rounded-[3rem] p-16 shadow-xl border border-red-100/50">
+            <span class="text-6xl mb-6 block">🌋</span>
+            <h2 class="text-3xl font-black italic text-forest mb-4">Adventure Not Found</h2>
+            <p class="text-sage mb-8 font-medium">{{ errorMessage }}</p>
+            <button (click)="onBack()" class="px-10 py-4 bg-forest text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-olive transition-all shadow-xl shadow-forest/10">
+                Back to Discovery
+            </button>
+        </div>
     </div>
 
     @if (event) {
@@ -52,7 +71,8 @@
             class="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-sm">
             <!-- Slot 1 (Large) -->
             <div (click)="triggerUpload(-1)" class="h-full relative group cursor-pointer bg-sage/10 overflow-hidden">
-                <img *ngIf="event.image" [src]="event.image" [alt]="event.title"
+                <img *ngIf="event.image" [src]="resolveImagePath(event.image)" [alt]="event.title"
+                    (error)="handleImageError($event)"
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                 <div *ngIf="!event.image"
                     class="w-full h-full flex flex-col items-center justify-center text-forest/40">
@@ -71,7 +91,7 @@
             <div class="hidden md:grid grid-rows-2 gap-4 h-full">
                 <!-- Slot 2 -->
                 <div (click)="triggerUpload(0)" class="h-full relative group cursor-pointer bg-sage/5 overflow-hidden">
-                    <img *ngIf="event.images && event.images[0]" [src]="event.images[0]" alt="Gallery 2"
+                    <img *ngIf="event.images && event.images[0]" [src]="resolveImagePath(event.images[0])" alt="Gallery 2"
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                     <div *ngIf="!event.images || !event.images[0]"
                         class="w-full h-full flex flex-col items-center justify-center text-forest/30 border-2 border-dashed border-forest/10 rounded-2xl m-2">
@@ -81,7 +101,7 @@
                 </div>
                 <!-- Slot 3 -->
                 <div (click)="triggerUpload(1)" class="h-full relative group cursor-pointer bg-sage/5 overflow-hidden">
-                    <img *ngIf="event.images && event.images[1]" [src]="event.images[1]" alt="Gallery 3"
+                    <img *ngIf="event.images && event.images[1]" [src]="resolveImagePath(event.images[1])" alt="Gallery 3"
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                     <div *ngIf="!event.images || !event.images[1]"
                         class="w-full h-full flex flex-col items-center justify-center text-forest/30 border-2 border-dashed border-forest/10 rounded-2xl m-2">
@@ -96,22 +116,22 @@
         <div *ngIf="!canManage" class="rounded-3xl overflow-hidden shadow-sm h-[400px] md:h-[500px]">
             <!-- Case 1: Only 1 Image -->
             <div *ngIf="(!event.images || event.images.length <= 1)" class="w-full h-full">
-                <img [src]="event.image" [alt]="event.title" class="w-full h-full object-cover">
+                <img [src]="resolveImagePath(event.image)" [alt]="event.title" (error)="handleImageError($event)" class="w-full h-full object-cover">
             </div>
 
             <!-- Case 2: Exactly 2 Images -->
             <div *ngIf="event.images && event.images.length === 2" class="grid grid-cols-2 gap-2 w-full h-full">
-                <img [src]="event.image" alt="1" class="w-full h-full object-cover">
-                <img [src]="event.images[0]" alt="2" class="w-full h-full object-cover font-bold">
+                <img [src]="resolveImagePath(event.image)" alt="1" (error)="handleImageError($event)" class="w-full h-full object-cover">
+                <img [src]="resolveImagePath(event.images[0])" alt="2" (error)="handleImageError($event)" class="w-full h-full object-cover font-bold">
             </div>
 
             <!-- Case 3: 3+ Images -->
             <div *ngIf="event.images && event.images.length >= 3"
                 class="grid grid-cols-1 md:grid-cols-2 gap-2 w-full h-full">
-                <img [src]="event.image" alt="1" class="w-full h-full object-cover">
+                <img [src]="resolveImagePath(event.image)" alt="1" (error)="handleImageError($event)" class="w-full h-full object-cover">
                 <div class="grid grid-rows-2 gap-2 h-full">
-                    <img [src]="event.images[0]" alt="2" class="w-full h-full object-cover">
-                    <img [src]="event.images[1]" alt="3" class="w-full h-full object-cover">
+                    <img [src]="resolveImagePath(event.images[0])" alt="2" (error)="handleImageError($event)" class="w-full h-full object-cover">
+                    <img [src]="resolveImagePath(event.images[1])" alt="3" (error)="handleImageError($event)" class="w-full h-full object-cover">
                 </div>
             </div>
         </div>
@@ -284,32 +304,165 @@
                     </div>
                 </div>
 
+                <!-- Required Services (Premium Section for Workers) -->
+                @if (event.requestedServices && event.requestedServices.length > 0) {
+                <div class="border-t border-gray-200 pt-10 pb-6">
+                    <div class="flex flex-col mb-10">
+                        <span class="text-olive font-black text-[10px] uppercase tracking-[0.3em] mb-2">Staffing
+                            Needs</span>
+                        <h3 class="text-3xl font-black text-forest tracking-tight italic">Support the Adventure</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        @for (service of event.requestedServices; track service.id) {
+                        <div
+                            class="group bg-white rounded-[3rem] overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100 flex flex-col h-full">
+                            <div class="h-44 overflow-hidden relative">
+                                <img [src]="getServicePlaceholderImage(service.name)"
+                                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    alt="Service Category">
+                                <div class="absolute inset-0 bg-gradient-to-t from-forest/80 to-transparent"></div>
+                                <div class="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+                                    <h4 class="text-xl font-black text-white leading-tight italic">{{ service.name }}
+                                    </h4>
+                                    <div
+                                        class="bg-sage text-forest px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1">
+                                        <span class="opacity-60 text-[8px]">Salary:</span> {{ service.price }} DT</div>
+                                </div>
+                            </div>
+                            <div class="p-8 flex flex-col justify-between flex-grow">
+                                <p class="text-sm text-olive/60 font-medium mb-8 leading-relaxed line-clamp-3">{{
+                                    service.description || 'Professional contribution required.' }}</p>
+                                <div class="flex flex-col gap-6">
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-end">
+                                            <span
+                                                class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Positions Needed:
+                                                <span class="text-forest font-bold">{{ service.quantiteAcceptee }} / {{
+                                                    service.quantiteRequise }}</span></span>
+                                            <span class="text-[10px] font-black text-olive italic">{{
+                                                (service.quantiteAcceptee / (service.quantiteRequise || 1) * 100) |
+                                                number:'1.0-0' }}% Filled</span>
+                                        </div>
+                                        <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                            <div class="h-full bg-olive rounded-full transition-all duration-1000 group-hover:bg-forest"
+                                                [style.width.%]="(service.quantiteAcceptee / service.quantiteRequise * 100)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if (isWorker && isOrganizerEvent) {
+                                        @if (getCandidatureForService(service.id)) {
+                                            <div class="w-full bg-sage/20 text-forest py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-center border-2 border-sage/30">
+                                                Application: {{ getCandidatureForService(service.id).statut }}
+                                            </div>
+                                        } @else if (!viewOnly) {
+                                            <button (click)="onApply(service)"
+                                                [disabled]="service.quantiteAcceptee >= service.quantiteRequise"
+                                                class="w-full bg-forest text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all transform hover:bg-olive active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-400 border-2 border-transparent hover:border-sage shadow-xl shadow-forest/5">
+                                                {{ service.quantiteAcceptee >= service.quantiteRequise ? 'Positions Filled' : 'Join Staff Team' }}
+                                            </button>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+
+                <!-- Organizer Application Management Section -->
+                <div *ngIf="canManage" class="mt-16 space-y-8 animate-in slide-in-from-bottom duration-700">
+                    <div class="flex items-center justify-between border-t border-forest/5 pt-12">
+                        <div>
+                            <h3 class="text-3xl font-black text-forest uppercase tracking-tighter italic">Review Applications</h3>
+                            <p class="text-sage font-bold text-xs uppercase tracking-widest mt-1 opacity-60">Manage your workforce for this event</p>
+                        </div>
+                        <span class="px-6 py-2 bg-forest/5 rounded-2xl text-[10px] font-black text-forest uppercase tracking-widest border border-forest/10">{{ eventCandidatures.length }} Total Applicants</span>
+                    </div>
+
+                    <div *ngIf="isCandidaturesLoading" class="flex justify-center py-10">
+                        <div class="w-8 h-8 border-4 border-forest/20 border-t-forest rounded-full animate-spin"></div>
+                    </div>
+
+                    <div *ngIf="!isCandidaturesLoading" class="grid grid-cols-1 gap-4">
+                        <div *ngFor="let cand of eventCandidatures" class="bg-white rounded-[2.5rem] p-8 border border-forest/5 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                            <div class="flex items-center gap-6">
+                                <div class="w-16 h-16 rounded-[1.5rem] bg-sage/10 flex items-center justify-center text-2xl shadow-inner overflow-hidden border border-forest/5 text-forest font-black uppercase">
+                                    {{ (cand.nomParticipant || cand.candidat?.name || 'P').charAt(0) }}
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-black text-forest italic">{{ cand.nomParticipant || cand.candidat?.name || 'Applicant' }}</h4>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="px-2 py-0.5 bg-olive/10 text-olive rounded-lg text-[8px] font-black uppercase tracking-widest">Applying for</span>
+                                        <p class="text-[11px] font-bold text-forest uppercase tracking-widest">{{ cand.serviceName || cand.eventService?.name || 'Staff Role' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 bg-gray-50/50 rounded-2xl p-6 border border-gray-100 max-w-xl">
+                                <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2 opacity-60">Motivation Letter</p>
+                                <p class="text-xs text-sage font-medium italic leading-relaxed">"{{ cand.lettreMotivation }}"</p>
+                            </div>
+
+                            <div class="flex items-center gap-4 shrink-0">
+                                <!-- Pending Actions -->
+                                <div *ngIf="cand.statut === 'EN_ATTENTE' || cand.statut === 'PENDING'; else statusBadge" class="flex gap-3">
+                                    <button (click)="updateCandidatureStatus(cand.id, 'REJETEE')" 
+                                            [disabled]="isProcessing"
+                                            class="px-8 py-4 rounded-2xl border-2 border-red-50 text-red-400 font-black uppercase text-[10px] tracking-widest hover:bg-red-50 transition-all disabled:opacity-50">
+                                        Reject
+                                    </button>
+                                    <button (click)="updateCandidatureStatus(cand.id, 'ACCEPTEE')" 
+                                            [disabled]="isProcessing"
+                                            class="px-8 py-4 rounded-2xl bg-forest text-white font-black uppercase text-[10px] tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-forest/10 disabled:opacity-50">
+                                        Accept
+                                    </button>
+                                </div>
+                                
+                                <!-- Static Status -->
+                                <ng-template #statusBadge>
+                                    <div [ngClass]="{
+                                        'bg-green-100 text-green-700 border-green-200': cand.statut === 'ACCEPTEE',
+                                        'bg-red-100 text-red-700 border-red-200': cand.statut === 'REJETEE',
+                                        'bg-gray-100 text-gray-700 border-gray-200': cand.statut === 'RETIREE'
+                                    }" class="px-8 py-4 rounded-2xl border font-black uppercase text-[10px] tracking-widest shadow-sm">
+                                        {{ cand.statut }}
+                                    </div>
+                                </ng-template>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div *ngIf="!isCandidaturesLoading && eventCandidatures.length === 0" class="py-20 text-center bg-forest/5 rounded-[3rem] border border-dashed border-forest/10">
+                        <p class="text-sage font-black uppercase tracking-[0.2em] opacity-40 italic">No applications received yet for this adventure.</p>
+                    </div>
+                </div>
+
                 <!-- NEW: Comments Section -->
                 <div class="border-t border-gray-200 pt-10 pb-12">
                     <h3 class="text-2xl font-black text-forest mb-8">Comments</h3>
-
-                    <!-- Comment Input (only when authenticated) -->
                     <div class="mb-8" *ngIf="authService.isAuthenticated()">
                         <textarea [(ngModel)]="newComment" placeholder="Add a comment..."
                             class="w-full p-4 rounded-2xl border border-gray-200 focus:border-olive focus:ring-1 focus:ring-olive transition-all h-24 text-sm"></textarea>
                         <button (click)="addComment()"
-                            class="mt-3 bg-forest text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-olive transition-colors">
-                            Post Comment
-                        </button>
+                            class="mt-3 bg-forest text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-olive transition-colors">Post
+                            Comment</button>
                     </div>
                     <div class="mb-8 text-gray-500 text-sm font-medium italic" *ngIf="!authService.isAuthenticated()">
-                        Please log in to write a comment and interact with this event.
-                    </div>
-
-                    <!-- Comments List -->
+                        Please log in to write a comment and interact with this event.</div>
                     <div class="space-y-6">
                         @for (comment of comments; track comment.id) {
                         <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="font-black text-forest text-sm uppercase tracking-wider">{{
                                     comment.userName || 'User' }}</span>
-                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{{
-                                    comment.createdAt | date:'short' }}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{{
+                                        comment.createdAt | date:'short' }}</span>
+                                    <button *ngIf="authService.getCurrentUser()?.id == comment.userId" (click)="deleteComment(comment.id)" 
+                                            class="text-[9px] text-red-400 hover:text-red-600 font-black uppercase tracking-widest transition-colors">Delete</button>
+                                </div>
                             </div>
                             <p class="text-olive/70 text-sm font-medium leading-relaxed">{{ comment.content }}</p>
                         </div>
@@ -360,13 +513,33 @@
                     </div>
 
                     <button (click)="buyTickets()" [disabled]="purchaseSuccess"
+                        *ngIf="!authService.isParticipant()"
                         class="w-full bg-forest text-white font-black text-lg py-5 rounded-2xl hover:bg-olive transition-all transform active:scale-[0.98] mb-6 shadow-xl shadow-forest/10 uppercase tracking-widest text-xs disabled:opacity-50"
                         [ngClass]="{'bg-sage': purchaseSuccess}">
                         {{ purchaseSuccess ? 'Success!' : 'Get Your Tickets' }}
                     </button>
 
+                    <button (click)="joinEvent()" [disabled]="purchaseSuccess"
+                        *ngIf="authService.isParticipant() && isOrganizerEvent && !isRegistered && !viewOnly"
+                        class="w-full bg-olive text-white font-black text-lg py-5 rounded-2xl hover:bg-forest transition-all transform active:scale-[0.98] mb-6 shadow-xl shadow-olive/10 uppercase tracking-widest text-xs disabled:opacity-50"
+                        [ngClass]="{'bg-sage': purchaseSuccess}">
+                        {{ purchaseSuccess ? 'Registered!' : 'Join This Event' }}
+                    </button>
+
+                    <!-- View Ticket Button -->
+                    <button (click)="showTicket = true"
+                        *ngIf="isRegistered || hasStaffAccess"
+                        class="w-full bg-forest text-white font-black text-lg py-5 rounded-2xl hover:bg-olive transition-all transform active:scale-[0.98] mb-6 shadow-xl shadow-forest/10 uppercase tracking-widest text-xs">
+                        🎟️ {{ hasStaffAccess ? 'View Staff Access' : 'View Your Ticket' }}
+                    </button>
+
+                    <div *ngIf="authService.isParticipant() && !isOrganizerEvent" class="p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center mb-6">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Public Event</p>
+                        <p class="text-xs text-sage italic mt-1">Registration for this event is managed by administration.</p>
+                    </div>
+
                     <p *ngIf="purchaseSuccess" class="text-center text-[10px] text-olive font-bold mb-4 animate-bounce">
-                        Thank you! Details sent to your email.
+                        {{ authService.isParticipant() ? 'Welcome to the adventure!' : 'Thank you! Details sent to your email.' }}
                     </p>
 
                     <!-- Sponsored By (Mini) -->
@@ -385,4 +558,125 @@
         </div>
     </div>
     }
+
+    <!-- TICKET MODAL -->
+    <div *ngIf="showTicket && (registrationData || hasStaffAccess)" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-forest/40 backdrop-blur-md" (click)="showTicket = false"></div>
+        <div class="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-300">
+            <!-- Ticket Top (Header) -->
+            <div class="bg-[#2D3A2D] p-8 text-white relative">
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">
+                            {{ hasStaffAccess ? 'Staff Access Pass' : 'Admission Ticket' }}
+                        </p>
+                        <h2 class="text-2xl font-black italic tracking-tighter mt-1">{{ event?.title }}</h2>
+                    </div>
+                    <button (click)="showTicket = false" class="text-white/60 hover:text-white transition-colors">✕</button>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">📅</span>
+                        <div>
+                            <p class="text-[9px] font-black uppercase opacity-40">Date & Time</p>
+                            <p class="text-sm font-bold">{{ event?.date }} • {{ event?.time || 'Flexible' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">📍</span>
+                        <div>
+                            <p class="text-[9px] font-black uppercase opacity-40">Location</p>
+                            <p class="text-sm font-bold">{{ event?.location }}</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Perforation Decoration -->
+                <div class="absolute -bottom-4 left-0 right-0 h-8 flex justify-between px-6 z-10">
+                    <div class="w-8 h-8 rounded-full bg-[#f9f7f2] -ml-10"></div>
+                    <div class="w-8 h-8 rounded-full bg-[#f9f7f2] -mr-10"></div>
+                </div>
+            </div>
+
+            <!-- Ticket Bottom -->
+            <div class="bg-white p-10 pt-12 space-y-8">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Holder</p>
+                        <p class="text-lg font-black text-forest">{{ registrationData?.name || authService.getCurrentUser()?.name }}</p>
+                        
+                        <!-- Staff Badge Fluid Integration -->
+                        <div *ngIf="hasStaffAccess" 
+                             class="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-forest text-white rounded-full">
+                            <span class="text-[10px] font-black uppercase tracking-widest">STAFF TEAM</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">
+                            {{ hasStaffAccess ? 'Staff ID' : 'Ticket No' }}
+                        </p>
+                        <p class="text-sm font-black text-olive">
+                            #{{ registrationData?.ticketNumber || registrationData?.id || (hasStaffAccess ? 'STAFF-' + authService.getCurrentUser()?.id : '---') }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- QR Code Placeholder -->
+                <div class="bg-gray-50 rounded-3xl p-6 flex flex-col items-center justify-center border-2 border-dashed border-gray-100">
+                    <div class="w-32 h-32 bg-white rounded-2xl shadow-inner flex items-center justify-center mb-4">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TICKET-{{registrationData.ticketNumber}}" alt="QR Code" class="w-24 h-24 opacity-80">
+                    </div>
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Scan at entrance</p>
+                </div>
+
+                <div class="pt-6 border-t border-gray-50 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <span class="text-[10px] font-black text-gray-400 uppercase">Valid Status</span>
+                    </div>
+                    <button class="text-xs font-black text-olive hover:text-forest transition-colors uppercase tracking-widest">Download PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLY MOTIVATION MODAL -->
+    <div *ngIf="showApplyModal && selectedService" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-forest/20 backdrop-blur-sm" (click)="showApplyModal = false"></div>
+        <div class="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg p-10 animate-in slide-in-from-bottom-5 duration-300">
+            <h2 class="text-3xl font-black text-forest mb-2 italic">Join the Staff Team</h2>
+            <div class="flex flex-wrap items-center gap-4 mb-8">
+                <span class="text-sm text-olive/60 font-medium tracking-tight">Role: <span class="text-forest font-black">{{ selectedService.name }}</span></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
+                <span class="text-sm text-olive/60 font-medium tracking-tight">Salary: <span class="text-forest font-black">{{ selectedService.price }} DT</span></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
+                <span class="text-sm text-olive/60 font-medium tracking-tight pr-4">Total Staff Needed: <span class="text-forest font-black">{{ selectedService.quantiteRequise }}</span></span>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Your Motivation</label>
+                    <textarea 
+                        [(ngModel)]="applyMotivation"
+                        placeholder="Why are you a good fit for this role? Share your experience..."
+                        class="w-full h-40 p-6 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-sage focus:bg-white transition-all text-sm outline-none resize-none"
+                    ></textarea>
+                </div>
+
+                <div class="flex gap-4">
+                    <button 
+                        (click)="submitApplication()"
+                        [disabled]="isProcessing || !applyMotivation.trim()"
+                        class="flex-1 bg-forest text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-olive transition-all disabled:opacity-30">
+                        {{ isProcessing ? 'Sending...' : 'Submit Application' }}
+                    </button>
+                    <button 
+                        (click)="showApplyModal = false"
+                        class="px-8 bg-gray-100 text-gray-500 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+```

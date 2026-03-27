@@ -1,5 +1,5 @@
 @if (selectedEvent) {
-<app-event-detail [event]="selectedEvent" (back)="clearSelection()">
+<app-event-detail [event]="selectedEvent" (back)="clearSelection()" (apply)="onApplyWorker($event)">
 </app-event-detail>
 } @else {
 <section id="events" class="py-16 px-4 sm:px-6 lg:px-8 bg-sage/20">

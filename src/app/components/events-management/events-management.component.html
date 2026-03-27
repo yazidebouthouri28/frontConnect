@@ -97,8 +97,7 @@
           Picture</label>
         <div class="relative">
           <input type="file" (change)="onFileSelected($event)" accept="image/*" id="fileUpload" class="hidden">
-          <label for="fileUpload"
-            (click)="prepareMainUpload()"
+          <label for="fileUpload" (click)="prepareMainUpload()"
             class="flex flex-col items-center justify-center w-full h-44 rounded-3xl border-2 border-dashed border-forest/20 bg-forest/5 hover:bg-forest/10 transition-all cursor-pointer group overflow-hidden">
             @if (isUploading) {
             <div class="flex flex-col items-center">
@@ -254,9 +253,7 @@
     }
 
     <!-- DISCOVERY & MANAGEMENT SECTION -->
-    <div
-      class="mb-12"
-      [ngClass]="{ 'border-t border-forest/5 pt-16': !isOrganizer }">
+    <div class="mb-12" [ngClass]="{ 'border-t border-forest/5 pt-16': !isOrganizer }">
 
       <!-- UNIFIED BAR FOR ORGANIZER / STANDARD FOR USER -->
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12">
@@ -391,6 +388,21 @@
             </div>
 
             <div class="mt-auto">
+
+              <!-- SERVICES SECTION NEWLY ADDED FROM AHMEDFRONT -->
+              @if (event.requestedServices && event.requestedServices.length > 0) {
+              <div class="mb-4 pt-2 border-t border-forest/5">
+                <p class="text-[9px] font-black text-olive uppercase tracking-[0.2em] mb-2">Required Services</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (service of event.requestedServices; track service.id) {
+                  <div class="bg-forest/5 px-2 py-1 rounded text-[9px] font-bold text-forest border border-forest/10">
+                    {{ service.name }} - <span class="text-olive">{{ service.price }} DT</span>
+                  </div>
+                  }
+                </div>
+              </div>
+              }
+
               <div class="mb-4">
                 <div class="flex justify-between items-end mb-2">
                   <span class="text-[9px] font-black text-olive uppercase tracking-[0.2em]">{{ event.participants }}/{{
@@ -405,7 +417,7 @@
               </div>
 
               <div class="pt-6 border-t border-forest/5 flex items-center justify-between">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between w-full">
                   <div class="flex -space-x-3 overflow-hidden">
                     <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white" src="https://i.pravatar.cc/100?u=1"
                       alt="">
@@ -418,7 +430,7 @@
                       +{{ event.participants > 3 ? event.participants - 3 : 0 }}</div>
                   </div>
 
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center flex-wrap gap-2">
                     @if (canManage(event)) {
                     <button (click)="$event.stopPropagation(); editEvent(event)"
                       class="p-2.5 bg-forest text-white rounded-xl hover:bg-olive transition-colors shadow-lg shadow-forest/10"
@@ -429,14 +441,18 @@
                         </path>
                       </svg>
                     </button>
-                    <button (click)="$event.stopPropagation(); deleteEvent(event.id)"
-                      class="p-2.5 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors"
-                      title="Supprimer l'événement">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                        </path>
-                      </svg>
+                    <!-- NEW: B2B Button for Organizer -->
+                    <button (click)="$event.stopPropagation(); openB2BPicker(event)"
+                      class="px-4 py-2.5 bg-sage text-forest rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-forest/10 hover:bg-olive transition-colors">
+                      Manage Services
+                    </button>
+                    }
+
+                    <!-- NEW: Join Event Button for Worker -->
+                    @if (isWorker()) {
+                    <button (click)="$event.stopPropagation(); openApplyModal(event)"
+                      class="px-4 py-2.5 bg-orange-500 text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-forest/10 hover:bg-orange-600 transition-colors border border-transparent hover:border-orange-400">
+                      Join Staff
                     </button>
                     }
                     <button
@@ -465,4 +481,16 @@
     </div>
   </div>
 </section>
+}
+
+<!-- Application Modal -->
+@if (isApplyModalOpen) {
+<app-worker-apply-modal [event]="modalEvent" [service]="modalService" (close)="closeApplyModal()"
+  (apply)="handleApplySubmission($event)">
+</app-worker-apply-modal>
+}
+
+@if (isB2BPickerOpen) {
+<app-b2b-service-picker [event]="modalEvent" (close)="closeB2BPicker()" (serviceAdded)="refreshEvents()">
+</app-b2b-service-picker>
 }

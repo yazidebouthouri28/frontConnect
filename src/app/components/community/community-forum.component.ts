@@ -39,7 +39,7 @@ export class CommunityForumComponent implements OnInit {
     private authService: AuthService,
     private chatService: ChatService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit() {
     const user = this.authService.getCurrentUser();
@@ -51,18 +51,40 @@ export class CommunityForumComponent implements OnInit {
 
   loadRooms() {
     this.isLoadingRooms = true;
-    this.chatService.getMyRooms(Number(this.currentUser.id)).subscribe({
-      next: (rooms) => {
+    const userId = this.currentUser?.id;
+    const numericId = userId && !isNaN(Number(userId)) ? Number(userId) : null;
+
+    if (!numericId) {
+      console.warn('Non-numeric userId or offline mode. Loading public rooms instead.');
+      this.loadPublicRooms();
+      return;
+    }
+
+    this.chatService.getMyRooms(numericId).subscribe({
+      next: (rooms: any[]) => {
         this.rooms = rooms;
-        this.isLoadingRooms = false;
-        if (rooms.length > 0 && !this.activeRoom) {
-          this.selectRoom(rooms[0]);
+        if (rooms.length === 0) {
+          this.loadPublicRooms();
+        } else {
+          this.isLoadingRooms = false;
+          if (!this.activeRoom) this.selectRoom(rooms[0]);
         }
       },
       error: (err) => {
         console.error('Failed to load rooms', err);
-        this.isLoadingRooms = false;
+        this.loadPublicRooms();
       }
+    });
+  }
+
+  loadPublicRooms() {
+    this.chatService.getPublicRooms().subscribe({
+      next: (rooms: any[]) => {
+        this.rooms = rooms;
+        this.isLoadingRooms = false;
+        if (rooms.length > 0 && !this.activeRoom) this.selectRoom(rooms[0]);
+      },
+      error: () => this.isLoadingRooms = false
     });
   }
 
@@ -83,14 +105,15 @@ export class CommunityForumComponent implements OnInit {
   }
 
   sendMessage() {
-    if (!this.newMessage.trim() || !this.activeRoom) return;
+    if (!this.newMessage.trim() || !this.activeRoom || !this.currentUser?.id) return;
     const content = this.newMessage;
+    const userId = !isNaN(Number(this.currentUser.id)) ? Number(this.currentUser.id) : 1; // Fallback for offline
     this.newMessage = '';
-    this.chatService.sendMessage(this.activeRoom.id, Number(this.currentUser.id), content).subscribe({
+    this.chatService.sendMessage(this.activeRoom.id, userId, content).subscribe({
       next: (msg) => this.messages.push(msg),
       error: (err) => {
         console.error('Failed to send message', err);
-        this.newMessage = content; // restore on failure
+        this.newMessage = content;
       }
     });
   }

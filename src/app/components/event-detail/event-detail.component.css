@@ -30,3 +30,39 @@
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(44, 74, 60, 0.2);
 }
+
+/* Animations for Modals */
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in.zoom-in {
+    animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-in.slide-in-from-bottom-5 {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Ticket Extra Style */
+.ticket-perforation-top {
+    box-shadow: 0 4px 0 -2px #f9f7f2;
+}

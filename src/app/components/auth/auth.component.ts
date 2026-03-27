@@ -117,7 +117,32 @@ export class AuthComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.clearMessages();
     this.authService.login(this.loginForm).subscribe({
-      next: () => { this.cartService.syncCartAfterLogin(); this.router.navigate([this.returnUrl]); },
+      next: () => {
+        this.cartService.syncCartAfterLogin();
+
+        const user = this.authService.getCurrentUser();
+        if (user && user.role === 'ADMIN') {
+          this.router.navigate(['/admin']);
+          return;
+        }
+
+        if (user && user.role === 'CAMPER') {
+          this.router.navigate(['/user-preferences']);
+          return;
+        }
+
+        if (user && user.role === 'ORGANIZER') {
+          this.router.navigate(['/organizer']);
+          return;
+        }
+
+        if (user && user.role === 'PARTICIPANT') {
+          this.router.navigate(['/participant']);
+          return;
+        }
+
+        this.router.navigate([this.returnUrl]);
+      },
       error: (err) => { this.isLoading = false; this.errorMessage = err.message || 'Login failed.'; }
     });
   }
@@ -152,10 +177,16 @@ export class AuthComponent implements OnInit, OnDestroy {
     if (this.registerForm.bio) payload.bio = this.registerForm.bio;
 
     this.authService.register(payload).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.successMessage = 'Account created! Redirecting…';
         this.cartService.syncCartAfterLogin();
-        setTimeout(() => this.router.navigate([this.returnUrl]), 1200);
+        
+        const role = res?.data?.role;
+        let redirectUrl = this.returnUrl;
+        if (role === 'ORGANIZER') redirectUrl = '/organizer';
+        if (role === 'PARTICIPANT') redirectUrl = '/participant';
+
+        setTimeout(() => this.router.navigate([redirectUrl]), 1200);
       },
       error: (err) => { this.isLoading = false; this.errorMessage = err.message || 'Registration failed.'; }
     });

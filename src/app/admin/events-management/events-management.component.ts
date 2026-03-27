@@ -5,6 +5,11 @@ import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+// AhmedFront imports
+import { UserService } from '../../services/user.service';
+import { CandidatureService } from '../../services/candidature.service';
+import { EventDetailComponent } from '../../components/event-detail/event-detail.component';
+import { Event as EventModel } from '../../models/event.model';
 
 interface AdminEvent {
     id: number;
@@ -21,14 +26,18 @@ interface AdminEvent {
     category: string;
     endDate: string;
     picture: string;
+    image: string;
+    images: string[];
     isFree: boolean;
     eventType: string;
     createdAt: string;
     reviewCount: number;
     organizerId: number | null;
+    organizerUserId: number | null;
     organizerName: string;
     siteId: number | null;
     siteName: string;
+    requestedServices: any[];
 }
 
 interface EventForm {
@@ -50,7 +59,7 @@ interface EventForm {
 @Component({
     selector: 'app-events-admin-management',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, EventDetailComponent],
     templateUrl: './events-management.component.html',
     styleUrls: ['./events-management.component.css']
 })
@@ -61,9 +70,22 @@ export class EventsAdminManagementComponent implements OnInit {
     private route = inject(ActivatedRoute);
     private authService = inject(AuthService);
 
-    private apiUrl = `${environment.apiUrl}/api/events`;
-    private uploadUrl = `${environment.apiUrl}/api/files/upload`;
-    private imageUrlBase = `${environment.apiUrl}/uploads/`;
+    // AhmedFront additions
+    activeEventsTab: 'active' | 'requests' = 'active';
+    isAdmin = false;
+    get isOrganizer(): boolean {
+        return this.userService.isOrganizer();
+    }
+    isParticipant = false;
+
+    constructor(
+        private userService: UserService,
+        private candidatureService: CandidatureService
+    ) { }
+
+    private apiUrl = `${environment.apiUrl}/events`;
+    private uploadUrl = `${environment.apiUrl}/files/upload`;
+    private imageUrlBase = `${environment.apiUrl.replace('/api', '')}/uploads/`;
 
     @HostListener('document:click')
     onDocumentClick() {
@@ -98,8 +120,12 @@ export class EventsAdminManagementComponent implements OnInit {
         picture: '',
         status: 'DRAFT',
         organizerId: null,
-        siteId: 1
+        siteId: null
     };
+
+    selectedEventForDetail: any = null;
+    showDetailModal = false;
+    isDetailViewOnly = false;
 
     events: AdminEvent[] = [];
     loading = true;
@@ -117,10 +143,13 @@ export class EventsAdminManagementComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.isAdmin = this.userService.isAdmin();
+        this.isParticipant = this.userService.isParticipant();
+
         this.loadEvents();
 
         // Handle direct navigation for Add/Edit
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams.subscribe((params: any) => {
             const action = params['action'];
             const id = params['id'];
 
@@ -156,10 +185,19 @@ export class EventsAdminManagementComponent implements OnInit {
         this.http.get<any>(`${this.apiUrl}`).subscribe({
             next: (response) => {
                 const data = response.data || response;
-                this.events = (Array.isArray(data) ? data : []).map((e: any) => ({
+                const rawEvents = (Array.isArray(data) ? data : []);
+                
+                // Filter events based on role
+                let filteredEvents = rawEvents;
+                if (this.isParticipant) {
+                    // Participants only see organizer events
+                    filteredEvents = rawEvents.filter((e: any) => e.organizerId != null);
+                }
+
+                this.events = filteredEvents.map((e: any) => ({
                     id: e.id,
-                    name: e.name || '',
-                    title: (e.name || e.description || 'Untitled').substring(0, 30),
+                    name: e.title || e.name || 'Untitled',
+                    title: e.title || e.name || 'Untitled',
                     type: this.mapEventType(e.eventType),
                     location: e.location || '',
                     date: e.endDate ? new Date(e.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD',
@@ -170,15 +208,19 @@ export class EventsAdminManagementComponent implements OnInit {
                     status: this.mapStatus(e.status),
                     category: e.category || '',
                     endDate: e.endDate ? e.endDate.replace('T', 'T').substring(0, 16) : '',
-                    picture: e.picture || '',
+                    picture: e.images && e.images.length > 0 ? e.images[0] : (e.picture || ''),
+                    image: e.images && e.images.length > 0 ? e.images[0] : (e.picture || ''),
+                    images: e.images || [],
                     isFree: e.isFree || false,
                     eventType: e.eventType || '',
                     createdAt: e.createdAt || '',
                     reviewCount: e.reviewCount || 0,
                     organizerId: e.organizerId || null,
+                    organizerUserId: e.organizerUserId || e.organizerId || null,
                     organizerName: e.organizerName || '',
                     siteId: e.siteId || null,
-                    siteName: e.siteName || ''
+                    siteName: e.siteName || '',
+                    requestedServices: e.requestedServices || []
                 }));
                 this.loading = false;
                 this.cdr.detectChanges();
@@ -253,8 +295,8 @@ export class EventsAdminManagementComponent implements OnInit {
             isFree: false,
             picture: '',
             status: 'DRAFT',
-            organizerId: 1,
-            siteId: 1
+            organizerId: null,
+            siteId: null
         };
         this.editingEventId = null;
         this.otherEventType = '';
@@ -278,8 +320,8 @@ export class EventsAdminManagementComponent implements OnInit {
         }
     }
 
-    onFileSelected(event: Event) {
-        const input = event.target as HTMLInputElement;
+    onFileSelected(ev: any) {
+        const input = ev.target as HTMLInputElement;
         this.imageError = '';
         if (input.files && input.files[0]) {
             const file = input.files[0];
@@ -374,15 +416,30 @@ export class EventsAdminManagementComponent implements OnInit {
             return;
         }
 
-        const payload = {
-            ...this.newEvent,
+        // Format endDate as ISO
+        const endDateFormatted = this.newEvent.endDate.includes(':') ?
+            (this.newEvent.endDate.length === 16 ? this.newEvent.endDate + ':00' : this.newEvent.endDate) :
+            this.newEvent.endDate;
+
+        // Backend expects 'title' not 'name', and requires 'startDate'
+        const payload: any = {
+            title: this.newEvent.name,
+            description: this.newEvent.description,
             eventType: finalEventType,
             category: finalCategory,
-            endDate: this.newEvent.endDate.includes(':') ?
-                (this.newEvent.endDate.length === 16 ? this.newEvent.endDate + ':00' : this.newEvent.endDate) :
-                this.newEvent.endDate,
-            organizerId: this.newEvent.organizerId || 1,
-            siteId: this.newEvent.siteId || 1
+            startDate: new Date().toISOString().substring(0, 19),
+            endDate: endDateFormatted,
+            location: this.newEvent.location,
+            maxParticipants: this.newEvent.maxParticipants,
+            price: this.newEvent.price ?? 0,
+            isFree: this.newEvent.isFree,
+            isPublic: true,
+            requiresApproval: false,
+            images: this.newEvent.picture ? [this.newEvent.picture] : [],
+            thumbnail: this.newEvent.picture || '',
+            status: this.newEvent.status,
+            organizerId: this.newEvent.organizerId || null,
+            siteId: this.newEvent.siteId || null
         };
 
         if (this.editingEventId !== null) {
@@ -479,8 +536,10 @@ export class EventsAdminManagementComponent implements OnInit {
         }
     }
 
-    toggleActionMenu(eventId: number, event: Event) {
-        event.stopPropagation();
+
+
+    toggleActionMenu(eventId: number, ev: any) {
+        ev.stopPropagation();
         this.activeActionMenu = this.activeActionMenu === eventId ? null : eventId;
     }
 
@@ -488,49 +547,49 @@ export class EventsAdminManagementComponent implements OnInit {
         this.activeActionMenu = null;
     }
 
-    editEvent(event: AdminEvent) {
+    editEvent(eventData: any) {
         this.closeActionMenu();
-        this.editingEventId = event.id;
+        this.editingEventId = eventData.id;
 
         this.newEvent = {
-            name: event.name || '',
-            description: event.description,
-            eventType: event.eventType,
-            category: event.category,
-            endDate: event.endDate ? event.endDate.substring(0, 16) : '',
-            location: event.location,
-            maxParticipants: event.capacity,
-            price: event.price,
-            isFree: event.isFree,
-            picture: event.picture,
-            status: event.status === 'Published' ? 'PUBLISHED' : 'DRAFT',
-            organizerId: event.organizerId,
-            siteId: event.siteId
+            name: eventData.name || '',
+            description: eventData.description,
+            eventType: eventData.eventType,
+            category: eventData.category,
+            endDate: eventData.endDate ? eventData.endDate.substring(0, 16) : '',
+            location: eventData.location,
+            maxParticipants: eventData.capacity,
+            price: eventData.price,
+            isFree: eventData.isFree,
+            picture: eventData.picture,
+            status: eventData.status === 'Published' ? 'PUBLISHED' : 'DRAFT',
+            organizerId: eventData.organizerId,
+            siteId: eventData.siteId
         };
 
         // Handle custom event type
-        if (!this.eventTypes.includes(event.eventType)) {
+        if (!this.eventTypes.includes(eventData.eventType)) {
             this.newEvent.eventType = 'Other';
-            this.otherEventType = event.eventType;
+            this.otherEventType = eventData.eventType;
         } else {
             this.otherEventType = '';
         }
 
         // Handle custom category
-        if (!this.categories.includes(event.category)) {
+        if (!this.categories.includes(eventData.category)) {
             this.newEvent.category = 'Other';
-            this.otherCategory = event.category;
+            this.otherCategory = eventData.category;
         } else {
             this.otherCategory = '';
         }
 
         // Restore image preview if picture exists
-        if (event.picture) {
-            this.selectedFileName = event.picture;
+        if (eventData.picture) {
+            this.selectedFileName = eventData.picture;
             // Prepend base URL if it looks like a filename (doesn't start with http/blob)
-            this.imagePreview = (event.picture.startsWith('http') || event.picture.startsWith('blob'))
-                ? event.picture
-                : this.imageUrlBase + event.picture;
+            this.imagePreview = (eventData.picture.startsWith('http') || eventData.picture.startsWith('blob'))
+                ? eventData.picture
+                : this.imageUrlBase + eventData.picture;
         }
 
         this.showAddForm = true;
@@ -566,5 +625,31 @@ export class EventsAdminManagementComponent implements OnInit {
                 this.cdr.detectChanges();
             }
         });
+    }
+
+    joinEvent(eventId: number) {
+        const event = this.events.find(e => e.id === eventId);
+        if (event) {
+            this.openEventDetail(event, false);
+        }
+    }
+
+    applyAsWorker(eventId: number) {
+        const event = this.events.find(e => e.id === eventId);
+        if (event) {
+            this.openEventDetail(event, false);
+        }
+    }
+
+    openEventDetail(event: any, viewOnly: boolean = false) {
+        this.selectedEventForDetail = event;
+        this.isDetailViewOnly = viewOnly;
+        this.showDetailModal = true;
+        this.closeActionMenu();
+    }
+
+    closeEventDetail() {
+        this.showDetailModal = false;
+        this.selectedEventForDetail = null;
     }
 }

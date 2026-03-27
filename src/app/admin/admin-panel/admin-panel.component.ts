@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component';
 import { AdminDashboardComponent } from '../admin-dashboard/admin-dashboard.component';
 import { SponsorsManagementComponent } from '../sponsors-management/sponsors-management.component';
@@ -11,8 +11,14 @@ import { CampsitesManagementComponent } from '../campsites-management/campsites-
 import { EventsAdminManagementComponent } from '../events-management/events-management.component';
 import { UsersManagementComponent } from '../users-management/users-management.component';
 import { ReportsManagementComponent } from '../reports-management/reports-management.component';
-import { ServicesManagementComponent } from '../services-management/services-management.component';
-import { CampHighlightsManagementComponent } from '../camp-highlights-management/camp-highlights-management.component';
+import { ServiceListComponent } from '../../modules/services/components/service-list/service-list.component';
+import { PackListComponent } from '../../modules/services/components/pack-list/pack-list.component';
+import { PromotionListComponent } from '../../modules/services/components/promotion-list/promotion-list.component';
+import { AlerteDashboardComponent } from '../../modules/emergency/components/alerte-dashboard/alerte-dashboard.component';
+import { CandidatureManageComponent } from '../../modules/services/components/candidature-manage/candidature-manage.component';
+import { CandidatureListComponent } from '../../modules/services/components/candidature-list/candidature-list.component';
+import { ParticipantDashboardComponent } from '../../components/participant-dashboard/participant-dashboard.component';
+import { UserService, UserAccount } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -20,7 +26,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
+    RouterOutlet,
     AdminSidebarComponent,
     AdminDashboardComponent,
     SponsorsManagementComponent,
@@ -31,8 +37,13 @@ import { AuthService } from '../../services/auth.service';
     EventsAdminManagementComponent,
     UsersManagementComponent,
     ReportsManagementComponent,
-    ServicesManagementComponent,
-    CampHighlightsManagementComponent
+    ServiceListComponent,
+    PackListComponent,
+    PromotionListComponent,
+    AlerteDashboardComponent,
+    CandidatureManageComponent,
+    CandidatureListComponent,
+    ParticipantDashboardComponent
   ],
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.css'],
@@ -40,11 +51,21 @@ import { AuthService } from '../../services/auth.service';
 export class AdminPanelComponent {
   activeSection = signal('dashboard');
   isMenuOpen = signal(false);
+  user = signal<UserAccount | null>(null);
 
   constructor(
+    private userService: UserService,
     private authService: AuthService,
     private router: Router
-  ) { }
+  ) {
+    this.user.set(this.userService.getLoggedInUser());
+  }
+
+  get isChildRoute(): boolean {
+    const url = this.router.url;
+    return (url.includes('/admin/') || url.includes('/organizer/')) && 
+           (url !== '/admin' && url !== '/organizer');
+  }
 
   setSection(section: string) {
     this.activeSection.set(section);

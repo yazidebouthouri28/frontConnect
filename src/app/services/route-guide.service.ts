@@ -41,7 +41,7 @@ interface RouteGuideApiRequest {
     providedIn: 'root'
 })
 export class RouteGuideService {
-    private apiUrl = `${environment.apiUrl}/api/route-guides`;
+    private apiUrl = `${environment.apiUrl}/route-guides`;
 
     constructor(private http: HttpClient) { }
 

@@ -34,7 +34,7 @@ interface HighlightMediaUploadApiResponse {
     providedIn: 'root'
 })
 export class CampHighlightService {
-    private apiUrl = `${environment.apiUrl}/api/camp-highlights`;
+    private apiUrl = `${environment.apiUrl}/camp-highlights`;
     private readonly writeTimeoutMs = 30000;
 
     constructor(private http: HttpClient) { }

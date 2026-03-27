@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Rental, ExtendRentalDto } from '../models/api.models';
+import { Rental } from '../models/api.models';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -14,7 +14,7 @@ interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class RentalService {
-  private apiUrl = `${environment.apiUrl}/api/rentals`;
+  private apiUrl = `${environment.apiUrl}/rentals`;
 
   constructor(private http: HttpClient) { }
 
@@ -22,20 +22,8 @@ export class RentalService {
     return response.data ?? ([] as any);
   }
 
-  getAll(params?: {
-    status?: string;
-    customerId?: string;
-    sellerId?: string;
-  }): Observable<Rental[]> {
-    let httpParams = new HttpParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          httpParams = httpParams.set(key, value.toString());
-        }
-      });
-    }
-    return this.http.get<ApiResponse<Rental[]>>(this.apiUrl, { params: httpParams })
+  getAll(): Observable<Rental[]> {
+    return this.http.get<ApiResponse<Rental[]>>(this.apiUrl)
       .pipe(map(res => this.extractData(res)));
   }
 
@@ -44,36 +32,18 @@ export class RentalService {
       .pipe(map(res => this.extractData(res)));
   }
 
-  extend(id: string, data: ExtendRentalDto): Observable<Rental> {
-    return this.http.patch<ApiResponse<Rental>>(`${this.apiUrl}/${id}/extend`, data)
+  getSellerRentals(): Observable<Rental[]> {
+    return this.http.get<ApiResponse<Rental[]>>(`${this.apiUrl}/seller`)
       .pipe(map(res => this.extractData(res)));
   }
 
   markReturned(id: string): Observable<Rental> {
-    return this.http.patch<ApiResponse<Rental>>(`${this.apiUrl}/${id}/return`, {})
+    return this.http.post<ApiResponse<Rental>>(`${this.apiUrl}/${id}/return`, {})
       .pipe(map(res => this.extractData(res)));
   }
 
-  cancel(id: string): Observable<Rental> {
-    return this.http.patch<ApiResponse<Rental>>(`${this.apiUrl}/${id}/cancel`, {})
+  extend(id: string, data: { additionalDays: number }): Observable<Rental> {
+    return this.http.post<ApiResponse<Rental>>(`${this.apiUrl}/${id}/extend`, data)
       .pipe(map(res => this.extractData(res)));
-  }
-
-  getMyRentals(): Observable<Rental[]> {
-    return this.http.get<ApiResponse<Rental[]>>(`${this.apiUrl}/my-rentals`)
-      .pipe(map(res => this.extractData(res)));
-  }
-
-  getSellerRentals(): Observable<Rental[]> {
-    return this.http.get<ApiResponse<Rental[]>>(`${this.apiUrl}/seller-rentals`)
-      .pipe(map(res => this.extractData(res)));
-  }
-
-  getActive(): Observable<Rental[]> {
-    return this.getAll({ status: 'ACTIVE' });
-  }
-
-  getOverdue(): Observable<Rental[]> {
-    return this.getAll({ status: 'OVERDUE' });
   }
 }

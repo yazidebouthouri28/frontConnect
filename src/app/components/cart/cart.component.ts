@@ -1,95 +1,119 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface CartItem {
-    id: number;
-    name: string;
-    image: string;
-    type: 'Purchase' | 'Rental';
-    rentalDuration?: string;
-    quantity: number;
-    price: number;
-}
-
+import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
+import { CartService, CartItem } from '../../services/cart.service';
+import { PromotionService } from '../../modules/services/services/promotion.service';
 
 @Component({
     selector: 'app-cart',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './cart.component.html',
     styleUrls: ['./cart.component.css']
 })
-export class CartComponent {
-    constructor(private location: Location) { }
+export class CartComponent implements OnInit {
+    cartItems: CartItem[] = [];
+    subtotal: number = 0;
+    shipping: number = 0;
+    tax: number = 0;
+    total: number = 0;
+
+    discountPercentage: number = 0;
+    discountAmount: number = 0;
+    pointsToEarn: number = 0;
+
+    promoCode: string = '';
+    applyingPromo: boolean = false;
+    promoError: string = '';
+    promoSuccess: string = '';
+
+    walletBalance: number = 2500; // Mock balance
+
+    constructor(
+        private location: Location,
+        public cartService: CartService,
+        private promotionService: PromotionService
+    ) { }
+
+    ngOnInit(): void {
+        this.cartService.cartItems$.subscribe(items => {
+            this.cartItems = items;
+            this.calculateTotals();
+        });
+
+        this.cartService.discount$.subscribe(discount => {
+            this.discountPercentage = discount;
+            this.calculateTotals();
+        });
+    }
 
     goBack() {
         this.location.back();
     }
 
-    cartItems: CartItem[] = [
-        {
-            id: 1,
-            name: 'Waterproof Hiking Boots - Men\'s',
-            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1080',
-            type: 'Purchase',
-            quantity: 2,
-            price: 286.20
-        },
-        {
-            id: 2,
-            name: 'Camping Cookware Set - 4 Pieces',
-            image: 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=1080',
-            type: 'Rental',
-            rentalDuration: '7 days',
-            quantity: 3,
-            price: 36.00
+    decrementQuantity(item: CartItem) {
+        if (item.quantity > 1) {
+            this.cartService.updateQuantity(item, -1);
         }
-    ];
-
-    walletBalance = 250.00;
-    shipping = 15.00;
-    taxRate = 0.10;
-
-    get subtotal(): number {
-        return this.cartItems.reduce((acc, item) => acc + item.price, 0);
-    }
-
-    get tax(): number {
-        return this.subtotal * this.taxRate;
-    }
-
-    get total(): number {
-        return this.subtotal + this.shipping + this.tax;
-    }
-
-    get pointsToEarn(): number {
-        return Math.floor(this.total);
     }
 
     incrementQuantity(item: CartItem) {
-        item.quantity++;
-        // In a real app, unit price would be separate from total line price, 
-        // but for this mock we'll just adjust the price based on ratio or keep it simple
-        // Let's assume 'price' in the mock is the line total for simplicity of the screenshot matching
-        // For functionality, we'd want unit price. Let's infer unit price.
-        const unitPrice = item.price / (item.quantity - 1);
-        item.price += unitPrice;
-    }
-
-    decrementQuantity(item: CartItem) {
-        if (item.quantity > 1) {
-            const unitPrice = item.price / item.quantity;
-            item.quantity--;
-            item.price -= unitPrice;
-        }
+        this.cartService.updateQuantity(item, 1);
     }
 
     removeItem(item: CartItem) {
-        this.cartItems = this.cartItems.filter(i => i.id !== item.id);
+        this.cartService.removeItem(item);
+    }
+
+    applyPromoCode() {
+        if (!this.promoCode) return;
+
+        this.applyingPromo = true;
+        this.promoError = '';
+        this.promoSuccess = '';
+
+        this.promotionService.validateCode(this.promoCode.toUpperCase(), this.subtotal).subscribe({
+            next: (promo) => {
+                this.applyingPromo = false;
+                if (promo && promo.isActive) {
+                    const discount = promo.discountPercentage || 0;
+                    this.cartService.applyDiscount(discount);
+                    this.promoSuccess = `Promo code '${this.promoCode}' applied: ${discount}% off!`;
+                } else {
+                    this.promoError = 'This promo code is inactive or expired.';
+                    this.cartService.clearDiscount();
+                }
+            },
+            error: (err) => {
+                this.applyingPromo = false;
+                this.promoError = 'Invalid promo code or network error.';
+                this.cartService.clearDiscount();
+            }
+        });
+    }
+
+    removePromoCode() {
+        this.promoCode = '';
+        this.cartService.clearDiscount();
+        this.promoSuccess = '';
+        this.promoError = '';
     }
 
     clearCart() {
-        this.cartItems = [];
+        this.cartService.clearCart();
+        this.removePromoCode();
+    }
+
+    calculateTotals() {
+        this.subtotal = this.cartService.getSubtotal();
+        this.discountAmount = this.cartService.getDiscountAmount();
+
+        this.shipping = this.cartItems.length > 0 ? 15 : 0;
+        // Tax on subtotal after discount
+        this.tax = (this.subtotal - this.discountAmount) * 0.1;
+
+        this.total = this.subtotal - this.discountAmount + this.shipping + this.tax;
+        this.pointsToEarn = Math.floor(this.total / 10);
     }
 }

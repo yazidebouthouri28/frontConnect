@@ -121,6 +121,15 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
+                    <tr *ngIf="loading" class="text-center">
+                        <td colspan="6" class="py-12">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a2e1a] mx-auto"></div>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!loading && filteredUsers.length === 0" class="text-center">
+                        <td colspan="6" class="py-12 text-gray-400">No users found.</td>
+                    </tr>
+                    @if (!loading) {
                     @for (user of filteredUsers; track user.id) {
                     <tr class="hover:bg-gray-50/50 transition-colors group">
                         <td class="px-6 py-4 text-center">
@@ -130,10 +139,10 @@
                             <div class="flex items-center gap-4">
                                 <div
                                     class="w-10 h-10 rounded-full bg-gradient-to-br from-[#1a2e1a]/10 to-[#2d4a2d]/10 flex items-center justify-center text-xs font-black text-[#1a2e1a]">
-                                    {{ user.avatar }}
+                                    {{ (user.name || user.username || '?').substring(0, 2).toUpperCase() }}
                                 </div>
                                 <div>
-                                    <p class="font-bold text-[#1a2e1a]">{{ user.name }}</p>
+                                    <p class="font-bold text-[#1a2e1a]">{{ user.name || user.username }}</p>
                                     <p class="text-xs text-gray-400 font-medium">{{ user.email }}</p>
                                 </div>
                             </div>
@@ -145,20 +154,31 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-sm font-bold text-gray-500">
-                            {{ user.joinedDate }}
+                            {{ (user.createdAt | date:'MMM dd, yyyy') || 'N/A' }}
                         </td>
                         <td class="px-6 py-4 text-center">
                             <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border"
-                                [ngClass]="getStatusClass(user.status)">
-                                • {{ user.status }}
+                                [ngClass]="getStatusClass(user.isActive)">
+                                • {{ user.isActive ? 'Active' : 'Suspended' }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-right">
-                            <button class="text-gray-400 hover:text-[#1a2e1a] p-2 transition-all">
-                                <span class="text-xl">•••</span>
-                            </button>
+                        <td class="px-6 py-4 text-right relative">
+                            <div class="flex items-center justify-end gap-2">
+                                <button (click)="changeRole(user, 'ADMIN')" *ngIf="user.role !== 'ADMIN'"
+                                    title="Make Admin"
+                                    class="text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-md transition-colors">
+                                    Promote
+                                </button>
+                                <button (click)="toggleUserStatus(user)"
+                                    [title]="user.isActive ? 'Suspend User' : 'Unsuspend User'"
+                                    class="text-xs font-bold px-2 py-1 rounded-md transition-colors"
+                                    [ngClass]="user.isActive ? 'text-red-600 bg-red-50 hover:bg-red-100' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'">
+                                    {{ user.isActive ? 'Suspend' : 'Activate' }}
+                                </button>
+                            </div>
                         </td>
                     </tr>
+                    }
                     }
                 </tbody>
             </table>

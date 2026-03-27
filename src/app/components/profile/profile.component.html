@@ -18,13 +18,13 @@
                     alt="Cover"
                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div class="absolute inset-0 bg-gradient-to-t from-forest/40 to-transparent"></div>
-                <button *ngIf="isOwnProfile"
+                <button *ngIf="isOwnProfile" (click)="startEdit()"
                     class="absolute bottom-6 right-6 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white border border-white/30 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
-                    Change Cover
+                    Edit Profile
                 </button>
             </div>
 
@@ -38,11 +38,11 @@
                             <img [src]="viewedUser?.avatar" alt="Profile"
                                 class="w-full h-full object-cover -rotate-3 group-hover:rotate-0 transition-transform duration-500" />
                         </div>
-                        <button *ngIf="isOwnProfile"
+                        <button *ngIf="isOwnProfile" (click)="startEdit()"
                             class="absolute -bottom-2 -right-2 bg-olive text-white p-3 rounded-2xl shadow-xl hover:bg-forest transition-all hover:scale-110">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
                         </button>
                     </div>
@@ -58,8 +58,10 @@
                                     clip-rule="evenodd" />
                             </svg>
                         </div>
-                        <p class="text-sage font-bold mt-1 uppercase tracking-widest text-xs">{{ viewedUser?.role }} •
-                            {{ viewedUser?.followers || '0' }} Adventurers</p>
+                        <p class="text-sage font-bold mt-1 uppercase tracking-widest text-xs">
+                            {{ viewedUser?.followers || '0' }} Followers • {{ isOwnProfile ? followingCount : '12' }}
+                            Following
+                        </p>
                         <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-3">
                             <span *ngFor="let tag of viewedUser?.hashtags"
                                 class="bg-sage/10 text-forest px-3 py-1 rounded-full text-xs font-semibold border border-sage/20">{{
@@ -69,11 +71,11 @@
 
                     <!-- Themed Action Buttons for view-profile -->
                     <div *ngIf="!isOwnProfile" class="flex gap-4 mb-2">
-                        <button
-                            class="bg-olive hover:bg-forest text-white px-8 py-3 rounded-2xl font-black shadow-lg transition-all hover:scale-105 active:scale-95">
-                            Follow
+                        <button (click)="toggleFollow()" [class.bg-forest]="isFollowing" [class.bg-olive]="!isFollowing"
+                            class="text-white px-8 py-3 rounded-2xl font-black shadow-lg transition-all hover:scale-105 active:scale-95">
+                            {{ isFollowing ? 'Following' : 'Follow' }}
                         </button>
-                        <button
+                        <button (click)="openMessageWithUser()"
                             class="bg-cream/50 hover:bg-cream text-forest border border-olive/10 px-8 py-3 rounded-2xl font-black transition-all">
                             Message
                         </button>
@@ -108,7 +110,7 @@
                         <!-- Add Highlight Button -->
                         <div *ngIf="isOwnProfile"
                             class="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
-                            (click)="addHighlight()">
+                            (click)="onAddHighlight()">
                             <div
                                 class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-dashed border-sage/40 flex items-center justify-center group-hover:border-olive transition-colors bg-white/50">
                                 <svg class="w-8 h-8 text-sage group-hover:text-olive transition-colors" fill="none"
@@ -135,6 +137,39 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stories Bar -->
+    <div class="max-w-5xl mx-auto px-4 mt-8">
+        <div
+            class="flex gap-4 overflow-x-auto no-scrollbar py-4 px-2 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-olive/5 shadow-sm">
+            <!-- Add Story -->
+            <div *ngIf="isOwnProfile" (click)="onAddStory()"
+                class="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group">
+                <div
+                    class="w-16 h-16 rounded-2xl border-2 border-dashed border-olive/30 flex items-center justify-center bg-white group-hover:border-olive transition-colors relative">
+                    <img [src]="currentUser?.avatar" class="w-12 h-12 rounded-xl object-cover opacity-50">
+                    <div class="absolute -bottom-1 -right-1 bg-olive text-white rounded-lg p-1 shadow-md">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </div>
+                </div>
+                <span class="text-[10px] font-black text-forest uppercase tracking-tighter">Your Story</span>
+            </div>
+            <!-- Mock Stories -->
+            <div *ngFor="let f of follows" class="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group">
+                <div
+                    class="w-16 h-16 rounded-2xl p-0.5 border-2 border-olive bg-white group-hover:scale-105 transition-transform">
+                    <div
+                        class="w-full h-full rounded-xl bg-forest/10 flex items-center justify-center font-bold text-forest overflow-hidden">
+                        <img [src]="'https://ui-avatars.com/api/?name=' + f.name" class="w-full h-full object-cover">
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold text-sage truncate w-16 text-center">{{(f.name || 'User').split('
+                    ')[0]}}</span>
             </div>
         </div>
     </div>
@@ -213,27 +248,49 @@
             <!-- Right Column: Publications Feed -->
             <section class="lg:col-span-8 space-y-6">
                 <!-- Themed Post Creator -->
-                <div *ngIf="isOwnProfile" class="bg-white rounded-[2rem] shadow-sm p-6 border border-olive/10">
-                    <div class="flex gap-4 items-center">
+                <div *ngIf="isOwnProfile"
+                    class="bg-white rounded-[2rem] shadow-sm p-6 border border-olive/10 animate-fade-in mb-8">
+                    <div class="flex gap-4 items-start">
                         <div
-                            class="w-12 h-12 rounded-2xl bg-sage/20 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
+                            class="w-12 h-12 rounded-2xl bg-sage/20 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm ring-2 ring-forest/5">
                             <img [src]="viewedUser?.avatar" class="w-full h-full object-cover" />
                         </div>
-                        <button
-                            class="bg-cream/50 hover:bg-cream text-sage rounded-2xl px-6 py-3 flex-grow text-left transition-all border border-olive/5 font-medium">
-                            Share a new adventure, {{ viewedUser?.name }}?
-                        </button>
-                    </div>
-                    <div class="mt-6 pt-6 border-t border-cream flex gap-2">
-                        <button
-                            class="w-full hover:bg-forest/5 py-3 rounded-2xl flex items-center justify-center gap-2 text-forest font-bold transition-all text-sm">
-                            <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Photo/Video
-                        </button>
+                        <div class="flex-1">
+                            <textarea [(ngModel)]="newPostContent"
+                                class="w-full bg-cream/20 border-none rounded-2xl p-4 text-sm text-forest placeholder:text-sage focus:ring-1 focus:ring-olive transition-all min-h-[100px] resize-none"
+                                placeholder="What's your next adventure, {{ (viewedUser?.name || 'Explorer').split(' ')[0] }}?"></textarea>
+
+                            <!-- Media Preview -->
+                            <div *ngIf="selectedPostMedia"
+                                class="mt-2 relative rounded-xl overflow-hidden max-h-48 border border-olive/10 group/preview">
+                                <img [src]="selectedPostMedia" class="w-full h-full object-cover">
+                                <button (click)="selectedPostMedia = null"
+                                    class="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/preview:opacity-100 transition-opacity">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="mt-4 pt-4 border-t border-cream flex justify-between items-center">
+                                <input type="file" #profileMediaInput (change)="onPostMediaSelected($event)"
+                                    accept="image/*,video/*" hidden>
+                                <button (click)="profileMediaInput.click()"
+                                    class="hover:bg-forest/5 px-4 py-2 rounded-xl flex items-center gap-2 text-forest font-bold transition-all text-xs">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    Photo/Video
+                                </button>
+                                <button (click)="publishPost()" [disabled]="!newPostContent.trim()"
+                                    class="bg-olive disabled:opacity-50 text-white px-6 py-2 rounded-xl font-black shadow-md hover:scale-105 transition-all active:scale-95">
+                                    Publish
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -288,23 +345,49 @@
                     }
 
                     <!-- Post Actions -->
-                    <div class="p-4 bg-cream/30 flex gap-2">
-                        <button
-                            class="flex-1 bg-white hover:bg-forest hover:text-white py-3 rounded-2xl flex items-center justify-center gap-2 text-forest font-bold transition-all shadow-sm border border-olive/5 text-sm">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            Like
-                        </button>
-                        <button
-                            class="flex-1 bg-white hover:bg-olive hover:text-white py-3 rounded-2xl flex items-center justify-center gap-2 text-forest font-bold transition-all shadow-sm border border-olive/5 text-sm">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                            Explore
-                        </button>
+                    <div class="p-4 bg-cream/30 flex flex-col gap-4">
+                        <div class="flex gap-2">
+                            <button (click)="toggleLike(post)" [class.bg-forest]="post.userHasLiked"
+                                [class.text-white]="post.userHasLiked" [class.bg-white]="!post.userHasLiked"
+                                [class.text-forest]="!post.userHasLiked"
+                                class="flex-1 py-3 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all shadow-sm border border-olive/5 text-sm">
+                                <svg class="w-5 h-5" [attr.fill]="post.userHasLiked ? 'currentColor' : 'none'"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                                {{post.likes}} {{ post.userHasLiked ? 'Liked' : 'Like' }}
+                            </button>
+                            <button
+                                class="flex-1 bg-white hover:bg-olive hover:text-white py-3 rounded-2xl flex items-center justify-center gap-2 text-forest font-bold transition-all shadow-sm border border-olive/5 text-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                {{post.comments.length}} Comments
+                            </button>
+                        </div>
+
+                        <!-- Comment Section -->
+                        <div class="space-y-3 px-2">
+                            <div *ngFor="let comment of post.comments" class="flex gap-3 items-start animate-fade-in">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-olive/10 flex items-center justify-center font-bold text-olive text-[10px]">
+                                    {{comment.userName.charAt(0)}}</div>
+                                <div class="flex-1 bg-white p-3 rounded-2xl border border-olive/5 shadow-sm">
+                                    <p class="text-xs font-black text-forest">{{comment.userName}}</p>
+                                    <p class="text-xs text-forest/80 mt-1">{{comment.text}}</p>
+                                </div>
+                            </div>
+                            <!-- Add Comment -->
+                            <div class="flex gap-2 mt-4">
+                                <input type="text" [(ngModel)]="newCommentTexts[post.id]" placeholder="Add a comment..."
+                                    (keyup.enter)="addComment(post)"
+                                    class="flex-1 bg-white border-none rounded-xl px-4 py-2 text-xs text-forest focus:ring-1 focus:ring-olive shadow-sm">
+                                <button (click)="addComment(post)"
+                                    class="bg-olive text-white px-4 rounded-xl text-xs font-bold hover:bg-forest transition-all">Post</button>
+                            </div>
+                        </div>
                     </div>
                 </article>
                 }
@@ -367,6 +450,78 @@
             </div>
             <div *ngIf="!viewedUser?.gallery?.length" class="text-center py-12">
                 <p class="text-sage font-bold italic">No media uploaded yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div *ngIf="isEditing"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-forest/40 backdrop-blur-sm animate-fade-in">
+        <div
+            class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 animate-scale-up">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-forest tracking-tight">Customise Profile</h2>
+                    <button (click)="cancelEdit()" class="text-sage hover:text-forest transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-olive uppercase tracking-[0.2em] mb-1.5 ml-1">Display
+                            Name</label>
+                        <input type="text" [(ngModel)]="editForm.name"
+                            class="w-full bg-cream/30 border-none rounded-2xl p-4 text-forest font-bold focus:ring-2 focus:ring-olive transition-all"
+                            placeholder="Your name">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-olive uppercase tracking-[0.2em] mb-1.5 ml-1">Bio /
+                            Adventure Motto</label>
+                        <textarea [(ngModel)]="editForm.bio" rows="3"
+                            class="w-full bg-cream/30 border-none rounded-2xl p-4 text-forest font-medium focus:ring-2 focus:ring-olive transition-all"
+                            placeholder="Describe your adventures..."></textarea>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-olive uppercase tracking-[0.2em] mb-1.5 ml-1">Location</label>
+                        <input type="text" [(ngModel)]="editForm.location"
+                            class="w-full bg-cream/30 border-none rounded-2xl p-4 text-forest font-bold focus:ring-2 focus:ring-olive transition-all"
+                            placeholder="Tunis, Tunisia">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="block text-[10px] font-black text-olive uppercase tracking-[0.2em] mb-1.5 ml-1">Avatar
+                                URL</label>
+                            <input type="text" [(ngModel)]="editForm.avatar"
+                                class="w-full bg-cream/30 border-none rounded-2xl p-4 text-xs text-forest focus:ring-2 focus:ring-olive"
+                                placeholder="Image link">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-black text-olive uppercase tracking-[0.2em] mb-1.5 ml-1">Cover
+                                URL</label>
+                            <input type="text" [(ngModel)]="editForm.coverImage"
+                                class="w-full bg-cream/30 border-none rounded-2xl p-4 text-xs text-forest focus:ring-2 focus:ring-olive"
+                                placeholder="Cover link">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex gap-3">
+                    <button (click)="cancelEdit()"
+                        class="flex-1 py-4 text-sage font-black hover:bg-cream/50 rounded-2xl transition-all">Discard</button>
+                    <button (click)="saveProfile()"
+                        class="flex-2 bg-olive hover:bg-forest text-white py-4 px-8 rounded-2xl font-black shadow-lg shadow-olive/20 transition-all hover:scale-[1.02] active:scale-95">
+                        Keep Changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,22 +1,8 @@
 // Camping Platform Models
 
-// User and Profile Models
-export interface User {
-  id: string;
-  name: string;
-  avatar: string;
-  role: UserRole;
-  email?: string;
-  status?: 'online' | 'offline' | 'typing';
-  lastSeen?: string;
-  bio?: string;
-  coverImage?: string;
-  location?: string;
-  hashtags?: string[];
-  followers?: string;
-  gallery?: string[];
-  achievements?: Achievement[];
-}
+import type { User, UserRole } from './api.models';
+
+export type { User, UserRole };
 
 export interface Achievement {
   title: string;
@@ -24,8 +10,6 @@ export interface Achievement {
   description?: string;
   date?: string;
 }
-
-export type UserRole = 'ADMIN' | 'ORGANIZER' | 'SELLER' | 'CAMPER' | 'CLIENT' | 'SPONSOR';
 
 // Campsite Models
 export interface Campsite {

@@ -63,7 +63,63 @@
     animation: float 6s ease-in-out infinite;
 }
 
-/* Custom link underline */
-.decoration-olive\/30 {
-    text-decoration-color: rgba(128, 128, 0, 0.3);
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-scale-up {
+    animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stories & Modal Utilities */
+.flex-2 {
+    flex: 2;
+}
+
+/* Custom Input Focus */
+input:focus,
+textarea:focus {
+    outline: none;
+    background-color: white !important;
+    box-shadow: 0 10px 25px -5px rgba(128, 128, 0, 0.1);
+}
+
+/* Hide scrollbar but allow scrolling */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .profile-header-container .flex-col {
+        align-items: center;
+    }
 }

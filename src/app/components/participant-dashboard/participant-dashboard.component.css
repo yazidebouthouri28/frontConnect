@@ -1,0 +1,4 @@
+/* Styles are mostly handled by Tailwind in the HTML */
+.participant-dashboard {
+  display: block;
+}

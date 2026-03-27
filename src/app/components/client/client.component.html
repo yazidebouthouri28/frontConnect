@@ -4,7 +4,8 @@
     <!-- Profile Header -->
     <div class="bg-gradient-to-r from-forest-green to-olive-green rounded-xl p-6 mb-8 text-cream-beige">
       <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
-        <div class="w-24 h-24 rounded-full bg-cream-beige flex items-center justify-center text-forest-green text-3xl font-bold">
+        <div
+          class="w-24 h-24 rounded-full bg-cream-beige flex items-center justify-center text-forest-green text-3xl font-bold">
           👤
         </div>
         <div class="flex-1 text-center md:text-left">
@@ -24,13 +25,13 @@
 
     <!-- Tab Navigation -->
     <div class="mb-6 flex flex-wrap gap-2">
-      <button *ngFor="let item of menuItems"
-        (click)="activeTab = item.id"
+      <button *ngFor="let item of menuItems" (click)="activeTab = item.id"
         class="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px]"
         [ngClass]="activeTab === item.id ? 'bg-olive-green text-cream-beige' : 'bg-white text-forest-green hover:bg-sage-green/20'">
         <span>{{ item.icon }}</span>
         <span>{{ item.label }}</span>
-        <span *ngIf="item.badge" class="ml-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ item.badge }}</span>
+        <span *ngIf="item.badge" class="ml-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ item.badge
+          }}</span>
       </button>
     </div>
 
@@ -96,10 +97,8 @@
 
         <!-- Order Filter Tabs -->
         <div class="flex flex-wrap gap-2 mb-6">
-          <button *ngFor="let status of orderStatuses"
-            (click)="selectedOrderStatus = status"
-            class="px-4 py-1 rounded-md text-sm border transition-colors"
-            [ngClass]="selectedOrderStatus === status
+          <button *ngFor="let status of orderStatuses" (click)="selectedOrderStatus = status"
+            class="px-4 py-1 rounded-md text-sm border transition-colors" [ngClass]="selectedOrderStatus === status
               ? 'bg-forest-green text-cream-beige border-forest-green'
               : 'bg-white text-olive-green border-sage-green/40 hover:border-sage-green'">
             {{ status }}
@@ -107,9 +106,11 @@
         </div>
 
         <div class="space-y-6">
-          <div *ngFor="let order of filteredOrders" class="bg-white border border-sage-green/20 rounded-lg p-6 shadow-sm">
+          <div *ngFor="let order of filteredOrders"
+            class="bg-white border border-sage-green/20 rounded-lg p-6 shadow-sm">
             <!-- Order Header -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-sage-green/10">
+            <div
+              class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-sage-green/10">
               <div>
                 <h4 class="font-bold text-lg text-forest-green">Order #{{ order.id }}</h4>
                 <div class="text-sm text-olive-green">Placed on {{ formatDate(order.createdAt) }}</div>
@@ -129,11 +130,13 @@
             <!-- Order Items -->
             <div class="space-y-4 mb-6">
               <div *ngFor="let item of order.items" class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-md bg-sage-green/20 flex items-center justify-center text-2xl shrink-0">📦</div>
+                <div class="w-16 h-16 rounded-md bg-sage-green/20 flex items-center justify-center text-2xl shrink-0">📦
+                </div>
                 <div class="flex-1">
                   <h5 class="font-semibold text-forest-green">{{ item.productName }}</h5>
                   <div class="text-sm text-olive-green">Qty: {{ item.quantity }}</div>
-                  <span *ngIf="item.type === 'RENTAL'" class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                  <span *ngIf="item.type === 'RENTAL'"
+                    class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
                     📅 {{ item.rentalDays }} days rental
                   </span>
                 </div>
@@ -166,7 +169,9 @@
         <div *ngIf="filteredOrders.length === 0" class="text-center py-12">
           <p class="text-4xl mb-2">📦</p>
           <p class="text-olive-green mb-4">No orders found</p>
-          <a routerLink="/marketplace" class="inline-block bg-forest-green text-cream-beige px-6 py-3 rounded-lg hover:bg-olive-green">Start Shopping</a>
+          <a routerLink="/marketplace"
+            class="inline-block bg-forest-green text-cream-beige px-6 py-3 rounded-lg hover:bg-olive-green">Start
+            Shopping</a>
         </div>
       </div>
 
@@ -186,23 +191,65 @@
                 </p>
                 <div class="flex items-center gap-4">
                   <div class="flex items-center gap-2">
-                    <button (click)="updateQuantity(i, -1)" class="w-8 h-8 bg-sage-green/20 rounded-lg hover:bg-sage-green/40">-</button>
+                    <button (click)="updateQuantity(i, -1)"
+                      class="w-8 h-8 bg-sage-green/20 rounded-lg hover:bg-sage-green/40">-</button>
                     <span class="font-bold text-forest-green w-8 text-center">{{ item.quantity }}</span>
-                    <button (click)="updateQuantity(i, 1)" class="w-8 h-8 bg-sage-green/20 rounded-lg hover:bg-sage-green/40">+</button>
+                    <button (click)="updateQuantity(i, 1)"
+                      class="w-8 h-8 bg-sage-green/20 rounded-lg hover:bg-sage-green/40">+</button>
                   </div>
-                  <p class="font-bold text-forest-green">${{ (item.price * item.quantity).toFixed(2) }}</p>
+                  <div class="flex flex-col">
+                    <p class="font-bold text-forest-green">${{ (item.price * item.quantity * (item.details?.nights ||
+                      1)).toFixed(2) }}</p>
+                    <small *ngIf="item.details?.nights"
+                      class="text-[10px] text-olive-green uppercase font-black tracking-tighter">
+                      ${{ item.price }} x {{ item.details.nights }} nights
+                    </small>
+                  </div>
                 </div>
               </div>
               <button (click)="removeFromCart(i)" class="text-red-500 hover:text-red-700">🗑️</button>
             </div>
           </div>
 
+          <!-- Promo Code Section -->
+          <div class="bg-white border border-sage-green/20 rounded-lg p-6 mb-6">
+            <h4 class="font-semibold text-forest-green mb-3 flex items-center gap-2">
+              <span>🎟️</span> Have a promo code?
+            </h4>
+            <div class="flex gap-2">
+              <input type="text" [(ngModel)]="promoCode" name="promoCode"
+                class="flex-1 px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40 uppercase font-bold"
+                placeholder="PROMO2026" [disabled]="appliedPromoCode !== ''">
+              <button *ngIf="appliedPromoCode === ''" (click)="applyPromoCode()"
+                [disabled]="isApplyingPromo || !promoCode"
+                class="bg-forest-green text-cream-beige px-6 py-2 rounded-lg font-semibold hover:bg-olive-green transition-colors disabled:opacity-50 min-h-[44px]">
+                {{ isApplyingPromo ? '...' : 'Apply' }}
+              </button>
+              <button *ngIf="appliedPromoCode !== ''" (click)="clearPromoCode()"
+                class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-semibold hover:bg-red-100 transition-colors flex items-center gap-2">
+                <span>Remove</span>
+              </button>
+            </div>
+            <p *ngIf="promoError" class="text-xs text-red-500 mt-2 font-medium">❌ {{ promoError }}</p>
+            <p *ngIf="appliedPromoCode"
+              class="text-xs text-green-600 mt-2 font-bold ring-1 ring-green-100 bg-green-50 px-2 py-1 rounded inline-block">
+              ✅ Code "{{ appliedPromoCode }}" applied successfully!
+            </p>
+          </div>
+
           <!-- Cart Summary -->
           <div class="bg-sage-green/10 rounded-lg p-6 mb-6">
             <div class="space-y-3">
-              <div class="flex justify-between"><span class="text-olive-green">Subtotal:</span><span class="font-bold text-forest-green">${{ cartSubtotal.toFixed(2) }}</span></div>
-              <div class="flex justify-between"><span class="text-olive-green">Shipping:</span><span class="font-bold text-forest-green">${{ shippingCost.toFixed(2) }}</span></div>
-              <div class="flex justify-between"><span class="text-olive-green">Tax (10%):</span><span class="font-bold text-forest-green">${{ cartTax.toFixed(2) }}</span></div>
+              <div class="flex justify-between"><span class="text-olive-green">Subtotal:</span><span
+                  class="font-bold text-forest-green">${{ cartSubtotal.toFixed(2) }}</span></div>
+              <div *ngIf="cartDiscount > 0" class="flex justify-between text-green-600">
+                <span class="flex items-center gap-1 font-medium">🎁 Discount ({{ promoDiscount }}%):</span>
+                <span class="font-bold">-${{ cartDiscount.toFixed(2) }}</span>
+              </div>
+              <div class="flex justify-between"><span class="text-olive-green">Shipping:</span><span
+                  class="font-bold text-forest-green">${{ shippingCost.toFixed(2) }}</span></div>
+              <div class="flex justify-between"><span class="text-olive-green">Tax (10%):</span><span
+                  class="font-bold text-forest-green">${{ cartTax.toFixed(2) }}</span></div>
               <div class="border-t border-sage-green/20 pt-3 flex justify-between items-center">
                 <span class="text-xl font-bold text-forest-green">Total:</span>
                 <span class="text-3xl font-bold text-forest-green">${{ cartTotal.toFixed(2) }}</span>
@@ -219,13 +266,11 @@
             <h4 class="font-semibold text-forest-green mb-4">📍 Shipping Address</h4>
             <div class="bg-sage-green/10 rounded-lg p-4">
               <label class="block text-sm font-medium text-forest-green mb-2">Delivery Address *</label>
-              <textarea
-                [(ngModel)]="shippingAddress"
-                name="shippingAddress"
-                rows="3"
+              <textarea [(ngModel)]="shippingAddress" name="shippingAddress" rows="3"
                 class="w-full px-4 py-3 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/50 resize-none"
                 placeholder="Enter your full shipping address (Street, City, State, ZIP Code, Country)"></textarea>
-              <p *ngIf="!shippingAddress" class="text-sm text-red-500 mt-1">⚠️ Shipping address is required for checkout</p>
+              <p *ngIf="!shippingAddress" class="text-sm text-red-500 mt-1">⚠️ Shipping address is required for checkout
+              </p>
               <div class="mt-3 flex items-start gap-2">
                 <input type="checkbox" id="saveAddress" class="mt-1">
                 <label for="saveAddress" class="text-sm text-olive-green">Save this address for future orders</label>
@@ -237,8 +282,7 @@
           <div class="mb-6">
             <h4 class="font-semibold text-forest-green mb-4">💳 Payment Method</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button (click)="selectedPaymentMethod = 'wallet'"
-                class="p-4 border-2 rounded-lg transition-colors"
+              <button (click)="selectedPaymentMethod = 'wallet'" class="p-4 border-2 rounded-lg transition-colors"
                 [ngClass]="selectedPaymentMethod === 'wallet' ? 'border-forest-green bg-forest-green text-cream-beige' : 'border-sage-green/40 text-forest-green hover:border-forest-green'">
                 <div class="flex items-center gap-3">
                   <span class="text-2xl">💰</span>
@@ -248,8 +292,7 @@
                   </div>
                 </div>
               </button>
-              <button (click)="selectedPaymentMethod = 'card'"
-                class="p-4 border-2 rounded-lg transition-colors"
+              <button (click)="selectedPaymentMethod = 'card'" class="p-4 border-2 rounded-lg transition-colors"
                 [ngClass]="selectedPaymentMethod === 'card' ? 'border-forest-green bg-forest-green text-cream-beige' : 'border-sage-green/40 text-forest-green hover:border-forest-green'">
                 <div class="flex items-center gap-3">
                   <span class="text-2xl">💳</span>
@@ -267,17 +310,22 @@
               [disabled]="!shippingAddress || (selectedPaymentMethod === 'wallet' && walletBalance < cartTotal)"
               class="flex-1 bg-forest-green text-cream-beige py-4 rounded-lg hover:bg-olive-green transition-colors font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]">
               <span *ngIf="!shippingAddress">📍 Enter Shipping Address</span>
-              <span *ngIf="shippingAddress && selectedPaymentMethod === 'wallet' && walletBalance < cartTotal">⚠️ Insufficient Balance</span>
-              <span *ngIf="shippingAddress && !(selectedPaymentMethod === 'wallet' && walletBalance < cartTotal)">✅ Proceed to Checkout</span>
+              <span *ngIf="shippingAddress && selectedPaymentMethod === 'wallet' && walletBalance < cartTotal">⚠️
+                Insufficient Balance</span>
+              <span *ngIf="shippingAddress && !(selectedPaymentMethod === 'wallet' && walletBalance < cartTotal)">✅
+                Proceed to Checkout</span>
             </button>
-            <button (click)="clearCart()" class="px-6 bg-red-500 text-white py-4 rounded-lg hover:bg-red-600 transition-colors">🗑️ Clear</button>
+            <button (click)="clearCart()"
+              class="px-6 bg-red-500 text-white py-4 rounded-lg hover:bg-red-600 transition-colors">🗑️ Clear</button>
           </div>
         </div>
 
         <div *ngIf="cartItems.length === 0" class="text-center py-12">
           <p class="text-4xl mb-2">🛒</p>
           <p class="text-olive-green mb-4">Your cart is empty</p>
-          <a routerLink="/marketplace" class="inline-block bg-forest-green text-cream-beige px-6 py-3 rounded-lg hover:bg-olive-green">Continue Shopping</a>
+          <a routerLink="/marketplace"
+            class="inline-block bg-forest-green text-cream-beige px-6 py-3 rounded-lg hover:bg-olive-green">Continue
+            Shopping</a>
         </div>
       </div>
 
@@ -288,24 +336,29 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label class="block text-sm font-medium text-forest-green mb-2">Full Name</label>
-              <input type="text" [(ngModel)]="customerName" name="name" class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
+              <input type="text" [(ngModel)]="customerName" name="name"
+                class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
             </div>
             <div>
               <label class="block text-sm font-medium text-forest-green mb-2">Email</label>
-              <input type="email" [(ngModel)]="customerEmail" name="email" class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
+              <input type="email" [(ngModel)]="customerEmail" name="email"
+                class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
             </div>
             <div>
               <label class="block text-sm font-medium text-forest-green mb-2">Phone</label>
-              <input type="tel" [(ngModel)]="customerPhone" name="phone" class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
+              <input type="tel" [(ngModel)]="customerPhone" name="phone"
+                class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
             </div>
             <div>
               <label class="block text-sm font-medium text-forest-green mb-2">Country</label>
-              <input type="text" [(ngModel)]="customerCountry" name="country" class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
+              <input type="text" [(ngModel)]="customerCountry" name="country"
+                class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40">
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-forest-green mb-2">Shipping Address</label>
-            <textarea [(ngModel)]="customerAddress" name="address" rows="3" class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40"></textarea>
+            <textarea [(ngModel)]="customerAddress" name="address" rows="3"
+              class="w-full px-4 py-2 border border-sage-green/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-green/40"></textarea>
           </div>
           <button type="button" (click)="saveProfile()"
             class="bg-olive-green text-cream-beige px-6 py-3 rounded-lg hover:bg-forest-green transition-colors min-h-[44px]">
@@ -319,13 +372,15 @@
 </div>
 
 <!-- ADD FUNDS MODAL -->
-<div *ngIf="showAddFundsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="showAddFundsModal = false">
+<div *ngIf="showAddFundsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+  (click)="showAddFundsModal = false">
   <div class="bg-white rounded-xl max-w-md w-full p-6" (click)="$event.stopPropagation()">
     <h2 class="text-2xl font-bold text-forest-green mb-4">➕ Add Funds to Wallet</h2>
     <div class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-forest-green mb-2">Amount</label>
-        <input type="number" [(ngModel)]="addFundsAmount" min="10" step="10" class="w-full px-4 py-2 border border-sage-green/40 rounded-lg">
+        <input type="number" [(ngModel)]="addFundsAmount" min="10" step="10"
+          class="w-full px-4 py-2 border border-sage-green/40 rounded-lg">
       </div>
       <div class="grid grid-cols-3 gap-2">
         <button *ngFor="let amount of [50, 100, 200]" (click)="addFundsAmount = amount"
@@ -339,8 +394,11 @@
         </select>
       </div>
       <div class="flex gap-4">
-        <button (click)="confirmAddFunds()" class="flex-1 bg-forest-green text-cream-beige py-3 rounded-lg hover:bg-olive-green transition-colors">✅ Add Funds</button>
-        <button (click)="showAddFundsModal = false" class="px-6 bg-gray-100 text-forest-green py-3 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+        <button (click)="confirmAddFunds()"
+          class="flex-1 bg-forest-green text-cream-beige py-3 rounded-lg hover:bg-olive-green transition-colors">✅ Add
+          Funds</button>
+        <button (click)="showAddFundsModal = false"
+          class="px-6 bg-gray-100 text-forest-green py-3 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
       </div>
     </div>
   </div>
@@ -357,8 +415,12 @@
       <p class="text-2xl font-bold text-purple-600">+{{ lastEarnedPoints }} Points</p>
     </div>
     <div class="flex gap-4">
-      <button (click)="showCheckoutSuccess = false; activeTab = 'orders'" class="flex-1 bg-forest-green text-cream-beige py-3 rounded-lg hover:bg-olive-green transition-colors">View Orders</button>
-      <button (click)="showCheckoutSuccess = false" routerLink="/marketplace" class="flex-1 bg-white border border-forest-green text-forest-green py-3 rounded-lg hover:bg-sage-green/20 transition-colors">Continue Shopping</button>
+      <button (click)="showCheckoutSuccess = false; activeTab = 'orders'"
+        class="flex-1 bg-forest-green text-cream-beige py-3 rounded-lg hover:bg-olive-green transition-colors">View
+        Orders</button>
+      <button (click)="showCheckoutSuccess = false" routerLink="/marketplace"
+        class="flex-1 bg-white border border-forest-green text-forest-green py-3 rounded-lg hover:bg-sage-green/20 transition-colors">Continue
+        Shopping</button>
     </div>
   </div>
 </div>

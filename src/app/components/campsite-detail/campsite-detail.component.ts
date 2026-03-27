@@ -1,7 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+
 import { SiteService } from '../../services/site.service';
 import { Site, Review, CampHighlight, VirtualTour, Certification } from '../../models/camping.models';
 import { ReviewService } from '../../services/review.service';
@@ -9,6 +10,10 @@ import { CampHighlightService } from '../../services/camp-highlight.service';
 import { VirtualTourService } from '../../services/virtual-tour.service';
 import { CertificationService } from '../../services/certification.service';
 import { AuthService } from '../../services/auth.service';
+
+import { CartService, CartItem } from '../../services/cart.service';
+import { ServiceService } from '../../modules/services/services/service.service';
+import { PackService } from '../../modules/services/services/pack.service';
 
 @Component({
     selector: 'app-campsite-detail',
@@ -35,99 +40,16 @@ export class CampsiteDetailComponent implements OnInit {
 
     likes = 12;
     dislikes = 0;
-
-    
     userReaction: 'LIKE' | 'DISLIKE' | null = null;
     isGalleryOpen = false;
     activeGalleryIndex = 0;
     galleryImages: string[] = [];
 
-    toggleLike(): void {
-        if (!this.isAuthenticated) return;
-        if (this.userReaction === 'LIKE') {
-            this.userReaction = null;
-            this.likes--;
-        } else {
-            if (this.userReaction === 'DISLIKE') {
-                this.dislikes--;
-            }
-            this.userReaction = 'LIKE';
-            this.likes++;
-        }
-    }
-
-    toggleDislike(): void {
-        if (!this.isAuthenticated) return;
-        if (this.userReaction === 'DISLIKE') {
-            this.userReaction = null;
-            this.dislikes--;
-        } else {
-            if (this.userReaction === 'LIKE') {
-                this.likes--;
-            }
-            this.userReaction = 'DISLIKE';
-            this.dislikes++;
-        }
-    }
-
-    openGallery(index: number = 0): void {
-        const fallbacks = [
-            'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080',
-            'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800'
-        ];
-
-        if (this.campsite?.images?.length) {
-            this.galleryImages = this.campsite.images.filter((u) => !!u && String(u).trim().length > 0);
-        } else if (this.campsite?.image) {
-            this.galleryImages = [this.campsite.image].filter((u) => !!u);
-            if (this.galleryImages.length < 2) {
-                this.galleryImages = [...this.galleryImages, fallbacks[1]];
-            }
-        } else {
-            this.galleryImages = [...fallbacks];
-        }
-
-        if (this.galleryImages.length === 0) {
-            this.galleryImages = [...fallbacks];
-        }
-
-        this.activeGalleryIndex = Math.min(Math.max(0, index), this.galleryImages.length - 1);
-        this.isGalleryOpen = true;
-        document.body.style.overflow = 'hidden';
-        this.cdr.detectChanges();
-    }
-
-    closeGallery(): void {
-        this.isGalleryOpen = false;
-        document.body.style.overflow = '';
-        this.cdr.detectChanges();
-    }
-
-    @HostListener('document:keydown.escape')
-    onEscapeGallery(): void {
-        if (this.isGalleryOpen) {
-            this.closeGallery();
-        }
-    }
-
-    onGalleryBackdropClick(event: MouseEvent): void {
-        if ((event.target as HTMLElement).classList.contains('gallery-backdrop')) {
-            this.closeGallery();
-        }
-    }
-
-    nextImage(): void {
-        if (this.galleryImages.length > 0) {
-            this.activeGalleryIndex = (this.activeGalleryIndex + 1) % this.galleryImages.length;
-        }
-    }
-
-    prevImage(): void {
-        if (this.galleryImages.length > 0) {
-            this.activeGalleryIndex = (this.activeGalleryIndex - 1 + this.galleryImages.length) % this.galleryImages.length;
-        }
-    }
-
+    // Bundle / Reservation State (AhmedFront Work)
+    selectedAddon: any = null;
+    addonType: 'service' | 'pack' | null = null;
+    nights = 5;
+    guests = 1;
 
     private amenityConfig: Record<string, { icon: string; label: string }> = {
         wifi: { icon: '📶', label: 'WiFi (Lodge)' },
@@ -149,15 +71,32 @@ export class CampsiteDetailComponent implements OnInit {
         private virtualTourService: VirtualTourService,
         private certificationService: CertificationService,
         private authService: AuthService,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        public cartService: CartService,
+        private serviceService: ServiceService,
+        private packService: PackService,
+        private router: Router
     ) { }
 
     ngOnInit() {
+        // Sync nights from cart
+        this.nights = this.cartService.getReservationNights() || 1;
+
         this.route.params.subscribe(params => {
             const id = +params['id'];
             if (id) {
                 this.loadCampsite(id);
                 this.loadRelatedData(id);
+            }
+        });
+
+        this.route.queryParams.subscribe(params => {
+            if (params['service']) {
+                this.addonType = 'service';
+                this.loadServiceAddon(+params['service']);
+            } else if (params['pack']) {
+                this.addonType = 'pack';
+                this.loadPackAddon(+params['pack']);
             }
         });
     }
@@ -233,6 +172,28 @@ export class CampsiteDetailComponent implements OnInit {
         });
     }
 
+    private loadServiceAddon(id: number) {
+        this.serviceService.getById(id).subscribe({
+            next: (service) => {
+                this.selectedAddon = service;
+            },
+            error: () => {
+                this.selectedAddon = { id, name: 'Service Add-on', price: 0 };
+            }
+        });
+    }
+
+    private loadPackAddon(id: number) {
+        this.packService.getById(id).subscribe({
+            next: (pack) => {
+                this.selectedAddon = pack;
+            },
+            error: () => {
+                this.selectedAddon = { id, name: 'Pack Add-on', price: 0 };
+            }
+        });
+    }
+
     private mapAmenities(amenities: string[]) {
         this.mappedAmenities = amenities.map(amenity => {
             const key = String(amenity).toLowerCase().trim();
@@ -245,6 +206,139 @@ export class CampsiteDetailComponent implements OnInit {
                 label: amenity.charAt(0).toUpperCase() + amenity.slice(1)
             };
         });
+    }
+
+    // Reservation & Price Calculation (AhmedFront logic)
+    get totalAddons(): number {
+        if (!this.selectedAddon) return 0;
+        if (this.addonType === 'service') {
+            return (this.selectedAddon.price || 0) * this.nights;
+        }
+        return this.selectedAddon.price || 0;
+    }
+
+    get totalPrice(): number {
+        if (!this.campsite) return 0;
+        const cleaningFee = 45;
+        const serviceFee = 32;
+        return ((this.campsite.price || 0) * this.nights) + cleaningFee + serviceFee + this.totalAddons;
+    }
+
+    removeAddon() {
+        this.selectedAddon = null;
+        this.addonType = null;
+    }
+
+    onReserve() {
+        if (!this.campsite) return;
+
+        const mainImage = this.campsite.images?.[0] || (this.campsite as any).image || 'assets/images/logo.png';
+
+        const reservationItem: CartItem = {
+            productId: `res-${this.campsite.id}`,
+            productName: `${this.campsite.name} Reservation`,
+            id: `res-${this.campsite.id}-${Date.now()}`,
+            name: `${this.campsite.name} Reservation`,
+            image: mainImage,
+            type: 'Reservation',
+            quantity: 1,
+            price: this.totalPrice,
+            details: {
+                campsiteId: this.campsite.id,
+                nights: this.nights,
+                addon: this.selectedAddon
+            }
+        };
+
+        this.cartService.addItem(reservationItem);
+        this.router.navigate(['/cart']);
+    }
+
+    // Gallery, Likes, Reviews logic from HEAD
+    toggleLike(): void {
+        if (!this.isAuthenticated) return;
+        if (this.userReaction === 'LIKE') {
+            this.userReaction = null;
+            this.likes--;
+        } else {
+            if (this.userReaction === 'DISLIKE') {
+                this.dislikes--;
+            }
+            this.userReaction = 'LIKE';
+            this.likes++;
+        }
+    }
+
+    toggleDislike(): void {
+        if (!this.isAuthenticated) return;
+        if (this.userReaction === 'DISLIKE') {
+            this.userReaction = null;
+            this.dislikes--;
+        } else {
+            if (this.userReaction === 'LIKE') {
+                this.likes--;
+            }
+            this.userReaction = 'DISLIKE';
+            this.dislikes++;
+        }
+    }
+
+    openGallery(index: number = 0): void {
+        const fallbacks = [
+            'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080',
+            'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800'
+        ];
+
+        if (this.campsite?.images?.length) {
+            this.galleryImages = this.campsite.images.filter((u) => !!u && String(u).trim().length > 0);
+        } else if ((this.campsite as any)?.image) {
+            this.galleryImages = [(this.campsite as any).image].filter((u) => !!u);
+            if (this.galleryImages.length < 2) {
+                this.galleryImages = [...this.galleryImages, fallbacks[1]];
+            }
+        } else {
+            this.galleryImages = [...fallbacks];
+        }
+
+        if (this.galleryImages.length === 0) {
+            this.galleryImages = [...fallbacks];
+        }
+
+        this.activeGalleryIndex = Math.min(Math.max(0, index), this.galleryImages.length - 1);
+        this.isGalleryOpen = true;
+        document.body.style.overflow = 'hidden';
+        this.cdr.detectChanges();
+    }
+
+    closeGallery(): void {
+        this.isGalleryOpen = false;
+        document.body.style.overflow = '';
+        this.cdr.detectChanges();
+    }
+
+    @HostListener('document:keydown.escape')
+    onEscapeGallery(): void {
+        if (this.isGalleryOpen) {
+            this.closeGallery();
+        }
+    }
+
+    onGalleryBackdropClick(event: MouseEvent): void {
+        if ((event.target as HTMLElement).classList.contains('gallery-backdrop')) {
+            this.closeGallery();
+        }
+    }
+
+    nextImage(): void {
+        if (this.galleryImages.length > 0) {
+            this.activeGalleryIndex = (this.activeGalleryIndex + 1) % this.galleryImages.length;
+        }
+    }
+
+    prevImage(): void {
+        if (this.galleryImages.length > 0) {
+            this.activeGalleryIndex = (this.activeGalleryIndex - 1 + this.galleryImages.length) % this.galleryImages.length;
+        }
     }
 
     goBack() {
@@ -327,8 +421,8 @@ export class CampsiteDetailComponent implements OnInit {
 
                 this.campsite = {
                     ...this.campsite!,
-                    reviewCount,
-                    averageRating
+                    reviewCount: reviewCount as any,
+                    averageRating: averageRating as any
                 };
 
                 this.reviewDraft = { rating: 5, comment: '' };

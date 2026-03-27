@@ -56,8 +56,8 @@ interface SceneApiRequest {
     providedIn: 'root'
 })
 export class VirtualTourService {
-    private tourUrl = `${environment.apiUrl}/api/virtual-tours`;
-    private sceneUrl = `${environment.apiUrl}/api/scenes-360`;
+    private tourUrl = `${environment.apiUrl}/virtual-tours`;
+    private sceneUrl = `${environment.apiUrl}/scenes-360`;
 
     constructor(private http: HttpClient) { }
 

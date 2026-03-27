@@ -72,8 +72,8 @@ interface CertificationItemApiRequest {
     providedIn: 'root'
 })
 export class CertificationService {
-    private certUrl = `${environment.apiUrl}/api/certifications`;
-    private itemUrl = `${environment.apiUrl}/api/certification-items`;
+    private certUrl = `${environment.apiUrl}/certifications`;
+    private itemUrl = `${environment.apiUrl}/certification-items`;
 
     constructor(private http: HttpClient) { }
 

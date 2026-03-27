@@ -14,7 +14,7 @@ interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class InventoryService {
-  private apiUrl = `${environment.apiUrl}/api/inventory`;
+  private apiUrl = `${environment.apiUrl}/inventory`;
 
   constructor(private http: HttpClient) { }
 

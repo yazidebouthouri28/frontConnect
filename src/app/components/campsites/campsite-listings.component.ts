@@ -61,9 +61,38 @@ export class CampsiteListingsComponent implements OnInit {
       next: (sites) => {
         const mapped = sites.map((site) => this.toCard(site));
         this.campsites = mapped;
-        this.recommendedCampsites = [...mapped]
-          .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews)
-          .slice(0, 2);
+
+        let recommendations = [...mapped].sort((a, b) => b.rating - a.rating || b.reviews - a.reviews);
+        try {
+          const prefsStr = typeof window !== 'undefined' ? localStorage.getItem('camp_user_preferences') : null;
+          if (prefsStr) {
+            const prefs = JSON.parse(prefsStr);
+            const scored = [...mapped].map(site => {
+              let score = site.rating || 0;
+              if (prefs.amenities && Array.isArray(prefs.amenities)) {
+                prefs.amenities.forEach((pref: string) => {
+                  if (site.amenities.some(a => a.toLowerCase().includes(pref.toLowerCase()))) {
+                    score += 2;
+                  }
+                });
+              }
+              if (prefs.style && Array.isArray(prefs.style)) {
+                prefs.style.forEach((style: string) => {
+                  const s = style.toLowerCase();
+                  if (site.location.toLowerCase().includes(s) || site.name.toLowerCase().includes(s)) {
+                    score += 3;
+                  }
+                });
+              }
+              return { site, score };
+            });
+            recommendations = scored.sort((a, b) => b.score - a.score).map(x => x.site);
+          }
+        } catch (e) {
+          console.warn('Error applying user preferences to recommendations', e);
+        }
+
+        this.recommendedCampsites = recommendations.slice(0, 3);
         this.isLoading = false;
         this.cdr.detectChanges();
       },

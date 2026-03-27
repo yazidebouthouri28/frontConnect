@@ -2,18 +2,20 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
-export const API_BASE = 'http://localhost:8089/api';
+// Re-export API_BASE for compatibility with other services
+export const API_BASE = environment.apiUrl;
 
 const unwrap = (res: any) => res?.data?.content || res?.data || res || [];
 const unwrapOne = (res: any) => res?.data || res;
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private url = `${API_BASE}/products`;
-  private adminUrl = `${API_BASE}/admin/products`;
+  private url = `${environment.apiUrl}/products`;
+  private adminUrl = `${environment.apiUrl}/admin/products`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // ── Admin ──────────────────────────────────────────────
   getAllAdmin(page = 0, size = 50): Observable<any[]> {
@@ -44,7 +46,6 @@ export class ProductService {
   }
 
   // ── Public / Seller ────────────────────────────────────
-  /** GET /api/products — used by marketplace, accepts optional filters */
   getAll(filters?: { isActive?: boolean; categoryId?: string }): Observable<any[]> {
     let params = new HttpParams();
     if (filters?.isActive !== undefined) params = params.set('isActive', String(filters.isActive));
@@ -64,33 +65,27 @@ export class ProductService {
     return this.http.get<any>(`${this.url}/rental`).pipe(map(unwrap));
   }
 
-  /** GET /api/products/search?q=term */
   search(term: string): Observable<any[]> {
     const params = new HttpParams().set('q', term);
     return this.http.get<any>(`${this.url}/search`, { params }).pipe(map(unwrap));
   }
 
-  /** GET /api/products/{id} */
   getById(id: string): Observable<any> {
     return this.http.get<any>(`${this.url}/${id}`).pipe(map(unwrapOne));
   }
 
-  /** POST /api/products — seller creates product */
   create(data: any): Observable<any> {
     return this.http.post<any>(this.url, data).pipe(map(unwrapOne));
   }
 
-  /** PUT /api/products/{id} */
   update(id: string, data: any): Observable<any> {
     return this.http.put<any>(`${this.url}/${id}`, data).pipe(map(unwrapOne));
   }
 
-  /** DELETE /api/products/{id} */
   delete(id: string): Observable<any> {
     return this.http.delete<any>(`${this.url}/${id}`);
   }
 
-  // alias used by admin component
   getMyProducts(): Observable<any[]> {
     return this.getAll();
   }

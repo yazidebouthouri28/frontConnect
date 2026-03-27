@@ -1,6 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { EventDetailComponent, Event } from '../event-detail/event-detail.component';
+import { EventDetailComponent } from '../event-detail/event-detail.component';
+import { Event } from '../../models/event.model';
+import { CandidatureService } from '../../services/candidature.service';
+import { AuthService } from '../../services/auth.service';
+import { EventServiceEntity } from '../../models/event-service-entity.model';
 
 @Component({
   selector: 'app-events-management',
@@ -11,6 +15,11 @@ import { EventDetailComponent, Event } from '../event-detail/event-detail.compon
 })
 export class EventsManagementComponent {
   selectedEvent: Event | null = null;
+  
+  constructor(
+    private candidatureService: CandidatureService,
+    private authService: AuthService
+  ) {}
   events: Event[] = [
     { id: 1, title: 'Wilderness Survival Skills Workshop', type: 'workshop', date: 'Feb 15, 2026', time: '9:00 AM - 4:00 PM', location: 'Zaghouan Mountain, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080', participants: 18, maxParticipants: 25, price: 85, organizer: 'Tunis Adventure Co.' },
     { id: 2, title: 'Summer Camping Music Festival', type: 'festival', date: 'Jul 4-6, 2026', time: 'All Day', location: 'Kelibia Beach, Tunisia', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1080', participants: 342, maxParticipants: 500, price: 195, organizer: 'Carthage Sounds' },
@@ -45,5 +54,29 @@ export class EventsManagementComponent {
 
   clearSelection() {
     this.selectedEvent = null;
+  }
+
+  onApplyWorker(data: { event: Event, service: EventServiceEntity }) {
+    if (!this.authService.isAuthenticated()) {
+      alert('You must be logged in to apply.');
+      return;
+    }
+
+    const userId = Number(this.authService.getCurrentUser()?.id);
+    const motivation = prompt(`Apply for ${data.service.name}. Why should we pick you?`);
+    
+    if (motivation === null) return;
+
+    const candidature = {
+      motivation: motivation,
+      status: 'PENDING',
+      eventId: data.event.id,
+      serviceId: data.service.id
+    };
+
+    this.candidatureService.apply(data.service.id, userId, candidature).subscribe({
+      next: () => alert('Application submitted successfully!'),
+      error: (err) => alert('Failed to submit application: ' + (err.error?.message || err.message))
+    });
   }
 }

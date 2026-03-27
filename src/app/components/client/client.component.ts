@@ -8,6 +8,7 @@ import { OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { ApiService } from '../../services/api.service';
+import { PromotionService } from '../../modules/services/services/promotion.service';
 import { CartItem, Wallet, WalletTransaction, Order, CreateOrderDto } from '../../models/api.models';
 
 @Component({
@@ -64,6 +65,13 @@ export class ClientComponent implements OnInit {
   latestOrderId = '';
   lastEarnedPoints = 0;
 
+  // Promo Code
+  promoCode = '';
+  appliedPromoCode = '';
+  promoDiscount = 0;
+  promoError = '';
+  isApplyingPromo = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -72,8 +80,9 @@ export class ClientComponent implements OnInit {
     private orderService: OrderService,
     private authService: AuthService,
     private notificationService: NotificationService,
-    private apiService: ApiService
-  ) {}
+    private apiService: ApiService,
+    private promotionService: PromotionService
+  ) { }
 
   ngOnInit() {
     // Load user info
@@ -101,6 +110,15 @@ export class ClientComponent implements OnInit {
     this.cartService.cart$.subscribe(items => {
       this.cartItems = items;
       this.updateCartBadge();
+    });
+
+    this.cartService.discount$.subscribe(discount => {
+      this.promoDiscount = discount;
+    });
+
+    this.cartService.promoCode$.subscribe(code => {
+      this.appliedPromoCode = code;
+      this.promoCode = code;
     });
 
     // Load data
@@ -147,15 +165,50 @@ export class ClientComponent implements OnInit {
   }
 
   get cartSubtotal(): number {
-    return this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return this.cartService.getSubtotal();
+  }
+
+  get cartDiscount(): number {
+    return this.cartService.getDiscountAmount();
   }
 
   get cartTax(): number {
-    return this.cartSubtotal * 0.1;
+    // Tax on subtotal after discount
+    return (this.cartSubtotal - this.cartDiscount) * 0.1;
   }
 
   get cartTotal(): number {
-    return this.cartSubtotal + this.shippingCost + this.cartTax;
+    return this.cartSubtotal - this.cartDiscount + this.cartTax + (this.cartItems.length > 0 ? this.shippingCost : 0);
+  }
+
+  applyPromoCode() {
+    if (!this.promoCode || this.promoCode.trim().length === 0) return;
+
+    this.isApplyingPromo = true;
+    this.promoError = '';
+
+    this.promotionService.validateCode(this.promoCode, this.cartSubtotal).subscribe({
+      next: (res: any) => {
+        this.isApplyingPromo = false;
+        if (res && res.data) {
+          const promo = res.data;
+          this.cartService.applyDiscount(promo.discountValue, this.promoCode);
+          alert(`✅ Promo code "${this.promoCode}" applied! You saved ${promo.discountValue}%`);
+        } else {
+          this.promoError = 'Invalid promo code';
+        }
+      },
+      error: (err) => {
+        this.isApplyingPromo = false;
+        this.promoError = err.error?.message || 'Invalid or expired promo code';
+        console.error('Promo error:', err);
+      }
+    });
+  }
+
+  clearPromoCode() {
+    this.cartService.clearDiscount();
+    this.promoCode = '';
   }
 
   get filteredOrders(): Order[] {

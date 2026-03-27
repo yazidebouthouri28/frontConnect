@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { RouterLink, ActivatedRoute } from '@angular/router';
-import { UserService, User } from '../../services/user.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { UserService } from '../../services/user.service';
+import { User } from '../../models/api.models';
 
 interface Post {
     id: number;
@@ -9,6 +11,9 @@ interface Post {
     date: string;
     content: string;
     image?: string;
+    likes: number;
+    userHasLiked: boolean;
+    comments: { userName: string; text: string; date: string }[];
 }
 
 interface Highlight {
@@ -20,7 +25,7 @@ interface Highlight {
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule, FormsModule],
     templateUrl: './profile.component.html',
     styleUrls: ['./profile.component.css']
 })
@@ -29,49 +34,39 @@ export class ProfileComponent implements OnInit {
     viewedUser: User | null = null;
     activeTab: string = 'adventure';
     isOwnProfile: boolean = false;
+    isFollowing: boolean = false;
+    followingCount: number = 0;
+    selectedPostMedia: string | null = null;
 
     posts: Post[] = [
         {
             id: 1,
             userName: '',
-            date: 'December 31, 2025',
-            content: 'Just updated my profile picture for the new year adventure!',
-            image: 'https://images.unsplash.com/photo-1627820988643-8077d82eed7d?q=80&w=1080'
-        },
-        {
-            id: 2,
-            userName: '',
-            date: 'December 28, 2025',
-            content: 'Incredible experience at Jebel ech Chambi. The view from the top is worth every drop of sweat! 🏔️✨',
-            image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1080'
-        },
-        {
-            id: 3,
-            userName: '',
-            date: 'December 20, 2025',
-            content: 'Starting my digital detox week. See you guys back in the wilderness! 🌲📵'
+            date: '2 hours ago',
+            content: 'Exploring the beauty of the outdoors! ⛰️🌳',
+            image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200',
+            likes: 124,
+            userHasLiked: false,
+            comments: []
         }
     ];
 
     follows = [
-        { name: 'Sarah Johnson', avatar: 'SJ', role: 'Mountain Guide', bio: 'Exploring the peaks since 2015.' },
-        { name: 'Mike Chen', avatar: 'MC', role: 'Outdoor Photographer', bio: 'Capturing nature one frame at a time.' },
-        { name: 'Emma Wilson', avatar: 'EW', role: 'Backpacking Expert', bio: 'Living out of a bag 6 months a year.' },
-        { name: 'David Brown', avatar: 'DB', role: 'Survivalist', bio: 'Wilderness is my second home.' }
+        { name: 'Sarah Johnson', avatar: 'SJ', role: 'Mountain Guide', bio: 'Exploring the peaks since 2015.' }
     ];
 
     highlights: Highlight[] = [
-        { id: 1, title: 'Gym', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600' },
-        { id: 2, title: 'Diving', image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600' },
-        { id: 3, title: 'Gaming', image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600' },
-        { id: 4, title: 'Skydiving', image: 'https://images.unsplash.com/photo-1521033029917-5975a2d7c37e?q=80&w=600' },
-        { id: 5, title: 'Books', image: 'https://images.unsplash.com/photo-1491843325424-02fe657702f3?q=80&w=600' },
-        { id: 6, title: 'Kilimanjaro', image: 'https://images.unsplash.com/photo-1589118949245-7d38baf380d6?q=80&w=600' },
-        { id: 7, title: 'Surf Agadir', image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?q=80&w=600' }
+        { id: 1, title: 'Nature', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600' }
     ];
+
+    isEditing: boolean = false;
+    editForm: any = { name: '', bio: '', location: '', avatar: '', coverImage: '' };
+    newCommentTexts: { [key: number]: string } = {};
+    newPostContent: string = '';
 
     constructor(
         private route: ActivatedRoute,
+        private router: Router,
         private userService: UserService,
         private location: Location
     ) { }
@@ -82,16 +77,34 @@ export class ProfileComponent implements OnInit {
         this.route.params.subscribe(params => {
             const id = params['id'];
             if (id && id !== 'me' && id !== this.currentUser?.id) {
-                this.viewedUser = this.userService.getUserById(id) || null;
-                this.isOwnProfile = false;
+                this.userService.getUserById(id).subscribe(user => {
+                    this.viewedUser = user;
+                    this.isOwnProfile = false;
+                    this.loadUserStats();
+                });
             } else {
                 this.viewedUser = this.currentUser;
                 this.isOwnProfile = true;
+                if (this.currentUser) {
+                    this.editForm = { ...this.currentUser };
+                    this.loadUserStats();
+                }
             }
+        });
+    }
 
-            if (this.viewedUser) {
-                this.posts.forEach(post => post.userName = this.viewedUser?.name || 'Explorer');
-            }
+    private loadUserStats() {
+        if (!this.viewedUser) return;
+
+        this.posts.forEach(post => post.userName = this.viewedUser?.name || 'Explorer');
+
+        this.userService.isFollowing(this.viewedUser.id).subscribe(val => this.isFollowing = val);
+        this.userService.getFollowerCount(this.viewedUser.id).subscribe(val => {
+            if (this.viewedUser) this.viewedUser.followers = val;
+        });
+        this.userService.getFollowingCount(this.viewedUser.id).subscribe(val => {
+            this.followingCount = val;
+            if (this.viewedUser) this.viewedUser.following = val;
         });
     }
 
@@ -99,11 +112,95 @@ export class ProfileComponent implements OnInit {
         this.activeTab = tab;
     }
 
-    addHighlight() {
-        console.log('Add highlight clicked');
+    startEdit() {
+        this.isEditing = true;
+    }
+
+    cancelEdit() {
+        this.isEditing = false;
+        if (this.currentUser) this.editForm = { ...this.currentUser };
+    }
+
+    saveProfile() {
+        if (this.currentUser) {
+            this.userService.updateUserProfile(this.currentUser.id, this.editForm).subscribe(updated => {
+                this.currentUser = updated;
+                this.viewedUser = { ...this.currentUser };
+                this.isEditing = false;
+            });
+        }
+    }
+
+    toggleFollow() {
+        if (!this.viewedUser) return;
+
+        if (this.isFollowing) {
+            this.userService.unfollowUser(this.viewedUser.id).subscribe(() => {
+                this.isFollowing = false;
+                this.loadUserStats();
+            });
+        } else {
+            this.userService.followUser(this.viewedUser.id).subscribe(() => {
+                this.isFollowing = true;
+                this.loadUserStats();
+            });
+        }
+    }
+
+    toggleLike(post: Post) {
+        post.userHasLiked = !post.userHasLiked;
+        post.likes += post.userHasLiked ? 1 : -1;
+    }
+
+    addComment(post: Post) {
+        const text = this.newCommentTexts[post.id];
+        if (!text || !text.trim()) return;
+        post.comments.push({
+            userName: this.currentUser?.name || 'User',
+            text: text,
+            date: 'Just now'
+        });
+        this.newCommentTexts[post.id] = '';
+    }
+
+    onPostMediaSelected(event: any) {
+        const file = event.target.files[0];
+        if (file) this.selectedPostMedia = URL.createObjectURL(file);
+    }
+
+    publishPost() {
+        if (!this.newPostContent.trim() && !this.selectedPostMedia) return;
+        const newPost: Post = {
+            id: Date.now(),
+            userName: this.currentUser?.name || 'Explorer',
+            date: 'Just now',
+            content: this.newPostContent,
+            image: this.selectedPostMedia || undefined,
+            likes: 0,
+            userHasLiked: false,
+            comments: []
+        };
+        this.posts.unshift(newPost);
+        this.newPostContent = '';
+        this.selectedPostMedia = null;
+    }
+
+    openMessageWithUser() {
+        if (!this.viewedUser) return;
+        this.router.navigate(['/community'], { queryParams: { chatWith: this.viewedUser.id } });
     }
 
     goBack() {
         this.location.back();
     }
+
+    onAddHighlight() {
+        console.log('Add highlight clicked');
+    }
+    addHighlight() { this.onAddHighlight(); }
+
+    onAddStory() {
+        console.log('Add story clicked');
+    }
+    addStory() { this.onAddStory(); }
 }

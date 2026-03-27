@@ -1,5 +1,5 @@
 <div class="flex h-screen bg-[#F5F2E8] overflow-hidden font-sans">
-  <app-admin-sidebar [activeSection]="activeSection()" (onSectionChange)="setSection($event)"
+  <app-admin-sidebar *ngIf="user()?.role !== 'PARTICIPANT'" [activeSection]="activeSection()" (onSectionChange)="setSection($event)"
     (logoutClicked)="onLogout()" />
   <main class="flex-1 flex flex-col overflow-hidden">
     <!-- Top Header Refined -->
@@ -24,10 +24,11 @@
         <div class="relative">
           <button (click)="toggleMenu()"
             class="flex items-center gap-3 p-1.5 pl-3 rounded-2xl bg-white/10 border border-white/10 hover:border-white/20 transition-all group">
-            <span class="text-xs font-black text-white uppercase tracking-tight">Admin Profile</span>
+            <span class="text-xs font-black text-white uppercase tracking-tight">{{ user()?.name || 'Admin User'
+              }}</span>
             <div
               class="w-8 h-8 rounded-xl bg-white text-[#2C4A3C] flex items-center justify-center text-xs font-black group-hover:scale-105 transition-transform">
-              AD
+              {{ (user()?.name || 'A')[0] }}
             </div>
           </button>
 
@@ -36,7 +37,7 @@
             class="absolute top-14 right-0 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 z-50 animate-slide-up">
             <div class="px-5 py-2 mb-2">
               <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account Authority</p>
-              <p class="text-xs font-black text-[#1a2e1a]">Senior Administrator</p>
+              <p class="text-xs font-black text-[#1a2e1a]">{{ user()?.role || 'Senior Administrator' }}</p>
             </div>
             <div class="h-px bg-gray-50 my-2"></div>
             <button (click)="closeMenu()"
@@ -58,9 +59,13 @@
     </header>
 
     <div class="flex-1 overflow-y-auto">
+      @if (isChildRoute) {
+      <router-outlet></router-outlet>
+      } @else {
       @switch (renderContent()) {
       @case ('dashboard') {
-      <app-admin-dashboard />
+      <app-admin-dashboard *ngIf="user()?.role !== 'PARTICIPANT'" (onSectionChange)="setSection($event)" />
+      <app-participant-dashboard *ngIf="user()?.role === 'PARTICIPANT'" (onSectionChange)="setSection($event)" />
       }
       @case ('sponsors') {
       <app-sponsors-management />
@@ -77,8 +82,20 @@
       @case ('rentals_management') {
       <app-marketplace-management [section]="activeSection()" />
       }
-      @case ('services') {
-      <app-services-management />
+      @case ('services_users') {
+      <app-service-list [adminViewMode]="'USER'" />
+      }
+      @case ('services_orgs') {
+      <app-service-list [adminViewMode]="'ORGANIZER'" />
+      }
+      @case ('packs') {
+      <app-pack-list />
+      }
+      @case ('promotions') {
+      <app-promotion-list />
+      }
+      @case ('emergency') {
+      <app-alerte-dashboard />
       }
       @case ('users') {
       <app-users-management />
@@ -95,11 +112,15 @@
       @case ('events') {
       <app-events-admin-management />
       }
-      @case ('camp_highlights') {
-      <app-camp-highlights-management />
-      }
       @case ('moderation') {
       <app-moderation-panel />
+      }
+      @case ('candidatures') {
+      @if (user()?.role === 'ADMIN' || user()?.role === 'ORGANIZER') {
+      <app-candidature-manage />
+      } @else if (user()?.role === 'PARTICIPANT') {
+      <app-candidature-list (browseEvents)="setSection('events')" />
+      }
       }
       @default {
       <div class="p-6">
@@ -108,6 +129,7 @@
           <p class="text-olive">This section will be available soon</p>
         </div>
       </div>
+      }
       }
       }
     </div>

@@ -8,6 +8,8 @@ export interface Campsite {
   price: number;
   amenities: string[];
   distance: number;
+  style?: string;
+  intensity?: string;
 }
 
 export interface Event {

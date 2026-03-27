@@ -55,7 +55,7 @@
               <div class="bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/20 font-black text-xs">
                 {{ campsite.price }} DT <span class="opacity-60 text-[10px]">/ night</span>
               </div>
-              <a [routerLink]="['/campsites', campsite.id]"
+              <a [routerLink]="['/campsites', campsite.id]" queryParamsHandling="preserve"
                 class="bg-white text-forest px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-sage transform transition-all active:scale-95 shadow-2xl">
                 Discover Now
               </a>
@@ -113,7 +113,7 @@
             @if (campsite.distance !== null) {
             <div class="text-sm text-olive mb-4">{{ campsite.distance }} miles away</div>
             }
-            <a [routerLink]="['/campsites', campsite.id]"
+            <a [routerLink]="['/campsites', campsite.id]" queryParamsHandling="preserve"
               class="block w-full text-center bg-olive hover:bg-forest text-cream py-2 px-4 rounded-lg transition-colors min-h-[44px]">View
               Details</a>
           </div>

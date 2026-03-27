@@ -1,33 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { UserService, User } from '../../services/user.service';
-
-interface Message {
-    id: string;
-    senderId: string;
-    content: string;
-    timestamp: string;
-    type: 'text' | 'image' | 'file';
-    imageUrls?: string[];
-}
-
-interface ChatGroup {
-    id: string;
-    name: string;
-    description: string;
-    avatar: string;
-    membersCount: number;
-    members: User[];
-    messages: Message[];
-    mediaCount: {
-        docs: number;
-        photos: number;
-        music: number;
-        video: number;
-    };
-}
+import { Router, ActivatedRoute } from '@angular/router';
+import { UserService } from '../../services/user.service';
+import { User } from '../../models/api.models';
+import { ChatService } from '../../services/chat.service';
+import { interval, Subscription } from 'rxjs';
+import { startWith, switchMap } from 'rxjs/operators';
 
 @Component({
     selector: 'app-community-forum',
@@ -36,165 +15,469 @@ interface ChatGroup {
     templateUrl: './community-forum.component.html',
     styleUrls: ['./community-forum.component.css']
 })
-export class CommunityForumComponent implements OnInit {
-    currentUser: User = {
-        id: 'me',
-        name: 'Ahmed Ben Salem',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150',
-        role: 'Adventure Guide',
-        bio: 'Professional guide with 10 years of experience in the Tunisian mountains.',
-        coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800',
-        location: 'Hammamet, Tunisia',
-        hashtags: ['#Hiking', '#Guide'],
-        followers: '1.2K',
-        gallery: [
-            'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=200',
-            'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=200',
-            'https://images.unsplash.com/photo-1496062031456-07b8f162a322?q=80&w=200'
-        ]
-    };
+export class CommunityForumComponent implements OnInit, OnDestroy, AfterViewChecked {
+    @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
-    onlineUsers: User[] = [
-        {
-            id: '1', name: 'Yassine Trabelsi', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150', status: 'online', role: 'Gear Expert',
-            bio: 'Gear specialist and outdoor enthusiast. If you need equipment advice for the Sahara, I am your guy!',
-            coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800',
-            location: 'Tunis, Tunisia',
-            hashtags: ['#Gear', '#Camping'],
-            followers: '5k+',
-            gallery: [
-                'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=200',
-                'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?q=80&w=200'
-            ],
-            achievements: [{ title: 'Peak Conqueror', icon: '🏔️' }, { title: 'First Aid', icon: '🩹' }]
-        },
-        { id: '2', name: 'Mariem Guezguez', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150', status: 'online', role: 'Survivalist', bio: 'Exploring the wild side of Tunisia.', coverImage: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=800' },
-        { id: '3', name: 'Selim Riahi', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150', status: 'online', role: 'Trail Photographer', bio: 'Capturing nature.', coverImage: 'https://images.unsplash.com/photo-1496062031456-07b8f162a322?q=80&w=800' },
-        { id: '4', name: 'Ines Ben Ammar', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150', status: 'online', role: 'Seasoned Hiker', bio: 'Always on the move.', coverImage: 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=800' },
-        { id: '5', name: 'Sami Karray', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150', status: 'online', role: 'Backpacker', bio: 'Traveler.', coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800' },
-    ];
-
-    recentChats: any[] = [
-        { id: 'g1', name: 'Tunisian Hikers', avatar: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?q=80&w=150', lastMessage: 'Great spot for camping!', time: '5:23 PM', type: 'group' },
-        { id: 'u1', name: 'Yassine Trabelsi', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150', lastMessage: 'Gear list sent.', time: '5:23 PM', unread: 0, type: 'private' },
-        { id: 'u2', name: 'Mariem Guezguez', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150', lastMessage: 'Typing...', time: '4:00 PM', type: 'typing' },
-        { id: 'u3', name: 'Selim Riahi', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150', lastMessage: 'See you at the trail!', time: '3:41 PM', unread: 3, type: 'private' },
-    ];
-
-    // Mock data for different groups
-    private allGroups: { [key: string]: ChatGroup } = {
-        'g1': {
-            id: 'g1',
-            name: 'Tunisian Hikers',
-            description: 'Exploring the North and the South together.',
-            avatar: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?q=80&w=150',
-            membersCount: 15,
-            members: [
-                this.onlineUsers[3], // Ines
-                this.onlineUsers[0], // Yassine
-                this.onlineUsers[2], // Selim
-            ],
-            messages: [
-                { id: 'm1', senderId: '4', content: 'Anyone knows a good camping spot near Beni M Tir?', timestamp: '09:00 AM', type: 'text' },
-                { id: 'm2', senderId: '3', content: "I suggest the forest area near the lake, the view is amazing!", timestamp: '09:45 AM', type: 'text' },
-                { id: 'm3', senderId: '3', content: '', timestamp: '09:45 AM', type: 'image', imageUrls: ['https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=300', 'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?q=80&w=300'] },
-                { id: 'm4', senderId: '4', content: 'Wow, that looks perfect! I will check it out.', timestamp: '09:48 AM', type: 'text' },
-                { id: 'm5', senderId: '3', content: 'Make sure to bring a warm sleeping bag, it gets cold in the mountains.', timestamp: '09:50 AM', type: 'text' },
-            ],
-            mediaCount: { docs: 12, photos: 85, music: 5, video: 0 }
-        },
-        'u1': {
-            id: 'u1',
-            name: 'Yassine Trabelsi',
-            description: 'Private message',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150',
-            membersCount: 2,
-            members: [this.onlineUsers[0]],
-            messages: [
-                { id: 'pm1', senderId: '1', content: 'Hey! I sent you the gear list for our Douz trip.', timestamp: '10:30 AM', type: 'text' },
-                { id: 'pm2', senderId: 'me', content: 'Thanks Yassine! I will check it out tonight.', timestamp: '10:35 AM', type: 'text' },
-                { id: 'pm3', senderId: '1', content: 'Great, let me know if you need any adjustments.', timestamp: '10:40 AM', type: 'text' },
-            ],
-            mediaCount: { docs: 2, photos: 5, music: 0, video: 0 }
-        },
-        'u3': {
-            id: 'u3',
-            name: 'Selim Riahi',
-            description: 'Private message',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150',
-            membersCount: 2,
-            members: [this.onlineUsers[2]],
-            messages: [
-                { id: 'gm1', senderId: '3', content: 'Those photos from Zaghouan are coming out great!', timestamp: '03:15 PM', type: 'text' },
-                { id: 'gm2', senderId: '3', content: 'See you at the trail!', timestamp: '03:41 PM', type: 'text' },
-            ],
-            mediaCount: { docs: 0, photos: 12, music: 0, video: 0 }
-        }
-    };
-
-    activeGroup: ChatGroup = this.allGroups['g1'];
+    currentUser: User | null = null;
+    onlineUsers: any[] = [];
+    rooms: any[] = [];
+    activeRoom: any = null;
+    messages: any[] = [];
     newMessage: string = '';
-    selectedUser: User | null = null;
+    isLoadingRooms = true;
+    isLoadingMessages = false;
+    selectedFile: File | null = null;
+    targetUserId: number | null = null;
+
+    // Voice & Media state
+    isRecording = false;
+    recordingDuration = 0;
+    private mediaRecorder: any;
+    private audioChunks: any[] = [];
+    private recordingTimer: any;
+
+    // Interactive state
+    showGroupModal = false;
+    newGroupName = '';
+    newGroupDesc = '';
+    allUsers: any[] = [];
+    selectedMemberIds: number[] = [];
+    showReactionPickerFor: number | null = null;
+    reactions = ['👍', '❤️', '😂', '😮', '😢', '😡'];
+
+    private shouldScroll = false;
+    private pollSubscription?: Subscription;
 
     constructor(
         private router: Router,
-        private userService: UserService
+        private route: ActivatedRoute,
+        private userService: UserService,
+        private chatService: ChatService
     ) { }
 
     ngOnInit(): void {
         this.currentUser = this.userService.getCurrentUser();
+
+        this.route.queryParams.subscribe(params => {
+            const chatWithId = params['chatWith'];
+            if (chatWithId) {
+                this.targetUserId = Number(chatWithId);
+                this.handleDirectChat(chatWithId);
+            } else {
+                this.loadRooms();
+            }
+        });
+
+        this.loadOnlineUsers();
+        this.loadAllUsers();
+        // Refresh online list every 10 seconds
+        interval(10000).subscribe(() => this.loadOnlineUsers());
     }
 
-    switchChat(chat: any) {
-        if (this.allGroups[chat.id]) {
-            this.activeGroup = this.allGroups[chat.id];
-            this.selectedUser = null; // Reset profile view when switching chats
-        } else if (chat.type !== 'group') {
-            // Create a temporary private chat if not exists
-            this.allGroups[chat.id] = {
-                id: chat.id,
-                name: chat.name,
-                description: 'Private message',
-                avatar: chat.avatar,
-                membersCount: 2,
-                members: [{ id: chat.id, name: chat.name, avatar: chat.avatar, role: 'Explorer' }],
-                messages: [{ id: 'm-init', senderId: chat.id, content: 'Hey there! How can I help you?', timestamp: 'Just now', type: 'text' }],
-                mediaCount: { docs: 0, photos: 0, music: 0, video: 0 }
-            };
-            this.activeGroup = this.allGroups[chat.id];
-            this.selectedUser = null;
+    ngOnDestroy(): void {
+        this.stopPolling();
+    }
+
+    ngAfterViewChecked() {
+        this.scrollToBottom();
+    }
+
+    private scrollToBottom(): void {
+        if (this.shouldScroll && this.scrollContainer) {
+            this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight;
+            this.shouldScroll = false;
         }
     }
 
-    viewProfile(user: User | undefined) {
-        if (user) {
-            this.router.navigate(['/profile', user.id]);
+    // ── Real-time Polling ─────────────────────────────────────────────────────
+
+    private startPolling(roomId: number) {
+        this.stopPolling();
+        this.pollSubscription = interval(3000).pipe(
+            startWith(0),
+            switchMap(() => this.chatService.getMessages(roomId))
+        ).subscribe(msgs => {
+            if (msgs.length > this.messages.length) {
+                this.messages = msgs;
+                this.shouldScroll = true;
+            }
+        });
+    }
+
+    private stopPolling() {
+        if (this.pollSubscription) this.pollSubscription.unsubscribe();
+    }
+
+    // ── Interactive Features ──────────────────────────────────────────────────
+
+    reactToMessage(msgId: number, reaction: string) {
+        const msg = this.messages.find(m => m.id === msgId);
+        if (msg) {
+            if (!msg.reactions) msg.reactions = {};
+            msg.reactions[reaction] = (msg.reactions[reaction] || 0) + 1;
+            this.showReactionPickerFor = null;
+            // In a real app, call this.chatService.addReaction(msgId, reaction)
+        }
+    }
+
+    deleteMessage(msgId: number) {
+        if (confirm('Delete this message?')) {
+            const tempMsgs = [...this.messages];
+            this.messages = this.messages.filter(m => m.id !== msgId);
+
+            this.chatService.deleteMessage(msgId).subscribe({
+                error: () => {
+                    this.messages = tempMsgs;
+                    alert('Could not delete message from server.');
+                }
+            });
+        }
+    }
+
+    simulateBotResponse() {
+        const responses = [
+            "That sounds like an amazing adventure!",
+            "I've been there too, the view is breathtaking.",
+            "Make sure to bring extra supplies for that trek.",
+            "Can you share more photos of the landscape?",
+            "I'm planning a similar trip next month!",
+            "Did you see the hidden waterfall near the camp?"
+        ];
+
+        setTimeout(() => {
+            const botMsg = {
+                id: Date.now(),
+                content: responses[Math.floor(Math.random() * responses.length)],
+                senderName: 'Adventurer Bot',
+                senderId: 999, // Bot ID
+                sentAt: new Date(),
+                messageType: 'TEXT'
+            };
+            this.messages.push(botMsg);
+            this.shouldScroll = true;
+        }, 2000);
+    }
+
+    getSharedMedia() {
+        return this.messages
+            .filter(m => m.mediaUrl)
+            .map(m => ({
+                url: m.mediaUrl,
+                type: m.messageType,
+                name: m.fileName || 'Shared Media',
+                sentAt: m.sentAt
+            }))
+            .slice(-6); // Only show last 6 items for clean sidebar
+    }
+
+    // ── Voice Recording ───────────────────────────────────────────────────────
+
+    async startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.audioChunks = [];
+            this.mediaRecorder.ondataavailable = (event: any) => this.audioChunks.push(event.data);
+            this.mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                this.sendVoiceMessage(audioBlob);
+            };
+            this.mediaRecorder.start();
+            this.isRecording = true;
+            this.recordingDuration = 0;
+            this.recordingTimer = setInterval(() => this.recordingDuration++, 1000);
+        } catch (err) {
+            alert('Could not access microphone: ' + err);
+        }
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.isRecording) {
+            this.mediaRecorder.stop();
+            this.isRecording = false;
+            clearInterval(this.recordingTimer);
+            this.mediaRecorder.stream.getTracks().forEach((t: any) => t.stop());
+        }
+    }
+
+    sendVoiceMessage(blob: Blob) {
+        const mockVoiceUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        this.proceedWithSendMessage(false, mockVoiceUrl, 'voice-message.wav', 'AUDIO');
+    }
+
+    // ── Data Loading & Logic ──────────────────────────────────────────────────
+
+    loadRooms() {
+        this.isLoadingRooms = true;
+        const userId = this.getNumericUserId();
+        this.chatService.getMyRooms(userId).subscribe({
+            next: (rooms) => {
+                this.rooms = rooms;
+                if (rooms.length > 0) this.selectRoom(rooms[0]);
+                else this.loadPublicRooms();
+                this.isLoadingRooms = false;
+            },
+            error: () => this.loadPublicRooms()
+        });
+    }
+
+    loadPublicRooms() {
+        this.chatService.getPublicRooms().subscribe({
+            next: (rooms) => {
+                this.rooms = rooms;
+                if (this.rooms.length === 0) this.rooms = [{ id: 0, name: 'Adventure Hub', description: 'Global community chat.' }];
+                this.isLoadingRooms = false;
+                if (!this.activeRoom && this.rooms.length > 0) this.selectRoom(this.rooms[0]);
+            },
+            error: () => {
+                this.isLoadingRooms = false;
+                this.rooms = [{ id: 0, name: 'Local Chat', description: 'Self-repairing link.' }];
+                if (!this.activeRoom) this.selectRoom(this.rooms[0]);
+            }
+        });
+    }
+
+    loadOnlineUsers() {
+        this.userService.getActiveUsers().subscribe({
+            next: (res) => {
+                const users = res.data?.content || res.data || [];
+                // Filter out current user and map to match UI if needed
+                this.onlineUsers = users.filter((u: any) => u.id !== this.currentUser?.id);
+            }
+        });
+    }
+
+    loadAllUsers() {
+        this.userService.getAllUsers().subscribe({
+            next: (res) => {
+                this.allUsers = res.data?.content || res.data || [];
+            }
+        });
+    }
+
+    toggleMemberSelection(userId: any) {
+        const id = Number(userId);
+        if (this.selectedMemberIds.includes(id)) {
+            this.selectedMemberIds = this.selectedMemberIds.filter(mid => mid !== id);
+        } else {
+            this.selectedMemberIds.push(id);
+        }
+    }
+
+    handleDirectChat(targetId: string) {
+        this.isLoadingRooms = true;
+        const userId = this.getNumericUserId();
+
+        this.userService.getUserById(targetId).subscribe({
+            next: (targetUser) => {
+                if (!targetUser) { this.loadRooms(); return; }
+
+                // Try to find existing private chat in current rooms first
+                this.chatService.getMyRooms(userId).subscribe(rooms => {
+                    const existing = rooms.find(r =>
+                        (r.type === 'PRIVATE' || r.name.toLowerCase().includes(targetUser.name.toLowerCase())) &&
+                        !r.isPublic
+                    );
+
+                    if (existing) {
+                        this.rooms = rooms;
+                        this.selectRoom(existing);
+                        this.isLoadingRooms = false;
+                    } else {
+                        // If not found in my rooms, check public (unlikely for private) or create temp
+                        this.chatService.getPublicRooms().subscribe(publicRooms => {
+                            const room = publicRooms.find(r => r.name.toLowerCase().includes(targetUser.name.toLowerCase()));
+                            if (room) {
+                                this.rooms = publicRooms;
+                                this.selectRoom(room);
+                            } else {
+                                const newRoom: any = {
+                                    id: 0,
+                                    name: targetUser.name,
+                                    description: 'Private Chat',
+                                    isPrivate: true,
+                                    type: 'PRIVATE',
+                                    members: [targetUser],
+                                    targetUserId: Number(targetId)
+                                };
+                                this.rooms = [newRoom, ...publicRooms];
+                                this.selectRoom(newRoom);
+                            }
+                            this.isLoadingRooms = false;
+                        });
+                    }
+                });
+            },
+            error: () => {
+                this.loadRooms();
+                this.isLoadingRooms = false;
+            }
+        });
+    }
+
+    selectRoom(room: any) {
+        this.activeRoom = room;
+        this.messages = [];
+        this.stopPolling();
+
+        if (room.id === 0) {
+            this.messages = [{ id: -1, content: 'Say something to start the adventure!', senderName: 'System', sentAt: new Date(), messageType: 'TEXT' }];
+            return;
+        }
+
+        this.isLoadingMessages = true;
+        this.chatService.getMessages(room.id).subscribe({
+            next: (msgs) => {
+                this.messages = msgs;
+                this.isLoadingMessages = false;
+                this.shouldScroll = true;
+                this.startPolling(room.id);
+            },
+            error: () => {
+                this.isLoadingMessages = false;
+                this.messages = [{ id: -1, content: 'Conversation started!', senderName: 'System', sentAt: new Date(), messageType: 'TEXT' }];
+                this.startPolling(room.id);
+            }
+        });
+    }
+
+    onFileSelected(event: any) {
+        const file = event.target.files[0];
+        if (file) {
+            const isImage = file.type.startsWith('image/');
+            const mockUrl = isImage ? 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=500' : 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+            this.proceedWithSendMessage(isImage, mockUrl, file.name, isImage ? 'IMAGE' : 'FILE');
         }
     }
 
     sendMessage() {
-        if (this.newMessage.trim()) {
-            const msg: Message = {
-                id: Date.now().toString(),
-                senderId: 'me',
-                content: this.newMessage,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                type: 'text'
-            };
-            this.activeGroup.messages.push(msg);
-            this.newMessage = '';
+        if (!this.newMessage.trim() || !this.activeRoom || !this.currentUser) return;
+        if (this.activeRoom.id === 0) {
+            this.ensureRoomExistsAndSend();
+            return;
         }
+        this.proceedWithSendMessage();
     }
 
-    isCurrentUser(senderId: string): boolean {
-        return senderId === 'me';
+    private ensureRoomExistsAndSend() {
+        const creatorId = this.getNumericUserId();
+
+        const memberIds = [creatorId];
+        if (this.activeRoom.targetUserId) {
+            memberIds.push(this.activeRoom.targetUserId);
+        } else if (this.activeRoom.members) {
+            this.activeRoom.members.forEach((m: any) => {
+                const mid = Number(String(m.id).match(/\d+/)?.[0] || m.id);
+                if (mid && mid !== creatorId) memberIds.push(mid);
+            });
+        }
+
+        const data = {
+            name: this.activeRoom.name,
+            description: this.activeRoom.description,
+            type: this.activeRoom.type || (this.activeRoom.isPrivate ? 'PRIVATE' : 'PUBLIC'),
+            isPublic: !this.activeRoom.isPrivate,
+            memberIds: [...new Set(memberIds)]
+        };
+
+        this.chatService.createRoom(creatorId, data).subscribe({
+            next: (room) => {
+                this.activeRoom.id = room.id;
+                this.proceedWithSendMessage();
+                this.startPolling(room.id);
+            },
+            error: (err) => alert('Sync Error: ' + (err.message || 'Database mismatch.'))
+        });
     }
 
-    getSender(senderId: string): User | undefined {
-        if (senderId === 'me') return this.currentUser;
-        // Search in online users, then in current group members
-        return this.onlineUsers.find(u => u.id === senderId)
-            || this.activeGroup.members.find(u => u.id === senderId)
-            || { id: senderId, name: 'Unknown User', avatar: 'https://ui-avatars.com/api/?name=Unknown', role: 'Explorer' };
+    private proceedWithSendMessage(isImage: boolean = false, mediaUrl?: string, fileName?: string, msgType: string = 'TEXT') {
+        const senderId = this.getNumericUserId();
+        const content = this.newMessage || (msgType === 'AUDIO' ? 'Voice Note' : (msgType === 'IMAGE' ? 'Sent photo' : (fileName || 'Sent file')));
+
+        const tempMsg = {
+            id: Date.now(),
+            content,
+            senderName: this.currentUser?.name,
+            senderId: this.currentUser?.id,
+            sentAt: new Date(),
+            mediaUrl,
+            fileName,
+            messageType: msgType,
+            status: 'sending'
+        };
+
+        this.messages.push(tempMsg);
+        this.shouldScroll = true;
+        this.newMessage = '';
+
+        this.chatService.sendMessage(this.activeRoom.id, senderId, content, mediaUrl, fileName).subscribe({
+            next: (res) => {
+                const idx = this.messages.indexOf(tempMsg);
+                if (idx !== -1 && res) this.messages[idx] = { ...res, senderName: this.currentUser?.name };
+                if (this.activeRoom.id > 0) this.simulateBotResponse(); // Trigger bot reply
+            },
+            error: (err) => {
+                const idx = this.messages.indexOf(tempMsg);
+                if (idx !== -1) { this.messages[idx].status = 'error'; this.messages[idx].content += ' (Failed)'; }
+                alert('Messaging Error: ' + (err.message || 'Unauthorized'));
+            }
+        });
+    }
+
+    createGroup() {
+        if (!this.newGroupName.trim()) return;
+        const userId = this.getNumericUserId();
+
+        // Include self and selected members
+        const memberIds = [userId, ...this.selectedMemberIds];
+
+        const data = {
+            name: this.newGroupName,
+            description: this.newGroupDesc,
+            type: 'PUBLIC',
+            isPublic: true,
+            memberIds: [...new Set(memberIds)]
+        };
+
+        this.chatService.createRoom(userId, data).subscribe({
+            next: (room) => {
+                this.rooms.unshift(room);
+                this.selectRoom(room);
+                this.showGroupModal = false;
+                this.newGroupName = '';
+                this.newGroupDesc = '';
+                this.selectedMemberIds = [];
+            },
+            error: (err) => alert('Failed: ' + (err.message || 'Unauthorized'))
+        });
+    }
+
+    private getNumericUserId(): number {
+        const id = String(this.currentUser?.id || '1');
+        const match = id.match(/\d+/);
+        const num = match ? Number(match[0]) : Number(id);
+        return isNaN(num) ? 1 : num;
+    }
+
+    isCurrentUser(sid: any): boolean {
+        const cid = String(this.currentUser?.id);
+        const s = String(sid);
+        return s === cid || cid.includes(s) || s.includes(cid);
+    }
+
+    getAvatar(n: string): string {
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(n || 'U')}&background=random`;
+    }
+
+    viewProfile(u: any) { this.router.navigate(['/profile', u.id]); }
+
+    formatDuration(s: number): string {
+        const mins = Math.floor(s / 60);
+        const secs = s % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    getObjectKeys(obj: any): string[] {
+        return obj ? Object.keys(obj) : [];
     }
 }

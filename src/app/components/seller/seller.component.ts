@@ -91,7 +91,7 @@ export class SellerComponent implements OnInit {
     private orderService: OrderService,
     private rentalService: RentalService,
     private authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadAllData();
@@ -291,7 +291,7 @@ export class SellerComponent implements OnInit {
           this.cancelProductForm();
           this.loadProducts();
         },
-        error: (err) => {
+        error: (err: any) => {
           this.isLoading = false;
           alert('❌ Failed to update product: ' + (err.message || 'Unknown error'));
         }
@@ -303,7 +303,7 @@ export class SellerComponent implements OnInit {
           this.cancelProductForm();
           this.loadProducts();
         },
-        error: (err) => {
+        error: (err: any) => {
           this.isLoading = false;
           alert('❌ Failed to create product: ' + (err.message || 'Unknown error'));
         }
@@ -327,7 +327,7 @@ export class SellerComponent implements OnInit {
           alert('🗑️ Product deleted');
           this.loadProducts();
         },
-        error: (err) => alert('❌ Failed to delete product: ' + (err.message || 'Unknown error'))
+        error: (err: any) => alert('❌ Failed to delete product: ' + (err.message || 'Unknown error'))
       });
     }
   }
@@ -338,7 +338,7 @@ export class SellerComponent implements OnInit {
         product.isActive = !product.isActive;
         alert(`Product ${product.isActive ? 'activated' : 'deactivated'}`);
       },
-      error: (err) => alert('❌ Failed to update product status')
+      error: (err: any) => alert('❌ Failed to update product status')
     });
   }
 

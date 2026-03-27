@@ -6,7 +6,7 @@ import { environment } from '../../environments/environment';
 import { User, LoginRequest, RegisterRequest, AuthResponse } from '../models/api.models';
 
 type UserRole = User['role'];
-const VALID_ROLES: UserRole[] = ['CLIENT', 'SELLER', 'ORGANIZER', 'CAMPER', 'SPONSOR', 'ADMIN', 'USER' as any];
+const VALID_ROLES: UserRole[] = ['CLIENT', 'SELLER', 'ORGANIZER', 'CAMPER', 'SPONSOR', 'ADMIN', 'USER', 'PARTICIPANT'];
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -233,10 +233,19 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return false;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (Date.now() >= payload.exp * 1000) { this.logout(); return false; }
+      const parts = token.split('.');
+      if (parts.length < 2) return false;
+      const payload = JSON.parse(atob(parts[1]));
+      if (payload && payload.exp) {
+        if (Date.now() >= payload.exp * 1000) {
+          this.logout();
+          return false;
+        }
+      }
       return true;
-    } catch { return true; }
+    } catch {
+      return false;
+    }
   }
 
   isTokenExpiringSoon(thresholdMs = 5 * 60 * 1000): boolean {
@@ -253,8 +262,9 @@ export class AuthService {
 
   isAdmin(): boolean { return this.hasRole('ADMIN'); }
   isSeller(): boolean { return this.hasRole('SELLER'); }
-  isClient(): boolean { return this.hasRole('CLIENT') || this.hasRole('USER' as any); }
+  isClient(): boolean { return this.hasRole('CLIENT') || this.hasRole('USER'); }
   isOrganizer(): boolean { return this.hasRole('ORGANIZER'); }
   isCamper(): boolean { return this.hasRole('CAMPER'); }
   isSponsor(): boolean { return this.hasRole('SPONSOR'); }
+  isParticipant(): boolean { return this.hasRole('PARTICIPANT'); }
 }

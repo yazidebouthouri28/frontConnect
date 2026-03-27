@@ -1,16 +1,22 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
-import { EventDetailComponent, Event } from '../event-detail/event-detail.component';
+import { EventDetailComponent } from '../event-detail/event-detail.component';
+import { Event } from '../../models/event.model';
+import { EventServiceEntity } from '../../models/event-service-entity.model';
+import { UserService } from '../../services/user.service';
+import { CandidatureService } from '../../services/candidature.service';
+import { WorkerApplyModalComponent } from '../worker-apply-modal/worker-apply-modal.component';
+import { B2BServicePickerComponent } from '../b2b-service-picker/b2b-service-picker.component';
 
 @Component({
   selector: 'app-events-management',
   standalone: true,
-  imports: [CommonModule, EventDetailComponent, FormsModule],
+  imports: [CommonModule, EventDetailComponent, FormsModule, WorkerApplyModalComponent, B2BServicePickerComponent, DecimalPipe],
   templateUrl: './events-management.component.html',
   styleUrls: ['./events-management.component.css'],
 })
@@ -20,6 +26,9 @@ export class EventsManagementComponent implements OnInit {
   public authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private apiUrl = environment.apiUrl;
+
+  public userService = inject(UserService);
+  private candidatureService = inject(CandidatureService);
 
   selectedEvent: Event | null = null;
   events: Event[] = [];
@@ -31,6 +40,11 @@ export class EventsManagementComponent implements OnInit {
   isUploading: boolean = false;
   isEditing: boolean = false;
   editingEventId: number | null = null;
+
+  isApplyModalOpen = false;
+  isB2BPickerOpen = false;
+  modalEvent: Event | null = null;
+  modalService: any | null = null;
 
   eventForm = {
     name: '',
@@ -62,34 +76,6 @@ export class EventsManagementComponent implements OnInit {
       price: 45,
       organizer: 'Mountain Pro',
       description: 'Une randonnée guidée spectaculaire vers le sommet de Zaghouan.'
-    },
-    {
-      id: 102,
-      title: 'Kroumirie Forest Workshop',
-      type: 'workshop',
-      date: '22 Mars 2026',
-      time: '10:00',
-      location: 'Ain Draham Forest, Tunisia',
-      image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1080',
-      participants: 8,
-      maxParticipants: 15,
-      price: 30,
-      organizer: 'Nature Academy',
-      description: 'Apprenez les techniques de survie et la flore locale.'
-    },
-    {
-      id: 103,
-      title: 'Sahara Star Gazing Festival',
-      type: 'festival',
-      date: '05 Avril 2026',
-      time: '19:00',
-      location: 'Douz Desert, Tunisia',
-      image: 'https://images.unsplash.com/photo-1541410965313-d53b3c16ef17?q=80&w=1080',
-      participants: 85,
-      maxParticipants: 200,
-      price: 120,
-      organizer: 'Desert Vibes',
-      description: 'Une nuit magique sous les étoiles avec musique et culture nomade.'
     }
   ];
 
@@ -102,7 +88,6 @@ export class EventsManagementComponent implements OnInit {
       next: (res) => {
         const data = res.data || res;
         if (Array.isArray(data) && data.length > 0) {
-          // Filter only PUBLISHED events for the public page
           const publishedEvents = data.filter((e: any) => e.status === 'PUBLISHED');
 
           if (publishedEvents.length > 0) {
@@ -119,7 +104,6 @@ export class EventsManagementComponent implements OnInit {
             this.useMockData();
           }
         } else {
-          // Fallback to mock if API returns empty
           this.useMockData();
         }
         this.cdr.detectChanges();
@@ -152,28 +136,34 @@ export class EventsManagementComponent implements OnInit {
   resolveImageUrl(path: string | null): string {
     if (!path) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080';
     if (path.startsWith('http')) return path;
-    return `${this.apiUrl}/uploads/${path}`;
+    
+    // Standardize path: remove leading / or uploads/
+    const cleanPath = path.replace(/^\//, '').replace(/^uploads\//, '');
+    const baseUrl = this.apiUrl.endsWith('/api') ? this.apiUrl.slice(0, -4) : this.apiUrl;
+    
+    return `${baseUrl}/uploads/${cleanPath}`;
   }
 
   private mapEvents(data: any[]): Event[] {
     return data.map(e => ({
       id: e.id,
-      title: e.name,
-      type: (e.eventType?.toLowerCase() || 'workshop') as any,
-      rawEndDate: e.endDate,
-      date: e.endDate ? new Date(e.endDate).toLocaleDateString() : 'TBD',
-      time: e.endDate ? new Date(e.endDate).toLocaleTimeString() : 'TBD',
+      title: e.name || e.title,
+      type: ((e.eventType || e.type)?.toLowerCase() || 'workshop') as any,
+      rawEndDate: e.endDate || e.date,
+      date: (e.endDate || e.date) ? new Date(e.endDate || e.date).toLocaleDateString() : 'TBD',
+      time: (e.endDate || e.date) ? new Date(e.endDate || e.date).toLocaleTimeString() : 'TBD',
       location: e.location,
-      image: this.resolveImageUrl(e.picture),
+      image: this.resolveImageUrl(e.image || e.thumbnail || e.picture || e.imagePath),
       images: e.images ? e.images.map((img: string) => this.resolveImageUrl(img)) : [],
-      participants: e.currentParticipants || 0,
+      participants: e.currentParticipants || e.participants || 0,
       maxParticipants: e.maxParticipants || 100,
       price: e.price,
-      organizer: e.organizerName || 'Organizer',
+      organizer: e.organizerName || e.organizer || 'Organizer',
       organizerUserId: e.organizerUserId,
       likesCount: e.likesCount,
       dislikesCount: e.dislikesCount,
-      description: e.description
+      description: e.description,
+      requestedServices: e.requestedServices || []
     }));
   }
 
@@ -187,6 +177,7 @@ export class EventsManagementComponent implements OnInit {
   }
 
   progressPercent(e: Event): number {
+    if (!e || !e.participants || !e.maxParticipants) return 0;
     return (e.participants / e.maxParticipants) * 100;
   }
 
@@ -216,7 +207,6 @@ export class EventsManagementComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // -1 => main picture, 0..n => gallery images
   currentUploadSlot: number | null = null;
   private uploadFromDetailContext = false;
 
@@ -228,8 +218,6 @@ export class EventsManagementComponent implements OnInit {
     this.currentUploadSlot = slotIndex;
     this.uploadFromDetailContext = !!this.selectedEvent && !this.isCreateModalOpen;
 
-    // In detail view there is no visible "Save Changes" button.
-    // Preload edit context so uploaded images can be persisted immediately.
     if (this.uploadFromDetailContext && this.selectedEvent) {
       this.isEditing = true;
       this.editingEventId = this.selectedEvent.id;
@@ -276,7 +264,6 @@ export class EventsManagementComponent implements OnInit {
             }
           } else {
             if (!this.eventForm.images) this.eventForm.images = [];
-            // Ensure array is large enough
             while (this.eventForm.images.length <= this.currentUploadSlot) {
               this.eventForm.images.push('');
             }
@@ -296,7 +283,6 @@ export class EventsManagementComponent implements OnInit {
           this.currentUploadSlot = null;
           this.cdr.detectChanges();
 
-          // If upload was triggered from detail view, persist immediately.
           if (this.uploadFromDetailContext && this.isEditing && this.editingEventId) {
             this.saveEvent(true);
           }
@@ -326,7 +312,7 @@ export class EventsManagementComponent implements OnInit {
       ...this.eventForm,
       images: (this.eventForm.images || []).filter((img) => !!img && img.trim().length > 0),
       organizerId: Number(user.organizerId),
-      status: 'PUBLISHED' // Defaulting to published for immediate visibility
+      status: 'PUBLISHED'
     };
 
     if (this.isEditing && this.editingEventId) {
@@ -339,7 +325,6 @@ export class EventsManagementComponent implements OnInit {
           }
         },
         error: (err) => {
-          console.error('Failed to update event', err);
           const details = err?.error?.errors
             ? JSON.stringify(err.error.errors)
             : (err.error?.message || err.message || 'Unknown error');
@@ -354,13 +339,11 @@ export class EventsManagementComponent implements OnInit {
           alert('Event created successfully!');
         },
         error: (err) => {
-          console.error('Failed to create event', err);
           alert('Failed to create event: ' + (err.error?.message || 'Unknown error'));
         }
       });
     }
   }
-
 
   canManage(event: Event): boolean {
     const user = this.authService.getCurrentUser();
@@ -394,24 +377,12 @@ export class EventsManagementComponent implements OnInit {
 
   private formatDateForInput(dateStr: string): string {
     if (!dateStr || dateStr === 'TBD') return '';
-
-    // If it's already in the correct format YYYY-MM-DDTHH:mm
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateStr)) return dateStr;
-
     try {
-      // Handle the case where the date is in a locale string format or other
-      // Attempt to parse it
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return '';
-
       const pad = (n: number) => n.toString().padStart(2, '0');
-      const year = d.getFullYear();
-      const month = pad(d.getMonth() + 1);
-      const day = pad(d.getDate());
-      const hours = pad(d.getHours());
-      const minutes = pad(d.getMinutes());
-
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     } catch (e) {
       return '';
     }
@@ -421,11 +392,65 @@ export class EventsManagementComponent implements OnInit {
     if (confirm('Êtes-vous sûr de vouloir supprimer cet événement ?')) {
       this.http.delete(`${this.apiUrl}/api/events/${eventId}`).subscribe({
         next: () => {
-          this.fetchEvents(); // Refresh list
+          this.fetchEvents();
         },
         error: (err) => {
           console.error('Delete failed:', err);
           alert('Erreur lors de la suppression.');
+        }
+      });
+    }
+  }
+
+  isWorker(): boolean {
+    return this.userService.isParticipant();
+  }
+
+  openApplyModal(event: Event, service?: EventServiceEntity) {
+    this.modalEvent = event;
+    this.modalService = service || (event.requestedServices && event.requestedServices[0]) || null;
+    this.isApplyModalOpen = true;
+  }
+
+  closeApplyModal() {
+    this.isApplyModalOpen = false;
+    this.modalEvent = null;
+    this.modalService = null;
+  }
+
+  openB2BPicker(event: Event) {
+    this.modalEvent = event;
+    this.isB2BPickerOpen = true;
+  }
+
+  closeB2BPicker() {
+    this.isB2BPickerOpen = false;
+    this.modalEvent = null;
+    this.fetchEvents();
+  }
+
+  refreshEvents() {
+    this.fetchEvents();
+  }
+
+  handleApplySubmission(data: { motivation: string }) {
+    if (this.modalEvent && this.modalService) {
+      const candidature = {
+        eventId: this.modalEvent.id,
+        serviceId: this.modalService.id,
+        motivation: data.motivation,
+        status: 'PENDING' as const,
+        appliedDate: new Date()
+      };
+
+      this.candidatureService.apply(this.modalService.id, 0, candidature).subscribe({
+        next: () => {
+          alert('Application submitted successfully!');
+          this.closeApplyModal();
+        },
+        error: (err) => {
+          console.error('Application failed', err);
+          alert('Failed to submit application. Please try again.');
         }
       });
     }

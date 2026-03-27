@@ -2,20 +2,18 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { API_BASE } from './product.service';
+import { environment } from '../../environments/environment';
 
 const unwrap = (res: any) => res?.data?.content || res?.data || res || [];
 const unwrapOne = (res: any) => res?.data || res;
 
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
-  // Both public and admin routes exist — use admin for write operations
-  private url = `${API_BASE}/categories`;
-  private adminUrl = `${API_BASE}/admin/categories`;
+  private url = `${environment.apiUrl}/categories`;
+  private adminUrl = `${environment.apiUrl}/admin/categories`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  /** GET /api/categories */
   getAll(): Observable<any[]> {
     return this.http.get<any>(this.url).pipe(map(unwrap));
   }
@@ -24,27 +22,15 @@ export class CategoryService {
     return this.http.get<any>(`${this.url}/${id}`).pipe(map(unwrapOne));
   }
 
-  getByName(name: string): Observable<any> {
-    return this.http.get<any>(`${this.url}/name/${name}`).pipe(map(unwrapOne));
-  }
-
-  /** POST /api/admin/categories */
-  create(data: { name: string; description?: string; icon?: string }): Observable<any> {
+  create(data: any): Observable<any> {
     return this.http.post<any>(this.adminUrl, data).pipe(map(unwrapOne));
   }
 
-  /** PUT /api/admin/categories/{id} */
-  update(id: string, data: { name: string; description?: string; icon?: string }): Observable<any> {
+  update(id: string, data: any): Observable<any> {
     return this.http.put<any>(`${this.adminUrl}/${id}`, data).pipe(map(unwrapOne));
   }
 
-  /** DELETE /api/admin/categories/{id} */
   delete(id: string): Observable<any> {
     return this.http.delete<any>(`${this.adminUrl}/${id}`);
-  }
-
-  /** PATCH /api/categories/{id}/product-count */
-  updateProductCount(id: string): Observable<any> {
-    return this.http.patch<any>(`${this.url}/${id}/product-count`, {}).pipe(map(unwrapOne));
   }
 }
