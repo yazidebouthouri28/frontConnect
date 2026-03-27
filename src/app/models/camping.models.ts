@@ -46,6 +46,7 @@ export interface Campsite {
   available?: boolean;
   owner?: string;
   createdAt?: Date;
+    ownerId?: number;  
 }
 
 export interface CampsiteReservation {
@@ -60,6 +61,7 @@ export interface CampsiteReservation {
   status: ReservationStatus;
   totalAmount: number;
   createdAt?: Date;
+    ownerId?: number;  
 }
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -221,6 +223,7 @@ export interface Site {
   checkInTime?: string;
   checkOutTime?: string;
   houseRules?: string;
+    ownerId?: number;  
 }
 
 export interface Review {

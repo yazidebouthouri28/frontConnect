@@ -9,6 +9,7 @@ import { Site } from '../../models/camping.models';
 import { SiteService } from '../../services/site.service';
 import { finalize, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 
 interface Campsite extends Site {
     status: 'Available' | 'Fully Booked' | 'Maintenance' | any;
@@ -49,7 +50,11 @@ export class CampsitesManagementComponent implements OnInit {
     selectedSite = signal<Campsite | null>(null);
     activeTab = signal<'general' | 'reviews' | 'tours' | 'certs'>('general');
 
-    constructor(private siteService: SiteService, private cdr: ChangeDetectorRef) { }
+    constructor(
+        private siteService: SiteService,
+        private cdr: ChangeDetectorRef,
+        private authService: AuthService
+    ) { }
 
     ngOnInit(): void {
         this.loadCampsites();
@@ -159,7 +164,22 @@ export class CampsitesManagementComponent implements OnInit {
         const coordinates = this.resolveCoordinates(city);
         const hasImages = this.newSiteImageFiles.length > 0;
 
-        const payload: Site = {
+        // Get current user ID
+        const currentUser = this.authService.getCurrentUser();
+        if (!currentUser?.id) {
+            this.createSiteError = 'You must be logged in to create a campsite.';
+            this.isCreatingSite = false;
+            return;
+        }
+
+        const ownerIdNum = Number(currentUser.id);
+        if (!Number.isFinite(ownerIdNum)) {
+            this.createSiteError = 'Your account cannot own a campsite (invalid user id).';
+            this.isCreatingSite = false;
+            return;
+        }
+
+        const payload: any = {
             id: 0,
             name,
             description: this.newSiteForm.description ?? '',
@@ -183,14 +203,14 @@ export class CampsitesManagementComponent implements OnInit {
             status: (this.newSiteForm.isActive ?? true) ? 'Available' : 'Maintenance',
             checkInTime: this.newSiteForm.checkInTime,
             checkOutTime: this.newSiteForm.checkOutTime,
-            houseRules: this.newSiteForm.houseRules
+            houseRules: this.newSiteForm.houseRules,
+            ownerId: ownerIdNum
         };
 
         this.siteService.createSite(payload).pipe(
             switchMap((created) => {
                 if (!hasImages) return of(created);
                 const files = [...this.newSiteImageFiles];
-                this.clearNewSiteImages();
                 return this.siteService.uploadSiteImages(created.id, files);
             }),
             finalize(() => {
@@ -200,6 +220,7 @@ export class CampsitesManagementComponent implements OnInit {
             })
         ).subscribe({
             next: (created) => {
+                this.clearNewSiteImages();
                 this.campsites = [
                     ...this.campsites,
                     {
@@ -375,6 +396,4 @@ export class CampsitesManagementComponent implements OnInit {
         clearTimeout(this.createWatchdogTimer);
         this.createWatchdogTimer = null;
     }
-
-    // Image processing no longer needed: images are uploaded as files (multipart).
 }

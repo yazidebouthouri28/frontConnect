@@ -75,8 +75,8 @@
     @if (!isLoading && !loadError) {
     <div class="mb-12 border-t border-forest/5 pt-16">
       
-      <!-- Filter Bar -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col gap-4 sticky top-4 z-[50]">
+      <!-- Filter Bar (relative stacking; sticky optional — avoid covering cards) -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-8 flex flex-col gap-4 relative z-10 isolate">
         <div class="flex flex-wrap items-center gap-3">
           <!-- Search -->
           <div class="relative">

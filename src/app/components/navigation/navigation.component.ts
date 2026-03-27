@@ -1,85 +1,72 @@
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, HostListener } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-
-interface StoredUser {
-  name?: string;
-  email?: string;
-  role?: string;
-  avatar?: string;
-}
+import { RouterModule, Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-navigation',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterModule],
   templateUrl: './navigation.component.html',
-  styleUrls: ['./navigation.component.css'],
+  styleUrls: ['./navigation.component.css']
 })
-export class NavigationComponent {
-  mobileMenuOpen = false;
-  profileDropdownOpen = false;
+export class NavigationComponent implements OnInit, OnDestroy {
+  isLoggedIn = false;
+  userName = '';
   logoError = false;
+  profileDropdownOpen = false;
+  mobileMenuOpen = false;
+  private authSubscription: Subscription | null = null;
 
-  constructor(private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
-  get currentUser(): StoredUser | null {
-    if (typeof localStorage === 'undefined') {
-      return null;
+  ngOnInit(): void {
+    this.updateUserState();
+    // Subscribe to auth changes (if your AuthService emits events)
+    this.authSubscription = this.authService.currentUser$.subscribe(() => {
+      this.updateUserState();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
     }
-
-    const rawUser = localStorage.getItem('campconnect_user');
-    if (!rawUser) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(rawUser) as StoredUser;
-    } catch {
-      return null;
-    }
   }
 
-  get isLoggedIn(): boolean {
-    return this.currentUser !== null;
+  private updateUserState(): void {
+    const user = this.authService.getCurrentUser();
+    this.isLoggedIn = !!user;
+    this.userName = user?.name || user?.username || '';
   }
 
-  get userName(): string {
-    return this.currentUser?.name ?? '';
+  get isOrganizer(): boolean {
+    const user = this.authService.getCurrentUser();
+    return user?.role === 'ORGANIZER' || user?.role === 'ADMIN';
   }
 
-  get isSeller(): boolean {
-    return this.currentUser?.role === 'SELLER';
-  }
-
-  get isSponsor(): boolean {
-    return this.currentUser?.role === 'SPONSOR';
-  }
-
-  get isAdmin(): boolean {
-    return this.currentUser?.role === 'ADMIN';
-  }
-
-  toggleMobileMenu() {
-    this.mobileMenuOpen = !this.mobileMenuOpen;
-  }
-
-  toggleProfileDropdown() {
+  toggleProfileDropdown(): void {
     this.profileDropdownOpen = !this.profileDropdownOpen;
   }
 
-  logout() {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('campconnect_user');
-    }
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
 
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/auth/login']);
     this.profileDropdownOpen = false;
     this.mobileMenuOpen = false;
-    this.router.navigate(['/login']);
   }
 
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event) {
+  onDocumentClick(event: MouseEvent): void {
+    // Close dropdown if clicked outside
     const target = event.target as HTMLElement;
     if (!target.closest('.profile-dropdown-container')) {
       this.profileDropdownOpen = false;

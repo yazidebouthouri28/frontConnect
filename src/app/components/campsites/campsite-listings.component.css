@@ -1,8 +1,9 @@
 /* ===== Price Range Slider ===== */
+/* Note: parent is flex-col — do NOT use flex-basis here or it becomes *height* and blows the layout. */
 .price-slider-panel {
-  flex: 0 1 380px;
-  min-width: 220px;
+  width: 100%;
   max-width: 440px;
+  flex-shrink: 0;
 }
 
 .range-inputs {

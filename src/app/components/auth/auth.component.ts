@@ -18,6 +18,7 @@ type UserRole = User['role'];
 export class AuthComponent implements OnInit, OnDestroy {
 
   isLoginMode = true;
+  isForgotPasswordMode = false;
   isSidebarAnimatingOut = false;
   isLoading = false;
   errorMessage = '';
@@ -26,6 +27,7 @@ export class AuthComponent implements OnInit, OnDestroy {
 
   showLoginPassword = false;
   showSignupPassword = false;
+  showResetPassword = false;
 
   currentYear = new Date().getFullYear();
 
@@ -38,6 +40,7 @@ export class AuthComponent implements OnInit, OnDestroy {
   private removeAudioUnlockListeners: (() => void) | null = null;
 
   loginForm = { email: '', password: '' };
+  forgotPasswordForm = { email: '', code: '', newPassword: '' };
 
   registerForm = {
     name: '',
@@ -65,6 +68,10 @@ export class AuthComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
     if (this.router.url.includes('register')) this.isLoginMode = false;
+    if (this.router.url.includes('forgot-password')) {
+      this.isLoginMode = true;
+      this.isForgotPasswordMode = true;
+    }
     if (this.authService.isAuthenticated()) this.router.navigate([this.returnUrl]);
     if (this.isBrowser) {
       this.initCampfireAudio();
@@ -92,11 +99,28 @@ export class AuthComponent implements OnInit, OnDestroy {
   }
 
   switchToSignup(): void {
+    this.isForgotPasswordMode = false;
     this.animateSidebarSwitch(false);
   }
 
   switchToLogin(): void {
+    this.isForgotPasswordMode = false;
     this.animateSidebarSwitch(true);
+  }
+
+  switchToForgotPassword(): void {
+    this.isForgotPasswordMode = true;
+    this.isLoginMode = true;
+    this.clearMessages();
+    this.forgotPasswordForm.email = this.loginForm.email || '';
+    this.forgotPasswordForm.code = '';
+    this.forgotPasswordForm.newPassword = '';
+  }
+
+  backToLoginFromForgot(): void {
+    this.isForgotPasswordMode = false;
+    this.showResetPassword = false;
+    this.clearMessages();
   }
 
   onRoleChange(): void {
@@ -184,6 +208,61 @@ export class AuthComponent implements OnInit, OnDestroy {
         this.cartService.syncCartAfterLogin();
       },
       error: (err) => { this.isLoading = false; this.errorMessage = err.message || 'Registration failed.'; }
+    });
+  }
+
+  sendResetCode(): void {
+    if (!this.forgotPasswordForm.email) {
+      this.errorMessage = 'Please enter your email.';
+      return;
+    }
+    this.isLoading = true;
+    this.clearMessages();
+    this.authService.requestPasswordResetCode(this.forgotPasswordForm.email).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.successMessage = 'Verification code sent. Check your email.';
+        if (response.devCode) {
+          this.successMessage = `Verification code sent. Dev code: ${response.devCode}`;
+        }
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = err.message || 'Failed to send verification code.';
+      }
+    });
+  }
+
+  resetPassword(): void {
+    if (!this.forgotPasswordForm.email || !this.forgotPasswordForm.code || !this.forgotPasswordForm.newPassword) {
+      this.errorMessage = 'Please fill in email, verification code, and new password.';
+      return;
+    }
+    if (this.forgotPasswordForm.newPassword.length < 6) {
+      this.errorMessage = 'New password must be at least 6 characters.';
+      return;
+    }
+
+    this.isLoading = true;
+    this.clearMessages();
+    this.authService.resetPassword({
+      email: this.forgotPasswordForm.email,
+      code: this.forgotPasswordForm.code,
+      newPassword: this.forgotPasswordForm.newPassword
+    }).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.successMessage = 'Password reset successful. You can now sign in.';
+        this.loginForm.email = this.forgotPasswordForm.email;
+        this.loginForm.password = '';
+        this.forgotPasswordForm.code = '';
+        this.forgotPasswordForm.newPassword = '';
+        this.isForgotPasswordMode = false;
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = err.message || 'Password reset failed.';
+      }
     });
   }
 

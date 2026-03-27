@@ -3,7 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap, catchError, map, of, throwError } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
-import { User, LoginRequest, RegisterRequest, AuthResponse } from '../models/api.models';
+import {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  ApiResponse,
+  ForgotPasswordResponse,
+  ResetPasswordRequest
+} from '../models/api.models';
 
 type UserRole = User['role'];
 const VALID_ROLES: UserRole[] = ['CLIENT', 'SELLER', 'ORGANIZER', 'CAMPER', 'SPONSOR', 'ADMIN', 'USER' as any];
@@ -57,17 +65,30 @@ export class AuthService {
   // ── Auth calls ────────────────────────────────────────────────────────────
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    // ✅ Java AuthRequest DTO has field: private String username
-    //    Spring Security authenticates by username OR email via the service
-    //    So we send the value (email or username) in the "username" field
     const body = {
-      username: credentials.email,   // field name must match Java DTO exactly
+      username: credentials.email,
       password: credentials.password
     };
 
     return this.http.post<any>(`${this.apiUrl}/login`, body).pipe(
       map(raw => this.extractAuthResponse(raw)),
-      tap(auth => this.handleAuthSuccess(auth)),
+      tap(auth => {
+        this.handleAuthSuccess(auth);
+        // If user is an organizer, fetch their organizerId and update the stored user
+        if (auth.user.role === 'ORGANIZER' && auth.user.id) {
+          this.http.get<ApiResponse<number>>(`${environment.apiUrl}/api/organizers/by-user/${auth.user.id}`)
+            .subscribe({
+              next: (res) => {
+                if (res.success && res.data) {
+                  const updatedUser = { ...auth.user, organizerId: res.data };
+                  this.storageSet(this.userKey, JSON.stringify(updatedUser));
+                  this.currentUserSubject.next(updatedUser);
+                }
+              },
+              error: (err) => console.warn('Failed to fetch organizer ID', err)
+            });
+        }
+      }),
       catchError(error => {
         if (this.canUseOfflineAuth(error)) {
           const offlineAuth = this.buildOfflineAuthResponse(credentials.email);
@@ -104,16 +125,38 @@ export class AuthService {
     );
   }
 
+  requestPasswordResetCode(email: string): Observable<ForgotPasswordResponse> {
+    return this.http.post<ApiResponse<ForgotPasswordResponse>>(`${this.apiUrl}/forgot-password`, { email }).pipe(
+      map((res) => res.data ?? { status: 'sent' }),
+      catchError(error => {
+        const msg = error.error?.message
+          || error.error?.error
+          || error.message
+          || 'Failed to send verification code.';
+        return throwError(() => new Error(msg));
+      })
+    );
+  }
+
+  resetPassword(payload: ResetPasswordRequest): Observable<void> {
+    return this.http.post<ApiResponse<void>>(`${this.apiUrl}/reset-password`, payload).pipe(
+      map(() => void 0),
+      catchError(error => {
+        const msg = error.error?.message
+          || error.error?.error
+          || error.message
+          || 'Password reset failed.';
+        return throwError(() => new Error(msg));
+      })
+    );
+  }
+
   // ── Response normalisation ────────────────────────────────────────────────
 
   private extractAuthResponse(raw: any): AuthResponse {
-    // Supports both:
-    //   Flat    → { token, userId, name, role, ... }
-    //   Wrapped → { success: true, data: { token, ... } }
     const p = (raw?.data && raw?.success !== undefined) ? raw.data : raw;
     if (!p?.token) throw new Error('Invalid server response: token missing.');
 
-    // Backend returns role as "USER" enum — map to CLIENT for frontend
     const rawRole = String(p.role ?? 'CLIENT').toUpperCase();
     const roleMap: Record<string, UserRole> = { 'USER': 'CLIENT' };
     const role: UserRole = roleMap[rawRole]
@@ -129,7 +172,7 @@ export class AuthService {
       country: p.country,
       loyaltyPoints: p.loyaltyPoints ?? 0,
       role,
-      organizerId: p.organizerId ? String(p.organizerId) : undefined,
+      organizerId: p.organizerId ? Number(p.organizerId) : undefined,  // <-- convert to number
       avatar: p.avatar,
       bio: p.bio,
       coverImage: p.coverImage,

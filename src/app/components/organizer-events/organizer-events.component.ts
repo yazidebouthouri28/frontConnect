@@ -53,10 +53,10 @@ interface EventForm {
     selector: 'app-events-admin-management',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: './events-management.component.html',
-    styleUrls: ['./events-management.component.css']
+    templateUrl: './organizer-events.component.html',
+    styleUrls: ['./organizer-events.component.css']
 })
-export class EventsAdminManagementComponent implements OnInit {
+export class OrganizerEventsComponent implements OnInit {
 
     private http = inject(HttpClient);
     private cdr = inject(ChangeDetectorRef);
@@ -99,7 +99,7 @@ export class EventsAdminManagementComponent implements OnInit {
         price: null,
         isFree: false,
         picture: '',
-        status: 'PUBLISHED',
+        status: 'DRAFT',
         organizerId: null,
         siteId: 1
     };
@@ -266,7 +266,7 @@ private setOrganizerId() {
             price: null,
             isFree: false,
             picture: '',
-            status: 'PUBLISHED',
+            status: 'DRAFT',
             organizerId: null,
             siteId: 1
         };
@@ -335,7 +335,7 @@ private setOrganizerId() {
     }
 
     submitEvent() {
-          console.log('submitEvent called');
+        console.log('submitEvent called');
         this.modalErrorMessage = '';
 
         let finalEventType = this.newEvent.eventType;

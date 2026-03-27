@@ -4,7 +4,12 @@ import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
-  const token = authService.getToken(); // or localStorage.getItem('auth_token')
+  // First try via service, then fallback to localStorage directly
+  let token = authService.getToken();
+  if (!token) {
+    token = localStorage.getItem('auth_token');
+  }
+  console.log('[Interceptor] Token exists:', !!token);
   if (token) {
     const cloned = req.clone({
       setHeaders: {

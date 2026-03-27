@@ -295,17 +295,24 @@
         </div>
 
         <!-- COLUMN 3: CREATE BUTTON (RIGHT - ORGANIZER ONLY) -->
-        @if (isOrganizer) {
-        <div class="lg:ml-auto">
-          <button (click)="createEvent()"
-            class="group flex items-center gap-3 px-8 py-4 bg-forest text-white rounded-[2rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-forest/30 hover:scale-105 active:scale-95 transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Create New Event
-          </button>
-        </div>
-        }
+@if (isOrganizer) {
+<div class="lg:ml-auto flex gap-3">
+  <button (click)="filterEvents('my')"
+    class="group flex items-center gap-3 px-8 py-4 bg-white text-forest border-2 border-forest rounded-[2rem] font-black uppercase tracking-widest text-[10px] shadow-sm hover:scale-105 active:scale-95 transition-all">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+    </svg>
+    Manage My Events
+  </button>
+  <button (click)="createEvent()"
+    class="group flex items-center gap-3 px-8 py-4 bg-forest text-white rounded-[2rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-forest/30 hover:scale-105 active:scale-95 transition-all">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
+    </svg>
+    Create New Event
+  </button>
+</div>
+}
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

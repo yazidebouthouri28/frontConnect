@@ -7,7 +7,8 @@ export const routes: Routes = [
 
   // Home page – only accessible after login
   { path: 'home', loadComponent: () => import('./components/home-hub/home-hub.component').then(m => m.HomeHubComponent), canActivate: [AuthGuard] },
-  // Campsite routes
+
+  // --- Campsites (public) ---
   {
     path: 'campsites',
     loadComponent: () => import('./components/campsites/campsite-listings.component').then(m => m.CampsiteListingsComponent)
@@ -26,14 +27,12 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
 
-  // --- Campsites ---
-  { path: 'campsites', loadComponent: () => import('./components/campsites/campsite-listings.component').then(m => m.CampsiteListingsComponent) },
-  { path: 'campsites/:siteId/highlights/:highlightId', loadComponent: () => import('./components/camp-highlight-detail/camp-highlight-detail.component').then(m => m.CampHighlightDetailComponent) },
-  { path: 'campsites/:id', loadComponent: () => import('./components/campsite-detail/campsite-detail.component').then(m => m.CampsiteDetailComponent) },
-
-  // --- Events ---
+  // --- Events: public listing ---
   { path: 'events', loadComponent: () => import('./components/events/events-management.component').then(m => m.EventsManagementComponent) },
   { path: 'events/:id', loadComponent: () => import('./components/event-detail/event-detail.component').then(m => m.EventDetailComponent) },
+
+  // --- Events management for admin/organizer (protected) ---
+  { path: 'events/manage', loadComponent: () => import('./admin/events-management/events-management.component').then(m => m.EventsAdminManagementComponent), canActivate: [OrganizerGuard] },
 
   // --- Marketplace ---
   { path: 'marketplace', loadComponent: () => import('./components/marketplace/marketplace.component').then(m => m.MarketplaceComponent) },
@@ -66,17 +65,25 @@ export const routes: Routes = [
   // --- Sponsor dashboard ---
   { path: 'sponsor-dashboard', loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent), canActivate: [AuthGuard], data: { role: 'SPONSOR' } },
 
-  // --- Admin panel ---
-  { path: 'admin', loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent), canActivate: [AdminGuard] },
+  // --- Admin panel (now accessible to organizers as well) ---
+  { path: 'admin', loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent), canActivate: [OrganizerGuard] },
 
   // --- Authentication routes ---
   { path: 'auth', loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent) },
   { path: 'auth/login', loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent) },
   { path: 'auth/register', loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent) },
+  { path: 'auth/forgot-password', loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent) },
 
   // --- Convenience redirects for login/register ---
   { path: 'login', redirectTo: '/auth/login', pathMatch: 'full' },
   { path: 'register', redirectTo: '/auth/register', pathMatch: 'full' },
+
+  // --- Organizer events management (copy of admin table) ---
+  {
+    path: 'organizer/events',
+    loadComponent: () => import('./components/organizer-events/organizer-events.component').then(m => m.OrganizerEventsComponent),
+    canActivate: [OrganizerGuard]
+  },
 
   // --- Catch‑all: redirect to root (which goes to auth) ---
   { path: '**', redirectTo: '' }

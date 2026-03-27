@@ -1,41 +1,132 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { catchError, map, of } from 'rxjs';
 import { EventDetailComponent, Event } from '../event-detail/event-detail.component';
+
+type ApiResponse<T> = {
+  success: boolean;
+  message: string;
+  data: T;
+  timestamp?: string;
+};
+
+type EventResponse = {
+  id: number;
+  title: string;
+  description?: string;
+  eventType?: string;
+  category?: string;
+  startDate: string; // LocalDateTime serialized
+  endDate?: string;
+  location?: string;
+  maxParticipants?: number;
+  currentParticipants?: number;
+  price?: number;
+  isFree?: boolean;
+  images?: string[];
+  organizerName?: string;
+  status?: string;
+};
 
 @Component({
   selector: 'app-events-management',
   standalone: true,
-  imports: [CommonModule, EventDetailComponent],
+  imports: [CommonModule, EventDetailComponent, HttpClientModule],
   templateUrl: './events-management.component.html',
   styleUrls: ['./events-management.component.css'],
 })
-export class EventsManagementComponent {
+export class EventsManagementComponent implements OnInit {
+  private readonly API_BASE = 'http://localhost:8089';
+
   selectedEvent: Event | null = null;
-  events: Event[] = [
-    { id: 1, title: 'Wilderness Survival Skills Workshop', type: 'workshop', date: 'Feb 15, 2026', time: '9:00 AM - 4:00 PM', location: 'Zaghouan Mountain, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080', participants: 18, maxParticipants: 25, price: 85, organizer: 'Tunis Adventure Co.' },
-    { id: 2, title: 'Summer Camping Music Festival', type: 'festival', date: 'Jul 4-6, 2026', time: 'All Day', location: 'Kelibia Beach, Tunisia', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1080', participants: 342, maxParticipants: 500, price: 195, organizer: 'Carthage Sounds' },
-    { id: 3, title: "Beginner's Backcountry Group Trip", type: 'trip', date: 'Mar 22-24, 2026', time: '3 Days / 2 Nights', location: 'Sahara Desert, Douz, Tunisia', image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1080', participants: 8, maxParticipants: 12, price: 250, organizer: 'Sahara Peak Adventures' },
-    { id: 4, title: 'Family Camping Weekend', type: 'trip', date: 'Apr 12-14, 2026', time: 'Weekend', location: 'Beni M Tir, Tunisia', image: 'https://images.unsplash.com/photo-1510672981848-a1c4f1cb5ccf?q=80&w=1080', participants: 24, maxParticipants: 30, price: 120, organizer: 'Bizerte Outdoors Club' },
-    { id: 5, title: 'Photography & Nature Workshop', type: 'workshop', date: 'May 8, 2026', time: '6:00 AM - 2:00 PM', location: 'Haouaria Cliffs, Tunisia', image: 'https://images.unsplash.com/photo-1533873984035-25970ab07451?q=80&w=1080', participants: 12, maxParticipants: 15, price: 95, organizer: 'Tunisian Nature Photo' },
-    { id: 6, title: 'Mountain Summit Challenge', type: 'trip', date: 'Jun 15-18, 2026', time: '4 Days / 3 Nights', location: 'Djebel Chaambi, Tunisia', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1080', participants: 6, maxParticipants: 10, price: 450, organizer: 'Summit Seekers Tunisia' },
-  ];
 
-  recommendedEvents: Event[] = [
-    { id: 1, title: 'Wilderness Survival Skills Workshop', type: 'workshop', date: 'Feb 15, 2026', time: '9:00 AM - 4:00 PM', location: 'Zaghouan Mountain, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080', participants: 18, maxParticipants: 25, price: 85, organizer: 'Tunis Adventure Co.' },
-    { id: 3, title: "Beginner's Backcountry Group Trip", type: 'trip', date: 'Mar 22-24, 2026', time: '3 Days / 2 Nights', location: 'Sahara Desert, Douz, Tunisia', image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1080', participants: 8, maxParticipants: 12, price: 250, organizer: 'Sahara Peak Adventures' },
-  ];
+  loading = false;
+  errorMessage = '';
 
-  eventTypeClass(type: string): string {
-    const map: Record<string, string> = {
-      workshop: 'bg-blue-100 text-blue-700',
-      trip: 'bg-green-100 text-green-700',
-      festival: 'bg-purple-100 text-purple-700',
-    };
-    return map[type] ?? '';
+  events: Event[] = [];
+  recommendedEvents: Event[] = [];
+
+  constructor(private readonly http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.loadEvents();
   }
 
-  progressPercent(e: Event): number {
-    return (e.participants / e.maxParticipants) * 100;
+  private loadEvents(): void {
+    this.loading = true;
+    this.errorMessage = '';
+
+    this.http
+      .get<ApiResponse<EventResponse[]>>(`${this.API_BASE}/api/events`)
+      .pipe(
+        map((res) => {
+          if (!res?.success) {
+            throw new Error(res?.message || 'Failed to load events');
+          }
+          return (res.data ?? []).map((e) => this.toUiEvent(e));
+        }),
+        catchError((err) => {
+          const msg =
+            err?.error?.message ||
+            err?.message ||
+            'Unable to load events. Make sure backend is running.';
+          this.errorMessage = msg;
+          this.loading = false;
+          return of([] as Event[]);
+        })
+      )
+      .subscribe((list) => {
+        this.events = list;
+
+        // Simple recommendation: first two upcoming by date
+        const sorted = [...list].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        this.recommendedEvents = sorted.slice(0, 2);
+
+        this.loading = false;
+      });
+  }
+
+  private toUiEvent(e: EventResponse): Event {
+    const start = e.startDate ? new Date(e.startDate) : null;
+
+    const image =
+      (e.images && e.images.length > 0 && e.images[0]) ||
+      'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080';
+
+    const type: 'workshop' | 'trip' | 'festival' = this.normalizeEventType(
+      e.eventType ?? e.category
+    );
+
+    return {
+      id: e.id,
+      title: e.title,
+      type,
+      date: start ? start.toDateString() : 'N/A',
+      time: e.endDate ? 'Scheduled' : 'TBA',
+      location: e.location || 'Unknown location',
+      image,
+      participants: e.currentParticipants ?? 0,
+      maxParticipants: e.maxParticipants ?? 1,
+      price: e.isFree ? 0 : e.price ?? 0,
+      organizer: e.organizerName || 'Organizer',
+    };
+  }
+
+  private normalizeEventType(raw?: string): 'workshop' | 'trip' | 'festival' {
+    const v = (raw ?? '').toLowerCase();
+
+    if (v.includes('workshop') || v.includes('atelier') || v.includes('training')) return 'workshop';
+    if (v.includes('festival') || v.includes('music')) return 'festival';
+
+    return 'trip';
+  }
+
+  progressPercent(ev: Event): number {
+    if (!ev.maxParticipants || ev.maxParticipants <= 0) return 0;
+    return (ev.participants / ev.maxParticipants) * 100;
   }
 
   selectEvent(event: Event) {

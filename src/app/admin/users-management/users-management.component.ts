@@ -1,6 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { finalize } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
+import { ApiResponse } from '../../models/api.models';
 
 type UserStatus = 'Active' | 'Suspended' | 'Inactive';
 type UserRoleOption = 'All' | 'Admin' | 'Organizer' | 'Camper' | 'Seller' | 'Sponsor' | 'Client';
@@ -15,6 +19,17 @@ interface UserRow {
     avatarLabel: string;
 }
 
+/** Matches backend UserDTO + Role enum JSON */
+interface UserDto {
+    id: number;
+    name?: string;
+    email?: string;
+    role?: string;
+    isActive?: boolean;
+    isSuspended?: boolean;
+    createdAt?: string;
+}
+
 @Component({
     selector: 'app-users-management',
     standalone: true,
@@ -22,29 +37,112 @@ interface UserRow {
     templateUrl: './users-management.component.html',
     styleUrl: './users-management.component.css'
 })
-export class UsersManagementComponent {
+export class UsersManagementComponent implements OnInit {
     searchTerm = '';
     filterRole: UserRoleOption = 'All';
     roleOptions: UserRoleOption[] = ['All', 'Admin', 'Organizer', 'Camper', 'Seller', 'Sponsor', 'Client'];
 
-    users: UserRow[] = [
-        { id: 1, name: 'Ahmed Trabelsi', email: 'ahmed.admin@connectcamp.tn', role: 'Admin', joinedDate: '14 Jan 2026', status: 'Active', avatarLabel: 'AT' },
-        { id: 2, name: 'Salma Ben Ali', email: 'salma.events@connectcamp.tn', role: 'Organizer', joinedDate: '21 Jan 2026', status: 'Active', avatarLabel: 'SB' },
-        { id: 3, name: 'Youssef Hamdi', email: 'youssef.market@connectcamp.tn', role: 'Seller', joinedDate: '05 Feb 2026', status: 'Active', avatarLabel: 'YH' },
-        { id: 4, name: 'Leila Gharbi', email: 'leila.sponsor@connectcamp.tn', role: 'Sponsor', joinedDate: '11 Feb 2026', status: 'Active', avatarLabel: 'LG' },
-        { id: 5, name: 'Rami Khelifi', email: 'rami.trails@connectcamp.tn', role: 'Camper', joinedDate: '17 Feb 2026', status: 'Inactive', avatarLabel: 'RK' },
-        { id: 6, name: 'Nour Ben Salem', email: 'nour.community@connectcamp.tn', role: 'Client', joinedDate: '19 Feb 2026', status: 'Active', avatarLabel: 'NB' },
-        { id: 7, name: 'Moez Jaziri', email: 'moez.support@connectcamp.tn', role: 'Client', joinedDate: '24 Feb 2026', status: 'Suspended', avatarLabel: 'MJ' },
-        { id: 8, name: 'Ines Saidi', email: 'ines.partners@connectcamp.tn', role: 'Organizer', joinedDate: '02 Mar 2026', status: 'Active', avatarLabel: 'IS' }
-    ];
+    users: UserRow[] = [];
+    loading = true;
+    loadError: string | null = null;
+
+    constructor(private http: HttpClient) {}
+
+    ngOnInit(): void {
+        this.loadUsers();
+    }
+
+    loadUsers(): void {
+        this.loading = true;
+        this.loadError = null;
+        this.http
+            .get<ApiResponse<UserDto[]>>(`${environment.apiUrl}/api/users`)
+            .pipe(finalize(() => (this.loading = false)))
+            .subscribe({
+                next: (res) => {
+                    if (!res.success || !res.data) {
+                        this.loadError = res.message || 'Failed to load users.';
+                        this.users = [];
+                        return;
+                    }
+                    this.users = res.data.map((u) => this.mapToRow(u));
+                },
+                error: () => {
+                    this.loadError = 'Could not load users. Please try again.';
+                    this.users = [];
+                }
+            });
+    }
+
+    private mapToRow(u: UserDto): UserRow {
+        const name = (u.name ?? u.email ?? 'User').trim();
+        return {
+            id: u.id,
+            name,
+            email: u.email ?? '—',
+            role: this.mapBackendRole(u.role),
+            joinedDate: this.formatJoinedDate(u.createdAt),
+            status: this.deriveStatus(u),
+            avatarLabel: this.initialsFromName(name)
+        };
+    }
+
+    private mapBackendRole(role: string | undefined): UserRow['role'] {
+        const r = (role ?? '').toUpperCase();
+        switch (r) {
+            case 'ADMIN':
+                return 'Admin';
+            case 'ORGANIZER':
+                return 'Organizer';
+            case 'PARTICIPANT':
+                return 'Camper';
+            case 'SELLER':
+                return 'Seller';
+            case 'SPONSOR':
+                return 'Sponsor';
+            default:
+                return 'Client';
+        }
+    }
+
+    private deriveStatus(u: UserDto): UserStatus {
+        if (u.isSuspended) {
+            return 'Suspended';
+        }
+        if (u.isActive === false) {
+            return 'Inactive';
+        }
+        return 'Active';
+    }
+
+    private formatJoinedDate(iso: string | undefined): string {
+        if (!iso) {
+            return '—';
+        }
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) {
+            return '—';
+        }
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    private initialsFromName(name: string): string {
+        const parts = name.trim().split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        if (parts.length === 1 && parts[0].length >= 2) {
+            return parts[0].slice(0, 2).toUpperCase();
+        }
+        return (parts[0]?.[0] ?? '?').toUpperCase();
+    }
 
     get filteredUsers(): UserRow[] {
         const term = this.searchTerm.trim().toLowerCase();
 
         return this.users.filter((user) => {
-            const matchesSearch = !term
-                || user.name.toLowerCase().includes(term)
-                || user.email.toLowerCase().includes(term);
+            const matchesSearch =
+                !term || user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term);
             const matchesRole = this.filterRole === 'All' || user.role === this.filterRole;
 
             return matchesSearch && matchesRole;

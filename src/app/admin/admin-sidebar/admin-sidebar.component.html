@@ -61,11 +61,12 @@
     <div class="flex items-center gap-4">
       <div
         class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white font-black border border-white/5">
-        AD</div>
+        {{ currentUser?.name?.charAt(0) || 'A' }}{{ currentUser?.name?.charAt(1) || 'D' }}
+      </div>
       @if (!isCollapsed) {
       <div class="flex-1 min-w-0">
-        <p class="font-black text-sm text-white truncate leading-tight">Admin Principal</p>
-        <p class="text-[10px] font-bold text-[#A8B9A3] truncate uppercase tracking-tighter">Senior Governance</p>
+        <p class="font-black text-sm text-white truncate leading-tight">{{ currentUser?.name || 'Admin' }}</p>
+        <p class="text-[10px] font-bold text-[#A8B9A3] truncate uppercase tracking-tighter">{{ currentUser?.role }}</p>
       </div>
       }
     </div>

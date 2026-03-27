@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
     selector: 'app-home-hub',
@@ -10,6 +11,13 @@ import { RouterLink } from '@angular/router';
     styleUrls: ['./home-hub.component.css']
 })
 export class HomeHubComponent {
+    private authService = inject(AuthService);
+
+    get isOrganizer(): boolean {
+        const user = this.authService.getCurrentUser();
+        return user?.role === 'ORGANIZER' || user?.role === 'ADMIN';
+    }
+
     featuredCampsites = [
         { id: 1, name: 'Sahara Star Camp', location: 'Douz, Tunisia', image: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?q=80&w=800', price: 120, rating: 4.9 },
         { id: 2, name: 'Azure Haven Resort', location: 'Kelibia, Tunisia', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=800', price: 195, rating: 4.8 },

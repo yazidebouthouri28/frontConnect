@@ -51,6 +51,7 @@ interface SiteApiRequest {
     checkInTime?: string;
     checkOutTime?: string;
     houseRules?: string;
+        ownerId?: number;    
 }
 
 interface SiteSummaryApiResponse {
@@ -274,7 +275,8 @@ export class SiteService {
             isActive: site.isActive,
             checkInTime: site.checkInTime,
             checkOutTime: site.checkOutTime,
-            houseRules: site.houseRules
+            houseRules: site.houseRules,
+            ownerId: site.ownerId 
         };
     }
 }

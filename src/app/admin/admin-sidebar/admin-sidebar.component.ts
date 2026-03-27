@@ -1,5 +1,7 @@
-import { Component, input, output } from '@angular/core';
-import { NgClass } from '@angular/common';
+import { Component, input, output, inject, OnInit } from '@angular/core';
+import { NgClass, CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
+import { User } from '../../models/api.models';
 
 interface NavItem {
   id: string;
@@ -15,17 +17,24 @@ interface NavSection {
 @Component({
   selector: 'app-admin-sidebar',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, CommonModule],
   templateUrl: './admin-sidebar.component.html',
   styleUrls: ['./admin-sidebar.component.css'],
 })
-export class AdminSidebarComponent {
+export class AdminSidebarComponent implements OnInit {
   activeSection = input.required<string>();
   isCollapsed = false;
   onSectionChange = output<string>();
   logoutClicked = output<void>();
 
-  navSections: NavSection[] = [
+  private authService = inject(AuthService);
+
+  currentUser: User | null = null;
+  isAdmin = false;
+  isOrganizer = false;
+
+  // Full sections for admins
+  fullNavSections: NavSection[] = [
     {
       title: 'Core Management',
       items: [
@@ -55,6 +64,29 @@ export class AdminSidebarComponent {
       ]
     }
   ];
+
+  ngOnInit(): void {
+    this.currentUser = this.authService.getCurrentUser();
+    this.isAdmin = this.currentUser?.role === 'ADMIN';
+    this.isOrganizer = this.currentUser?.role === 'ORGANIZER';
+  }
+
+  // For admins, we use the full sections; for organizers, we provide a custom section with only the Events item.
+  get navSections(): NavSection[] {
+    if (this.isAdmin) {
+      return this.fullNavSections;
+    } else if (this.isOrganizer) {
+      return [
+        {
+          title: 'Event Management',
+          items: [
+            { id: 'events', label: 'Events', icon: 'M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z' }
+          ]
+        }
+      ];
+    }
+    return []; // fallback
+  }
 
   selectSection(id: string) {
     this.onSectionChange.emit(id);

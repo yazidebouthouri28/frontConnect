@@ -8,7 +8,6 @@ export interface ApiResponse<T> {
 
 // ========== AUTH ==========
 
-// ✅ Named union — import UserRole wherever you need a typed role
 export type UserRole =
   | 'CLIENT'
   | 'SELLER'
@@ -18,8 +17,23 @@ export type UserRole =
   | 'ADMIN';
 
 export interface LoginRequest {
-  email: string;       // sent to Spring Boot as emailOrUsername
+  email: string;
   password: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+export interface ForgotPasswordResponse {
+  status: string;
+  devCode?: string;
 }
 
 export interface RegisterRequest {
@@ -31,7 +45,7 @@ export interface RegisterRequest {
   address?: string;
   country?: string;
   age?: number;
-  role: UserRole;           // required & strictly typed
+  role: UserRole;
   isSeller?: boolean;
   isBuyer?: boolean;
   storeName?: string;
@@ -52,19 +66,19 @@ export interface User {
   phone?: string;
   address?: string;
   country?: string;
-  age?: number;             // Spring Boot field
+  age?: number;
   loyaltyPoints?: number;
-  role: UserRole;           // uses named type — fixes TS2322
-  organizerId?: string;     // Added for organizer-specific actions
-  isSeller?: boolean;       // Spring Boot field
-  isBuyer?: boolean;        // Spring Boot field
-  storeName?: string;       // Spring Boot field
+  role: UserRole;
+  organizerId?: number;         // <-- only one, type number
   avatar?: string;
   bio?: string;
   coverImage?: string;
   location?: string;
   status?: 'online' | 'offline' | 'typing';
   createdAt: string;
+  isSeller?: boolean;
+  isBuyer?: boolean;
+  storeName?: string;
 }
 
 // ========== PRODUCT ==========
