@@ -407,6 +407,13 @@
   color: var(--text-on-dark-muted);
 }
 
+.auth-forgot-link-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.5rem;
+  margin-bottom: 0.8rem;
+}
+
 .auth-switch-link {
   border: none;
   background: none;

@@ -606,12 +606,22 @@ export class EventDetailComponent implements OnInit {
 
     resolveImagePath(path: string | null): string {
         if (!path) return 'assets/placeholder-event.jpg';
-        if (path.startsWith('http') || path.startsWith('blob') || path.startsWith('data:')) return path;
+        
+        // If it's already a full URL or blob, return it as is
+        if (path.startsWith('http') || path.startsWith('blob') || path.startsWith('data:')) {
+            return path;
+        }
 
-        const baseUrl = this.apiUrl.endsWith('/api') ? this.apiUrl.slice(0, -4) : this.apiUrl;
-        const cleanPath = path.replace(/^uploads\//, '').replace(/^\//, '');
+        // Clean the path: remove leading / and any leading uploads/ prefix to avoid duplication
+        const cleanPath = path.replace(/^\/+/, '').replace(/^uploads\//i, '');
+        
+        // Determine the base URL (strip /api if present)
+        const baseUrl = this.apiUrl.endsWith('/api') ? this.apiUrl.substring(0, this.apiUrl.length - 4) : this.apiUrl;
+        
+        // Construct the final URL. We assume the backend serves uploads at /uploads/
         const finalPath = `${baseUrl}/uploads/${cleanPath}`;
-        console.log(`[EventDetail] Resolving path: ${path} -> ${finalPath}`);
+        
+        console.log(`[EventDetail] Resolving: "${path}" -> "${finalPath}"`);
         return finalPath;
     }
 }

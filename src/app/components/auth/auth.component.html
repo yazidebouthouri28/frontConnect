@@ -37,7 +37,7 @@
         </header>
 
         <!-- LOGIN FORM -->
-        <ng-container *ngIf="isLoginMode; else signupForm">
+        <ng-container *ngIf="!isForgotMode && isLoginMode">
           <form (ngSubmit)="login()" class="auth-form">
             <div class="auth-form-intro">
               <h1 class="auth-title">Log in</h1>
@@ -78,6 +78,11 @@
                   </svg>
                 </button>
               </div>
+              <div class="auth-forgot-link-wrapper">
+                <button type="button" (click)="switchToForgot()" class="auth-switch-link">
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             <button type="submit" [disabled]="isLoading" class="auth-btn">
@@ -93,8 +98,40 @@
           </form>
         </ng-container>
 
-        <!-- SIGNUP FORM -->
-        <ng-template #signupForm>
+        <!-- FORGOT PASSWORD FORM -->
+        <ng-container *ngIf="isForgotMode">
+          <form (ngSubmit)="forgotPassword()" class="auth-form">
+            <div class="auth-form-intro">
+              <h1 class="auth-title">Reset Password</h1>
+              <p class="auth-subtitle">We'll send you a link to get back into your account.</p>
+            </div>
+
+            <div *ngIf="errorMessage" class="auth-alert auth-alert-error">
+              <span>⚠️</span> {{ errorMessage }}
+            </div>
+            <div *ngIf="successMessage" class="auth-alert auth-alert-success">
+              <span>✅</span> {{ successMessage }}
+            </div>
+
+            <div>
+              <label for="forgot-email" class="auth-label">Email Address</label>
+              <input id="forgot-email" type="email" [(ngModel)]="emailForReset" name="emailForReset"
+                placeholder="you&#64;example.com" class="auth-input" required />
+            </div>
+
+            <button type="submit" [disabled]="isLoading" class="auth-btn">
+              {{ isLoading ? 'Sending link…' : 'Send reset link' }}
+            </button>
+
+            <p class="auth-switch-text">
+              <button type="button" (click)="backToLogin()" class="auth-switch-link">
+                Back to login
+              </button>
+            </p>
+          </form>
+        </ng-container>
+
+        <ng-container *ngIf="!isForgotMode && !isLoginMode">
           <form (ngSubmit)="register()" class="auth-form">
             <div class="auth-form-intro">
               <h1 class="auth-title">Create your account</h1>
@@ -283,7 +320,7 @@
               </button>
             </p>
           </form>
-        </ng-template>
+        </ng-container>
 
         <p class="auth-footer-text">
           © {{ currentYear }} CampConnect. All rights reserved.

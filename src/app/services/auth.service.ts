@@ -267,4 +267,14 @@ export class AuthService {
   isCamper(): boolean { return this.hasRole('CAMPER'); }
   isSponsor(): boolean { return this.hasRole('SPONSOR'); }
   isParticipant(): boolean { return this.hasRole('PARTICIPANT'); }
+
+  // ── Password Reset ────────────────────────────────────────────────────────
+  
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  resetPassword(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, data);
+  }
 }

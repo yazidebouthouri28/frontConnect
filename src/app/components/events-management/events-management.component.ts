@@ -135,13 +135,23 @@ export class EventsManagementComponent implements OnInit {
 
   resolveImageUrl(path: string | null): string {
     if (!path) return 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080';
-    if (path.startsWith('http')) return path;
     
-    // Standardize path: remove leading / or uploads/
-    const cleanPath = path.replace(/^\//, '').replace(/^uploads\//, '');
-    const baseUrl = this.apiUrl.endsWith('/api') ? this.apiUrl.slice(0, -4) : this.apiUrl;
+    // If it's already a full URL or blob, return it as is
+    if (path.startsWith('http') || path.startsWith('blob') || path.startsWith('data:')) {
+      return path;
+    }
+
+    // Clean the path: remove leading / and any leading uploads/ prefix to avoid duplication
+    const cleanPath = path.replace(/^\/+/, '').replace(/^uploads\//i, '');
     
-    return `${baseUrl}/uploads/${cleanPath}`;
+    // Determine the base URL (strip /api if present)
+    const baseUrl = this.apiUrl.endsWith('/api') ? this.apiUrl.substring(0, this.apiUrl.length - 4) : this.apiUrl;
+    
+    // Construct the final URL. We assume the backend serves uploads at /uploads/
+    const finalPath = `${baseUrl}/uploads/${cleanPath}`;
+    
+    console.log(`[EventsManagement] Resolving: "${path}" -> "${finalPath}"`);
+    return finalPath;
   }
 
   private mapEvents(data: any[]): Event[] {
