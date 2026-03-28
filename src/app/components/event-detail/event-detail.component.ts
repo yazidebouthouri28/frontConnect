@@ -62,12 +62,16 @@ export class EventDetailComponent {
         const clonedValue = value ? { ...value } : null;
 
         if (clonedValue && clonedValue.image && !clonedValue.image.startsWith('http') && !clonedValue.image.startsWith('blob')) {
-            clonedValue.image = `${this.apiUrl}/uploads/${clonedValue.image}`;
+            clonedValue.image = clonedValue.image.startsWith('/uploads/')
+                ? `${this.apiUrl}${clonedValue.image}`
+                : `${this.apiUrl}/uploads/${clonedValue.image}`;
         }
         if (clonedValue && clonedValue.images) {
             clonedValue.images = clonedValue.images.map(img =>
                 (img && !img.startsWith('http') && !img.startsWith('blob'))
-                    ? `${this.apiUrl}/uploads/${img}`
+                    ? (img.startsWith('/uploads/')
+                        ? `${this.apiUrl}${img}`
+                        : `${this.apiUrl}/uploads/${img}`)
                     : img
             );
         }

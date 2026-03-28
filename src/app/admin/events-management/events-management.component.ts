@@ -183,7 +183,7 @@ private setOrganizerId() {
                     category: e.category || '',
                     startDate: e.startDate ? e.startDate.replace('T', 'T').substring(0, 16) : '', // ADDED
                     endDate: e.endDate ? e.endDate.replace('T', 'T').substring(0, 16) : '',
-                    picture: e.picture || '',
+                    picture: e.thumbnail || e.picture || e.images?.[0] || '',
                     isFree: e.isFree || false,
                     eventType: e.eventType || '',
                     createdAt: e.createdAt || '',
@@ -403,6 +403,7 @@ private setOrganizerId() {
             (this.newEvent.endDate.length === 16 ? this.newEvent.endDate + ':00' : this.newEvent.endDate) :
             this.newEvent.endDate;
 
+        const normalizedThumbnail = this.normalizeStoredImagePath(this.newEvent.picture);
         const payload = {
             title: this.newEvent.title,               // CHANGED: use title instead of name
             description: this.newEvent.description,
@@ -414,7 +415,8 @@ private setOrganizerId() {
             maxParticipants: this.newEvent.maxParticipants,
             price: this.newEvent.price,
             isFree: this.newEvent.isFree,
-            picture: this.newEvent.picture,
+            thumbnail: normalizedThumbnail,
+            images: normalizedThumbnail ? [normalizedThumbnail] : [],
             status: this.newEvent.status,
             organizerId: this.newEvent.organizerId || 1,
             siteId: this.newEvent.siteId || 1
@@ -557,10 +559,8 @@ private setOrganizerId() {
         }
 
         if (event.picture) {
-            this.selectedFileName = event.picture;
-            this.imagePreview = (event.picture.startsWith('http') || event.picture.startsWith('blob'))
-                ? event.picture
-                : this.imageUrlBase + event.picture;
+            this.selectedFileName = event.picture.split('/').pop() || event.picture;
+            this.imagePreview = this.resolveStoredImageUrl(event.picture);
         }
 
         this.showAddForm = true;
@@ -596,5 +596,50 @@ private setOrganizerId() {
                 this.cdr.detectChanges();
             }
         });
+    }
+
+    private resolveStoredImageUrl(path: string): string {
+        if (!path) {
+            return '';
+        }
+
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+            return path;
+        }
+
+        if (path.startsWith('/uploads/')) {
+            return `${environment.apiUrl}${path}`;
+        }
+
+        return `${this.imageUrlBase}${path}`;
+    }
+
+    private normalizeStoredImagePath(path: string): string {
+        if (!path) {
+            return '';
+        }
+
+        if (path.startsWith(this.imageUrlBase)) {
+            return path.substring(this.imageUrlBase.length);
+        }
+
+        if (path.startsWith('/uploads/')) {
+            return path.substring('/uploads/'.length);
+        }
+
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            try {
+                const url = new URL(path);
+                const uploadsPrefix = '/uploads/';
+                const uploadsIndex = url.pathname.indexOf(uploadsPrefix);
+                if (uploadsIndex >= 0) {
+                    return url.pathname.substring(uploadsIndex + uploadsPrefix.length);
+                }
+            } catch {
+                return path;
+            }
+        }
+
+        return path.replace(/^\/+/, '');
     }
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { catchError, map, of } from 'rxjs';
 import { EventDetailComponent, Event } from '../event-detail/event-detail.component';
+import { environment } from '../../../environments/environment';
 
 type ApiResponse<T> = {
   success: boolean;
@@ -25,6 +26,7 @@ type EventResponse = {
   price?: number;
   isFree?: boolean;
   images?: string[];
+  thumbnail?: string;
   organizerName?: string;
   status?: string;
 };
@@ -37,7 +39,9 @@ type EventResponse = {
   styleUrls: ['./events-management.component.css'],
 })
 export class EventsManagementComponent implements OnInit {
-  private readonly API_BASE = 'http://localhost:8089';
+  private readonly API_BASE = environment.apiUrl;
+  private readonly fallbackImage =
+    'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080';
 
   selectedEvent: Event | null = null;
 
@@ -91,10 +95,7 @@ export class EventsManagementComponent implements OnInit {
 
   private toUiEvent(e: EventResponse): Event {
     const start = e.startDate ? new Date(e.startDate) : null;
-
-    const image =
-      (e.images && e.images.length > 0 && e.images[0]) ||
-      'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=1080';
+    const primaryImage = e.thumbnail || e.images?.find((img) => !!img);
 
     const type: 'workshop' | 'trip' | 'festival' = this.normalizeEventType(
       e.eventType ?? e.category
@@ -107,11 +108,12 @@ export class EventsManagementComponent implements OnInit {
       date: start ? start.toDateString() : 'N/A',
       time: e.endDate ? 'Scheduled' : 'TBA',
       location: e.location || 'Unknown location',
-      image,
+      image: this.resolveMediaUrl(primaryImage),
       participants: e.currentParticipants ?? 0,
       maxParticipants: e.maxParticipants ?? 1,
       price: e.isFree ? 0 : e.price ?? 0,
       organizer: e.organizerName || 'Organizer',
+      images: (e.images ?? []).map((img) => this.resolveMediaUrl(img)),
     };
   }
 
@@ -122,6 +124,27 @@ export class EventsManagementComponent implements OnInit {
     if (v.includes('festival') || v.includes('music')) return 'festival';
 
     return 'trip';
+  }
+
+  private resolveMediaUrl(path?: string): string {
+    if (!path) {
+      return this.fallbackImage;
+    }
+
+    if (
+      path.startsWith('http://') ||
+      path.startsWith('https://') ||
+      path.startsWith('data:') ||
+      path.startsWith('blob:')
+    ) {
+      return path;
+    }
+
+    if (path.startsWith('/uploads/')) {
+      return `${this.API_BASE}${path}`;
+    }
+
+    return `${this.API_BASE}/uploads/${path}`;
   }
 
   progressPercent(ev: Event): number {
