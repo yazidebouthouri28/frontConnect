@@ -1,0 +1,66 @@
+<div class="cart-container">
+
+  <h2>🛒 My Cart</h2>
+
+  <!-- 🔙 Back Button -->
+  <button (click)="goBack()">⬅ Back</button>
+
+  <!-- 🧾 Cart Items -->
+  <div *ngIf="cartItems.length > 0; else emptyCart">
+
+    <div *ngFor="let item of cartItems" class="cart-item">
+      <h4>{{ item.productName }}</h4>
+      <p>Price: {{ item.price }} DT</p>
+
+      <div class="quantity">
+        <button (click)="decrementQuantity(item)">-</button>
+        <span>{{ item.quantity }}</span>
+        <button (click)="incrementQuantity(item)">+</button>
+      </div>
+
+      <p>Total: {{ item.price * item.quantity }} DT</p>
+
+      <button (click)="removeItem(item)">❌ Remove</button>
+    </div>
+
+    <!-- 💰 Summary -->
+    <div class="summary">
+      <p>Subtotal: {{ subtotal }} DT</p>
+      <p>Shipping: {{ shipping }} DT</p>
+      <p>Tax: {{ tax }} DT</p>
+      <h3>Total: {{ total }} DT</h3>
+    </div>
+
+    <!-- 💳 Wallet Section -->
+    <div class="wallet">
+      <h3>💼 Wallet Balance: {{ walletBalance }} DT</h3>
+
+      <button (click)="addFunds()">➕ Add Funds</button>
+      <button (click)="withdrawFunds()">➖ Withdraw</button>
+    </div>
+
+   <!-- <div class="points">
+      <h3>🎁 Loyalty Points: {{ loyaltyPoints }}</h3>
+    </div>-->
+
+    <label>
+      <input type="checkbox" [(ngModel)]="usePoints">
+      Use my loyalty points
+    </label>
+
+    <!-- 💳 Checkout -->
+    <div class="checkout">
+      <button (click)="proceedToCheckout()">💳 Pay Now</button>
+    </div>
+
+    <!-- 🧹 Clear Cart -->
+    <button (click)="clearCart()">🗑 Clear Cart</button>
+
+  </div>
+
+  <!-- ❌ Empty Cart -->
+  <ng-template #emptyCart>
+    <p>Your cart is empty 😢</p>
+  </ng-template>
+
+</div>
