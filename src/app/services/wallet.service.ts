@@ -1,67 +1,116 @@
+// src/app/services/wallet.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { Wallet, WalletTransaction, AddFundsDto } from '../models/api.models';
-
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+import { Observable, of } from 'rxjs';
+import { Wallet } from '../models/wallet';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WalletService {
-  private apiUrl = `${environment.apiUrl}/wallet`;
 
-  constructor(private http: HttpClient) {}
+  // Pour l'instant, on utilise des données mockées
+  // Plus tard, on remplacera par de vraies appels HTTP
+  private mockWallets: Wallet[] = [
+    {
+      id: 1,
+      user: { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+      balance: 1500.50,
+      totalDeposited: 2000,
+      totalWithdrawn: 499.50,
+      currency: 'TND',
+      isActive: true,
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-02-20')
+    },
+    {
+      id: 2,
+      user: { id: 2, firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com' },
+      balance: 3200.00,
+      totalDeposited: 3500,
+      totalWithdrawn: 300,
+      currency: 'TND',
+      isActive: true,
+      createdAt: new Date('2024-01-20'),
+      updatedAt: new Date('2024-02-25')
+    },
+    {
+      id: 3,
+      user: { id: 3, firstName: 'Mohamed', lastName: 'Ben Ali', email: 'mohamed@example.com' },
+      balance: 0,
+      totalDeposited: 0,
+      totalWithdrawn: 0,
+      currency: 'TND',
+      isActive: false,
+      createdAt: new Date('2024-02-01'),
+      updatedAt: new Date('2024-02-01')
+    }
+  ];
 
-  private extractData<T>(response: ApiResponse<T>): T {
-    return response.data ?? ({} as any);
+  constructor(private http: HttpClient) { }
+
+  // CREATE - Ajouter un wallet
+  createWallet(walletData: any): Observable<Wallet> {
+    // Simuler un appel API avec un nouveau wallet
+    const newWallet: Wallet = {
+      id: this.mockWallets.length + 1,
+      user: { id: walletData.user.id },
+      balance: walletData.balance || 0,
+      totalDeposited: 0,
+      totalWithdrawn: 0,
+      currency: walletData.currency || 'TND',
+      isActive: walletData.isActive !== undefined ? walletData.isActive : true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    this.mockWallets.push(newWallet);
+
+    // Simuler une réponse asynchrone
+    return of(newWallet);
   }
 
-  getMyWallet(): Observable<Wallet> {
-    return this.http.get<ApiResponse<Wallet>>(this.apiUrl)
-      .pipe(map(res => this.extractData(res)));
+  // READ - Récupérer tous les wallets
+  getAllWallets(): Observable<Wallet[]> {
+    // Simuler un appel API
+    return of([...this.mockWallets]);
   }
 
-  getBalance(userId: number): Observable<{ balance: number; loyaltyPoints: number }> {
-    // Balance comes from the main wallet endpoint
-    return this.http.get<ApiResponse<Wallet>>(this.apiUrl)
-      .pipe(map(res => {
-        const wallet = this.extractData(res);
-        return { balance: wallet?.balance ?? 0, loyaltyPoints: (wallet as any)?.loyaltyPoints ?? 0 };
-      }));
+  // READ - Récupérer un wallet par son ID
+  getWalletById(id: number): Observable<Wallet> {
+    const wallet = this.mockWallets.find(w => w.id === id);
+    return of(wallet!);
   }
 
-  addFunds(data: AddFundsDto): Observable<Wallet> {
-    return this.http.post<ApiResponse<Wallet>>(`${this.apiUrl}/add-funds`, data)
-      .pipe(map(res => this.extractData(res)));
+  // READ - Récupérer un wallet par ID utilisateur
+  getWalletByUserId(userId: number): Observable<Wallet> {
+    const wallet = this.mockWallets.find(w => w.user?.id === userId);
+    return of(wallet!);
   }
 
-  getTransactions(): Observable<WalletTransaction[]> {
-    return this.http.get<ApiResponse<WalletTransaction[]>>(`${this.apiUrl}/transactions`)
-      .pipe(map(res => this.extractData(res) ?? []));
+  // UPDATE - Modifier un wallet
+  updateWallet(id: number, walletData: any): Observable<Wallet> {
+    const index = this.mockWallets.findIndex(w => w.id === id);
+    if (index !== -1) {
+      this.mockWallets[index] = {
+        ...this.mockWallets[index],
+        balance: walletData.balance !== undefined ? walletData.balance : this.mockWallets[index].balance,
+        currency: walletData.currency || this.mockWallets[index].currency,
+        isActive: walletData.isActive !== undefined ? walletData.isActive : this.mockWallets[index].isActive,
+        updatedAt: new Date()
+      };
+      return of(this.mockWallets[index]);
+    }
+    throw new Error('Wallet non trouvé');
   }
 
-  getTransactionById(id: string): Observable<WalletTransaction> {
-    return this.http.get<ApiResponse<WalletTransaction>>(`${this.apiUrl}/transactions/${id}`)
-      .pipe(map(res => this.extractData(res)));
-  }
-
-  deposit(userId: number, amount: number, description: string) {
-    return this.http.post(
-      `${this.apiUrl}/${userId}/deposit?amount=${amount}&description=${description}`,
-      {}
-    );
-  }
-
-  withdraw(userId: number, amount: number, description: string) {
-    return this.http.post(
-      `${this.apiUrl}/${userId}/withdraw?amount=${amount}&description=${description}`,
-      {}
-    );
+  // DELETE - Supprimer un wallet
+  deleteWallet(id: number): Observable<void> {
+    const index = this.mockWallets.findIndex(w => w.id === id);
+    if (index !== -1) {
+      this.mockWallets.splice(index, 1);
+      return of(void 0);
+    }
+    throw new Error('Wallet non trouvé');
   }
 }

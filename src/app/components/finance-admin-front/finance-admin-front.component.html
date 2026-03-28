@@ -1,8 +1,7 @@
 <div class="py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 min-h-screen">
   <div class="mx-auto max-w-7xl space-y-6">
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h1 class="text-2xl font-bold text-slate-900">Finance Admin Front (Frontend Only)</h1>
-      <p class="text-slate-600 mt-1">Vue locale des entites: cart, coupon, invoice, points, promotion, refundrequest, transaction, wallet, couponusage, cartitem, subscription.</p>
+      <h1 class="text-2xl font-bold text-slate-900">Finance Admin </h1>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -10,10 +9,7 @@
         <div class="text-sm text-slate-500">Wallet Balance</div>
         <div class="text-3xl font-bold text-emerald-700 mt-1">{{ wallet.balance | number:'1.2-2' }} DT</div>
       </div>
-      <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-sm text-slate-500">Points</div>
-        <div class="text-3xl font-bold text-indigo-700 mt-1">{{ wallet.points }}</div>
-      </div>
+
       <div class="bg-white rounded-xl border border-slate-200 p-5" *ngIf="subscription">
         <div class="text-sm text-slate-500">Subscription</div>
         <div class="text-lg font-semibold text-slate-900 mt-1">{{ subscription.plan }} - {{ subscription.status }}</div>
