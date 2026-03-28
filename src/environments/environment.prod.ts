@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://camping-api.com/api',
+  apiUrl: '/api',
   allowOfflineAuth: false
 };
