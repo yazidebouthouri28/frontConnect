@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  DOCKER_IMAGE: farah/connectcamp-frontend
+  DOCKER_IMAGE: farah893/connectcamp-frontend
   NODE_VERSION: '20'
 
 jobs:
