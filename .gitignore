@@ -10,6 +10,9 @@ dist/
 build/
 out/
 
+# Angular CLI cache
+.angular/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
