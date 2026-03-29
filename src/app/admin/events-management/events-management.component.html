@@ -416,21 +416,22 @@
                 </div>
             </div>
 
-            <!-- Location + End Date (2 cols) -->
+            <!-- Start Date + End Date (2 cols) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label
-                        class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Location</label>
-                    <input [(ngModel)]="newEvent.location" name="location" #location="ngModel" required type="text"
-                        placeholder="e.g. Zaghouan, Tunisia"
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Start
+                        Date</label>
+                    <input [(ngModel)]="newEvent.startDate" name="startDate" #startDate="ngModel" required
+                        type="datetime-local"
                         class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/20 focus:border-[#2C4A3C]/40 transition-all"
-                        [ngClass]="{'border-red-500 bg-red-50': location.invalid && (location.touched || eventForm.submitted)}">
-                    @if (location.invalid && (location.touched || eventForm.submitted)) {
-                    <p class="text-[10px] text-red-500 font-bold mt-1">Le lieu est obligatoire</p>
+                        [ngClass]="{'border-red-500 bg-red-50': startDate.invalid && (startDate.touched || eventForm.submitted)}">
+                    @if (startDate.invalid && (startDate.touched || eventForm.submitted)) {
+                    <p class="text-[10px] text-red-500 font-bold mt-1">La date de début est obligatoire</p>
                     }
                 </div>
                 <div>
-                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">End
+                    <label
+                        class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">End
                         Date</label>
                     <input [(ngModel)]="newEvent.endDate" name="endDate" #endDate="ngModel" required
                         type="datetime-local"
@@ -440,6 +441,27 @@
                     <p class="text-[10px] text-red-500 font-bold mt-1">La date de fin est obligatoire</p>
                     }
                 </div>
+            </div>
+
+            <!-- Location -->
+            <div>
+                <label
+                    class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Location</label>
+                <input [(ngModel)]="newEvent.location" name="location" #location="ngModel" required type="text"
+                    list="campsites-options" (ngModelChange)="onLocationComboboxChange($event)"
+                    placeholder="Select a campsite from the list"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/20 focus:border-[#2C4A3C]/40 transition-all"
+                    [ngClass]="{'border-red-500 bg-red-50': location.invalid && (location.touched || eventForm.submitted)}">
+                <datalist id="campsites-options">
+                    @for (site of availableSites; track site.id) {
+                    <option [value]="formatSiteLabel(site)"></option>
+                    }
+                </datalist>
+                @if (location.invalid && (location.touched || eventForm.submitted)) {
+                <p class="text-[10px] text-red-500 font-bold mt-1">Le lieu est obligatoire</p>
+                } @else if (eventForm.submitted && !newEvent.siteId) {
+                <p class="text-[10px] text-red-500 font-bold mt-1">Veuillez choisir un campsite de la liste</p>
+                }
             </div>
 
             <!-- Max Participants + Price (2 cols) -->
@@ -473,9 +495,9 @@
                 @if (!imagePreview) {
                 <div (click)="fileInput.click()"
                     class="w-full border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#2C4A3C]/40 hover:bg-[#2C4A3C]/5 transition-all group"
-                    [ngClass]="{'border-red-500 bg-red-50': eventForm.submitted && !imagePreview, 'border-gray-200': !eventForm.submitted || imagePreview}">
+                    [ngClass]="{'border-red-500 bg-red-50': editingEventId === null && eventForm.submitted && !imagePreview, 'border-gray-200': editingEventId !== null || !eventForm.submitted || imagePreview}">
                     <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform"
-                        [ngClass]="{'bg-red-100': eventForm.submitted && !imagePreview}">
+                        [ngClass]="{'bg-red-100': editingEventId === null && eventForm.submitted && !imagePreview}">
                         📷
                     </div>
                     <div class="text-center">
@@ -483,7 +505,7 @@
                         <p class="text-[10px] text-gray-400 font-medium mt-1">JPG, PNG or WebP • Max 5MB</p>
                     </div>
                 </div>
-                @if (eventForm.submitted && !imagePreview) {
+                @if (editingEventId === null && eventForm.submitted && !imagePreview) {
                 <p class="text-[10px] text-red-500 font-bold mt-1 text-center">L'image de l'événement est obligatoire
                 </p>
                 }

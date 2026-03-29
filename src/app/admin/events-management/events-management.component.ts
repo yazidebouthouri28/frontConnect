@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { SiteService } from '../../services/site.service';
 import { environment } from '../../../environments/environment';
+import { Site } from '../../models/camping.models';
 
 interface AdminEvent {
     id: number;
@@ -62,6 +64,7 @@ export class EventsAdminManagementComponent implements OnInit {
     private cdr = inject(ChangeDetectorRef);
     private route = inject(ActivatedRoute);
     private authService = inject(AuthService);
+    private siteService = inject(SiteService);
 
     private apiUrl = `${environment.apiUrl}/api/events`;
     private uploadUrl = `${environment.apiUrl}/api/files/upload`;
@@ -83,6 +86,7 @@ export class EventsAdminManagementComponent implements OnInit {
     editingEventId: number | null = null;
     otherEventType = '';
     otherCategory = '';
+    availableSites: Site[] = [];
 
     private readonly ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
     private readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -101,7 +105,7 @@ export class EventsAdminManagementComponent implements OnInit {
         picture: '',
         status: 'PUBLISHED',
         organizerId: null,
-        siteId: 1
+        siteId: null
     };
 
     events: AdminEvent[] = [];
@@ -127,6 +131,7 @@ export class EventsAdminManagementComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.loadSites();
         this.loadEvents();
 
         // Handle direct navigation for Add/Edit
@@ -151,6 +156,19 @@ export class EventsAdminManagementComponent implements OnInit {
         });
     }
 
+    private loadSites() {
+        this.siteService.getAllSites().subscribe({
+            next: (sites) => {
+                this.availableSites = sites || [];
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error('Failed to load sites:', err);
+                this.availableSites = [];
+            }
+        });
+    }
+
 private setOrganizerId() {
   const user = this.authService.getCurrentUser();
   if (user && user.organizerId !== undefined && user.organizerId !== null) {
@@ -168,7 +186,9 @@ private setOrganizerId() {
         this.http.get<any>(`${this.apiUrl}`).subscribe({
             next: (response) => {
                 const data = response.data || response;
-                this.events = (Array.isArray(data) ? data : []).map((e: any) => ({
+                this.events = (Array.isArray(data) ? data : [])
+                    .filter((e: any) => e?.status !== 'CANCELLED')
+                    .map((e: any) => ({
                     id: e.id,
                     name: e.title || '',                    // CHANGED: backend returns title
                     title: (e.title || e.description || 'Untitled').substring(0, 30),
@@ -268,7 +288,7 @@ private setOrganizerId() {
             picture: '',
             status: 'PUBLISHED',
             organizerId: null,
-            siteId: 1
+            siteId: null
         };
         this.editingEventId = null;
         this.otherEventType = '';
@@ -348,7 +368,7 @@ private setOrganizerId() {
             finalCategory = this.otherCategory.trim() || 'Other';
         }
 
-        if (!this.newEvent.picture && !this.imagePreview) {
+        if (this.editingEventId === null && !this.newEvent.picture && !this.imagePreview) {
             this.modalErrorMessage = 'L\'image de l\'événement est obligatoire.';
             return;
         }
@@ -391,6 +411,11 @@ private setOrganizerId() {
         }
         if (!this.newEvent.endDate) {
             this.modalErrorMessage = 'La date de fin est obligatoire.';
+            this.loading = false;
+            return;
+        }
+        if (!this.newEvent.siteId) {
+            this.modalErrorMessage = 'Veuillez sélectionner un campsite valide.';
             this.loading = false;
             return;
         }
@@ -564,6 +589,27 @@ private setOrganizerId() {
         }
 
         this.showAddForm = true;
+    }
+
+    formatSiteLabel(site: Site): string {
+        const city = site.city || site.location || '';
+        return city ? `${site.name} - ${city}` : site.name;
+    }
+
+    onLocationComboboxChange(value: string) {
+        const selectedLabel = (value || '').trim().toLowerCase();
+        const matched = this.availableSites.find((site) => {
+            const byLabel = this.formatSiteLabel(site).toLowerCase() === selectedLabel;
+            const byName = site.name.toLowerCase() === selectedLabel;
+            return byLabel || byName;
+        });
+
+        if (matched) {
+            this.newEvent.siteId = matched.id ?? null;
+            this.newEvent.location = matched.city || matched.address || matched.name;
+        } else {
+            this.newEvent.siteId = null;
+        }
     }
 
     deleteSingleEvent(eventId: number) {
