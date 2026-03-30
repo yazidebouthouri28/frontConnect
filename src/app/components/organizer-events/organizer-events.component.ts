@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { ApiResponse } from '../../models/api.models';
 
 interface AdminEvent {
     id: number;
@@ -83,6 +84,7 @@ export class OrganizerEventsComponent implements OnInit {
     editingEventId: number | null = null;
     otherEventType = '';
     otherCategory = '';
+    myOrganizerId: number | null = null;
 
     private readonly ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
     private readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -99,9 +101,9 @@ export class OrganizerEventsComponent implements OnInit {
         price: null,
         isFree: false,
         picture: '',
-        status: 'DRAFT',
+        status: 'PUBLISHED',
         organizerId: null,
-        siteId: 1
+        siteId: null
     };
 
     events: AdminEvent[] = [];
@@ -127,78 +129,124 @@ export class OrganizerEventsComponent implements OnInit {
     }
 
     ngOnInit() {
-        this.loadEvents();
+        this.resolveOrganizerId(() => {
+            this.loadEvents();
 
-        // Handle direct navigation for Add/Edit
-        this.route.queryParams.subscribe(params => {
-            const action = params['action'];
-            const id = params['id'];
+            this.route.queryParams.subscribe(params => {
+                const action = params['action'];
+                const id = params['id'];
 
-            if (action === 'add') {
-                setTimeout(() => this.openAddForm(), 500);
-            } else if (action === 'edit' && id) {
-                const checkInterval = setInterval(() => {
-                    if (!this.loading) {
-                        const eventToEdit = this.events.find(e => e.id === Number(id));
-                        if (eventToEdit) {
-                            this.editEvent(eventToEdit);
+                if (action === 'add') {
+                    setTimeout(() => this.openAddForm(), 500);
+                } else if (action === 'edit' && id) {
+                    const checkInterval = setInterval(() => {
+                        if (!this.loading) {
+                            const eventToEdit = this.events.find(e => e.id === Number(id));
+                            if (eventToEdit) {
+                                this.editEvent(eventToEdit);
+                            }
+                            clearInterval(checkInterval);
                         }
-                        clearInterval(checkInterval);
-                    }
-                }, 100);
-                setTimeout(() => clearInterval(checkInterval), 3000);
+                    }, 100);
+                    setTimeout(() => clearInterval(checkInterval), 3000);
+                }
+            });
+        });
+    }
+
+    private resolveOrganizerId(done: () => void) {
+        const user = this.authService.getCurrentUser();
+        if (!user || user.role !== 'ORGANIZER') {
+            this.errorMessage = 'Organizer access required.';
+            this.loading = false;
+            this.cdr.detectChanges();
+            return;
+        }
+        if (user.organizerId != null && user.organizerId !== undefined) {
+            this.myOrganizerId = user.organizerId;
+            done();
+            return;
+        }
+        const uid = Number(user.id);
+        if (!Number.isFinite(uid)) {
+            this.errorMessage = 'Cannot resolve your user id.';
+            this.loading = false;
+            this.cdr.detectChanges();
+            return;
+        }
+        this.http.get<ApiResponse<number>>(`${environment.apiUrl}/api/organizers/by-user/${uid}`).subscribe({
+            next: (res) => {
+                const oid = res.data;
+                if (oid != null && oid !== undefined) {
+                    this.myOrganizerId = Number(oid);
+                    this.authService.patchStoredUser({ organizerId: this.myOrganizerId });
+                    done();
+                } else {
+                    this.errorMessage = 'No organizer record found for this account.';
+                    this.loading = false;
+                    this.cdr.detectChanges();
+                }
+            },
+            error: () => {
+                this.errorMessage = 'Could not load your organizer profile. Are you registered as an organizer?';
+                this.loading = false;
+                this.cdr.detectChanges();
             }
         });
     }
 
-private setOrganizerId() {
-  const user = this.authService.getCurrentUser();
-  if (user && user.organizerId !== undefined && user.organizerId !== null) {
-    // user.organizerId is already a number; assign directly
-    this.newEvent.organizerId = user.organizerId;
-  } else {
-    // fallback to null if no organizer ID
-    this.newEvent.organizerId = null;
-  }
-}
+    private setOrganizerId() {
+        const user = this.authService.getCurrentUser();
+        this.newEvent.organizerId = this.myOrganizerId ?? user?.organizerId ?? null;
+    }
 
     loadEvents() {
+        if (this.myOrganizerId == null) {
+            return;
+        }
         this.loading = true;
         this.errorMessage = '';
         this.http.get<any>(`${this.apiUrl}`).subscribe({
             next: (response) => {
-                const data = response.data || response;
-                this.events = (Array.isArray(data) ? data : []).map((e: any) => ({
-                    id: e.id,
-                    name: e.title || '',                    // CHANGED: backend returns title
-                    title: (e.title || e.description || 'Untitled').substring(0, 30),
-                    type: this.mapEventType(e.eventType),
-                    location: e.location || '',
-                    date: e.startDate ? new Date(e.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD', // CHANGED: use startDate
-                    participants: e.currentParticipants || 0,
-                    capacity: e.maxParticipants || 0,
-                    price: e.price || 0,
-                    description: e.description || '',
-                    status: this.mapStatus(e.status),
-                    category: e.category || '',
-                    startDate: e.startDate ? e.startDate.replace('T', 'T').substring(0, 16) : '', // ADDED
-                    endDate: e.endDate ? e.endDate.replace('T', 'T').substring(0, 16) : '',
-                    picture: e.picture || '',
-                    isFree: e.isFree || false,
-                    eventType: e.eventType || '',
-                    createdAt: e.createdAt || '',
-                    reviewCount: e.reviewCount || 0,
-                    organizerId: e.organizerId || null,
-                    organizerName: e.organizerName || '',
-                    siteId: e.siteId || null,
-                    siteName: e.siteName || ''
-                }));
+                const payload = response.data ?? response;
+                const list: any[] = Array.isArray(payload?.content)
+                    ? payload.content
+                    : Array.isArray(payload) ? payload : [];
+                const organizerEvents = list.filter((e: any) => Number(e?.organizerId) === this.myOrganizerId);
+
+                this.events = organizerEvents
+                    .filter((e: any) => e?.status !== 'CANCELLED')
+                    .map((e: any) => ({
+                        id: e.id,
+                        name: e.title || '',
+                        title: (e.title || e.description || 'Untitled').substring(0, 30),
+                        type: this.mapEventType(e.eventType),
+                        location: e.location || '',
+                        date: e.startDate ? new Date(e.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD',
+                        participants: e.currentParticipants || 0,
+                        capacity: e.maxParticipants || 0,
+                        price: e.price || 0,
+                        description: e.description || '',
+                        status: this.mapStatus(e.status),
+                        category: e.category || '',
+                        startDate: e.startDate ? e.startDate.replace('T', 'T').substring(0, 16) : '',
+                        endDate: e.endDate ? e.endDate.replace('T', 'T').substring(0, 16) : '',
+                        picture: e.thumbnail || e.picture || e.images?.[0] || '',
+                        isFree: e.isFree || false,
+                        eventType: e.eventType || '',
+                        createdAt: e.createdAt || '',
+                        reviewCount: e.reviewCount || 0,
+                        organizerId: e.organizerId || null,
+                        organizerName: e.organizerName || '',
+                        siteId: e.siteId || null,
+                        siteName: e.siteName || ''
+                    }));
                 this.loading = false;
                 this.cdr.detectChanges();
             },
             error: (err) => {
-                console.error('Failed to load events:', err);
-                this.errorMessage = 'Failed to load events. Is the backend running?';
+                console.error('Failed to load organizer events:', err);
+                this.errorMessage = err.error?.message || err.message || 'Failed to load your organizer events.';
                 this.loading = false;
                 this.cdr.detectChanges();
             }
@@ -266,9 +314,9 @@ private setOrganizerId() {
             price: null,
             isFree: false,
             picture: '',
-            status: 'DRAFT',
+            status: 'PUBLISHED',
             organizerId: null,
-            siteId: 1
+            siteId: null
         };
         this.editingEventId = null;
         this.otherEventType = '';
@@ -378,6 +426,13 @@ private setOrganizerId() {
     }
 
     private proceedWithSubmit(finalEventType: string, finalCategory: string) {
+        const organizerId = this.myOrganizerId ?? this.newEvent.organizerId;
+
+        if (organizerId == null) {
+            this.modalErrorMessage = 'Organizer profile not found. Please sign in again with your organizer account.';
+            this.loading = false;
+            return;
+        }
         // Validate required fields
         if (!this.newEvent.title) {
             this.modalErrorMessage = 'Le titre de l\'événement est obligatoire.';
@@ -403,7 +458,7 @@ private setOrganizerId() {
             (this.newEvent.endDate.length === 16 ? this.newEvent.endDate + ':00' : this.newEvent.endDate) :
             this.newEvent.endDate;
 
-        const payload = {
+        const payload: Record<string, unknown> = {
             title: this.newEvent.title,               // CHANGED: use title instead of name
             description: this.newEvent.description,
             eventType: finalEventType,
@@ -416,9 +471,12 @@ private setOrganizerId() {
             isFree: this.newEvent.isFree,
             picture: this.newEvent.picture,
             status: this.newEvent.status,
-            organizerId: this.newEvent.organizerId || 1,
-            siteId: this.newEvent.siteId || 1
+            organizerId
         };
+
+        if (this.newEvent.siteId != null) {
+            payload['siteId'] = this.newEvent.siteId;
+        }
 
         if (this.editingEventId !== null) {
             this.http.put<any>(`${this.apiUrl}/${this.editingEventId}`, payload).subscribe({

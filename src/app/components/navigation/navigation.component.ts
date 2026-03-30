@@ -2,6 +2,8 @@ import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { AccountProfileService } from '../../services/account-profile.service';
+import { ViewModeService } from '../../services/view-mode.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -14,6 +16,8 @@ import { Subscription } from 'rxjs';
 export class NavigationComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   userName = '';
+  userRole = '';
+  userAvatar = '';
   logoError = false;
   profileDropdownOpen = false;
   mobileMenuOpen = false;
@@ -21,7 +25,9 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private accountProfile: AccountProfileService,
+    private router: Router,
+    private viewMode: ViewModeService
   ) {}
 
   ngOnInit(): void {
@@ -42,11 +48,37 @@ export class NavigationComponent implements OnInit, OnDestroy {
     const user = this.authService.getCurrentUser();
     this.isLoggedIn = !!user;
     this.userName = user?.name || user?.username || '';
+    this.userRole = user?.role || '';
+    this.userAvatar = this.accountProfile.resolveStoredImageUrl(user?.avatar) || '';
   }
 
-  get isOrganizer(): boolean {
-    const user = this.authService.getCurrentUser();
-    return user?.role === 'ORGANIZER' || user?.role === 'ADMIN';
+  /** True only for organizer role (not admin). */
+  get showManageMyEvents(): boolean {
+    return this.authService.getCurrentUser()?.role === 'ORGANIZER';
+  }
+
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  get adminInCamperSpace(): boolean {
+    return this.viewMode.adminInCamperSpace();
+  }
+
+  goToAdminSpace(): void {
+    this.viewMode.exitCamperView();
+    this.router.navigate(['/admin']);
+    this.profileDropdownOpen = false;
+  }
+
+  goToSettings(): void {
+    this.router.navigate(['/settings']);
+    this.profileDropdownOpen = false;
+    this.mobileMenuOpen = false;
+  }
+
+  get userInitials(): string {
+    return this.accountProfile.initialsFromName(this.userName || 'User', 'CC');
   }
 
   toggleProfileDropdown(): void {

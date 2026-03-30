@@ -79,17 +79,29 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
+      const rawErrorBody =
+        error.error && typeof error.error === 'object' && !Array.isArray(error.error)
+          ? error.error as Record<string, unknown>
+          : {};
+      const finalMessage =
+        (typeof rawErrorBody['message'] === 'string' && rawErrorBody['message'])
+        || (typeof rawErrorBody['error'] === 'string' && rawErrorBody['error'])
+        || userFriendlyMessage;
+
       console.error('HTTP Error:', {
         status: error.status,
         url: error.url,
-        message: userFriendlyMessage,
+        message: finalMessage,
         timestamp: new Date().toISOString()
       });
 
       return throwError(() => ({
-        message: userFriendlyMessage,
+        message: finalMessage,
         status: error.status,
-        error: null
+        error: {
+          ...rawErrorBody,
+          message: finalMessage
+        }
       }));
     })
   );

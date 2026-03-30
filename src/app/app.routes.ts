@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { AuthGuard, SellerGuard, ClientGuard, AdminGuard, OrganizerGuard } from './guards/auth.guard';
+import { AuthGuard, SellerGuard, ClientGuard, AdminGuard, OrganizerOnlyGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   // Redirect root to the auth login page
@@ -32,7 +32,7 @@ export const routes: Routes = [
   { path: 'events/:id', loadComponent: () => import('./components/event-detail/event-detail.component').then(m => m.EventDetailComponent) },
 
   // --- Events management for admin/organizer (protected) ---
-  { path: 'events/manage', loadComponent: () => import('./admin/events-management/events-management.component').then(m => m.EventsAdminManagementComponent), canActivate: [OrganizerGuard] },
+  { path: 'events/manage', loadComponent: () => import('./admin/events-management/events-management.component').then(m => m.EventsAdminManagementComponent), canActivate: [OrganizerOnlyGuard] },
 
   // --- Marketplace ---
   { path: 'marketplace', loadComponent: () => import('./components/marketplace/marketplace.component').then(m => m.MarketplaceComponent) },
@@ -55,6 +55,7 @@ export const routes: Routes = [
   // --- Profile ---
   { path: 'profile', loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent), canActivate: [AuthGuard] },
   { path: 'profile/:id', loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent) },
+  { path: 'settings', loadComponent: () => import('./components/account-settings/account-settings.component').then(m => m.AccountSettingsComponent), canActivate: [AuthGuard] },
 
   // --- Preferences ---
   { path: 'preferences', loadComponent: () => import('./components/user-preferences/user-preferences.component').then(m => m.UserPreferencesComponent), canActivate: [AuthGuard] },
@@ -65,8 +66,9 @@ export const routes: Routes = [
   // --- Sponsor dashboard ---
   { path: 'sponsor-dashboard', loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent), canActivate: [AuthGuard], data: { role: 'SPONSOR' } },
 
-  // --- Admin panel (now accessible to organizers as well) ---
-  { path: 'admin', loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent), canActivate: [OrganizerGuard] },
+  // --- Admin panel (admin only) ---
+  { path: 'admin', loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent), canActivate: [AdminGuard] },
+  { path: 'admin/settings', loadComponent: () => import('./components/account-settings/account-settings.component').then(m => m.AccountSettingsComponent), canActivate: [AdminGuard] },
 
   // --- Authentication routes ---
   { path: 'auth', loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent) },
@@ -82,7 +84,7 @@ export const routes: Routes = [
   {
     path: 'organizer/events',
     loadComponent: () => import('./components/organizer-events/organizer-events.component').then(m => m.OrganizerEventsComponent),
-    canActivate: [OrganizerGuard]
+    canActivate: [OrganizerOnlyGuard]
   },
 
   // --- Catch‑all: redirect to root (which goes to auth) ---

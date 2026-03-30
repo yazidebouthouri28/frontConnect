@@ -61,7 +61,11 @@
     <div class="flex items-center gap-4">
       <div
         class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white font-black border border-white/5">
-        {{ currentUser?.name?.charAt(0) || 'A' }}{{ currentUser?.name?.charAt(1) || 'D' }}
+        @if (profileAvatar) {
+        <img [src]="profileAvatar" [alt]="currentUser?.name || 'Admin'" class="w-full h-full rounded-2xl object-cover">
+        } @else {
+        {{ profileInitials }}
+        }
       </div>
       @if (!isCollapsed) {
       <div class="flex-1 min-w-0">

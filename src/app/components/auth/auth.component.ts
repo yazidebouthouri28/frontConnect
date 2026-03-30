@@ -141,8 +141,7 @@ export class AuthComponent implements OnInit, OnDestroy {
           this.router.navigate(['/admin']);
           return;
         }
-        const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
-        if (prefsDone === 'true') {
+        if (this.authService.hasCompletedPreferences(auth.user)) {
           this.router.navigate(['/home']);
         } else {
           this.router.navigate(['/preferences']);
@@ -199,8 +198,7 @@ export class AuthComponent implements OnInit, OnDestroy {
           setTimeout(() => this.router.navigate(['/admin']), 1200);
           return;
         }
-        const prefsDone = localStorage.getItem(`campconnect_preferences_done_${auth.user.email}`);
-        if (prefsDone === 'true') {
+        if (this.authService.hasCompletedPreferences(auth.user)) {
           setTimeout(() => this.router.navigate(['/home']), 1200);
         } else {
           setTimeout(() => this.router.navigate(['/preferences']), 1200);

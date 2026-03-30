@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Site } from '../../models/camping.models';
 import { SiteService } from '../../services/site.service';
+import { AuthService } from '../../services/auth.service';
+import { PreferenceSelections, ProfilePersonalizationService } from '../../services/profile-personalization.service';
 
 interface CampsiteCard {
   id: number;
@@ -65,6 +67,8 @@ export class CampsiteListingsComponent implements OnInit {
 
   constructor(
     private siteService: SiteService,
+    private authService: AuthService,
+    private profilePersonalization: ProfilePersonalizationService,
     private cdr: ChangeDetectorRef,
     private elRef: ElementRef
   ) { }
@@ -182,9 +186,7 @@ export class CampsiteListingsComponent implements OnInit {
       next: (sites) => {
         const mapped = sites.map((site) => this.toCard(site));
         this.campsites = mapped;
-        this.recommendedCampsites = [...mapped]
-          .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews)
-          .slice(0, 2);
+        this.recommendedCampsites = this.buildRecommendedCampsites(mapped);
         this.isLoading = false;
         this.initPriceRangeFromData(mapped);
         this.rebuildHistogram(mapped);
@@ -312,5 +314,132 @@ export class CampsiteListingsComponent implements OnInit {
       .filter(Boolean)
       .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase())
       .join(' ');
+  }
+
+  private buildRecommendedCampsites(cards: CampsiteCard[]): CampsiteCard[] {
+    const fallback = [...cards]
+      .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews)
+      .slice(0, 2);
+
+    const preferences = this.profilePersonalization.getPreferences(this.authService.getCurrentUser());
+    if (!Object.keys(preferences).length) {
+      return fallback;
+    }
+
+    const ranked = cards
+      .map((card) => ({ card, score: this.scoreCampsite(card, preferences) }))
+      .sort((a, b) => b.score - a.score || b.card.rating - a.card.rating || b.card.reviews - a.card.reviews);
+
+    const personalized = ranked.filter((entry) => entry.score > 0).map((entry) => entry.card).slice(0, 2);
+    return personalized.length ? personalized : fallback;
+  }
+
+  private scoreCampsite(card: CampsiteCard, preferences: PreferenceSelections): number {
+    let score = 0;
+    const siteType = String(card.siteType || '').toUpperCase();
+    const location = card.location.toLowerCase();
+    const amenities = card.amenities.map((item) => item.toLowerCase());
+
+    const styleWeights: Record<string, string[]> = {
+      beach: ['BEACH'],
+      mountain: ['MOUNTAIN'],
+      desert: ['DESERT'],
+      forest: ['FOREST'],
+      lakeside: ['BEACH']
+    };
+
+    for (const style of preferences['style'] || []) {
+      if ((styleWeights[style] || []).includes(siteType)) {
+        score += 4;
+      }
+
+      if (style === 'lakeside' && this.includesAny(location, ['lake', 'lagoon', 'river', 'water'])) {
+        score += 2;
+      }
+    }
+
+    const amenitiesMap: Record<string, string[]> = {
+      electricity: ['electric', 'power'],
+      water: ['water', 'shower'],
+      restroom: ['restroom', 'toilet', 'bathroom'],
+      wifi: ['wifi', 'internet'],
+      shops: ['shop', 'store', 'restaurant', 'market'],
+      parking: ['parking'],
+      firepits: ['fire', 'bbq', 'campfire']
+    };
+
+    for (const amenity of preferences['amenities'] || []) {
+      if ((amenitiesMap[amenity] || []).some((expected) => amenities.some((value) => value.includes(expected)))) {
+        score += 2;
+      }
+    }
+
+    if ((preferences['amenities'] || []).includes('none') && amenities.length <= 2) {
+      score += 2;
+    }
+
+    const activities = preferences['activities'] || [];
+    if (activities.includes('hiking') && ['MOUNTAIN', 'FOREST'].includes(siteType)) score += 3;
+    if (activities.includes('water') && (siteType === 'BEACH' || amenities.includes('water'))) score += 3;
+    if (activities.includes('stargazing') && siteType === 'DESERT') score += 3;
+    if (activities.includes('wildlife') && ['FOREST', 'DESERT'].includes(siteType)) score += 2;
+    if (activities.includes('climbing') && siteType === 'MOUNTAIN') score += 3;
+    if (activities.includes('reading') && ['FOREST', 'BEACH'].includes(siteType)) score += 1;
+    if (activities.includes('gathering') && amenities.some((value) => value.includes('group') || value.includes('fire'))) score += 2;
+
+    const intensity = preferences['intensity']?.[0];
+    if (intensity === 'relaxed') {
+      score += Math.min(3, amenities.length);
+    } else if (intensity === 'extreme' && amenities.length <= 2) {
+      score += 3;
+    } else if (intensity === 'moderate' && amenities.length >= 2 && amenities.length <= 5) {
+      score += 2;
+    }
+
+    const primaryGoal = preferences['primary_goal']?.[0];
+    if (primaryGoal === 'relax' && ['BEACH', 'FOREST'].includes(siteType)) score += 2;
+    if (primaryGoal === 'adventure' && ['MOUNTAIN', 'DESERT'].includes(siteType)) score += 3;
+    if (primaryGoal === 'nature' && ['FOREST', 'MOUNTAIN'].includes(siteType)) score += 2;
+    if (primaryGoal === 'family' && amenities.some((value) => ['water', 'toilet', 'parking'].some((token) => value.includes(token)))) score += 2;
+    if (primaryGoal === 'photography' && card.rating >= 4) score += 2;
+
+    score += this.scorePrice(card.price, preferences['budget']?.[0]);
+
+    if ((preferences['special'] || []).includes('eco') && card.verified) score += 1;
+    if ((preferences['special'] || []).includes('family') && amenities.some((value) => value.includes('parking') || value.includes('water'))) score += 2;
+
+    return score;
+  }
+
+  private scorePrice(price: number, budget?: string): number {
+    if (!budget) {
+      return 0;
+    }
+
+    if (budget === 'budget') {
+      if (price <= 30) return 4;
+      if (price <= 50) return 2;
+    }
+
+    if (budget === 'moderate') {
+      if (price >= 30 && price <= 70) return 4;
+      if (price > 70 && price <= 90) return 2;
+    }
+
+    if (budget === 'comfortable') {
+      if (price >= 70 && price <= 150) return 4;
+      if (price >= 50 && price < 70) return 2;
+    }
+
+    if (budget === 'premium') {
+      if (price >= 150) return 4;
+      if (price >= 100) return 2;
+    }
+
+    return 0;
+  }
+
+  private includesAny(source: string, values: string[]): boolean {
+    return values.some((value) => source.includes(value));
   }
 }

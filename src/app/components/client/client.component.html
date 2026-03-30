@@ -15,7 +15,7 @@
             <span class="font-semibold">💰 ${{ walletBalance.toFixed(2) }} Balance</span>
           </div>
         </div>
-        <button (click)="activeTab = 'profile'"
+        <button (click)="goToAccountSettings()"
           class="bg-cream-beige text-forest-green px-6 py-2 rounded-lg font-semibold hover:bg-white transition-colors min-h-[44px]">
           Edit Profile
         </button>
@@ -25,7 +25,7 @@
     <!-- Tab Navigation -->
     <div class="mb-6 flex flex-wrap gap-2">
       <button *ngFor="let item of menuItems"
-        (click)="activeTab = item.id"
+        (click)="item.id === 'profile' ? goToAccountSettings() : activeTab = item.id"
         class="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors min-h-[44px]"
         [ngClass]="activeTab === item.id ? 'bg-olive-green text-cream-beige' : 'bg-white text-forest-green hover:bg-sage-green/20'">
         <span>{{ item.icon }}</span>

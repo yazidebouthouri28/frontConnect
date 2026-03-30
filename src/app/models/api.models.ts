@@ -74,6 +74,7 @@ export interface User {
   bio?: string;
   coverImage?: string;
   location?: string;
+  website?: string;
   status?: 'online' | 'offline' | 'typing';
   createdAt: string;
   isSeller?: boolean;

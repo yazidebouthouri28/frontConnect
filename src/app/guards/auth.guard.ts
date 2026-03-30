@@ -85,3 +85,25 @@ export class OrganizerGuard implements CanActivate {
     return false;
   }
 }
+
+/** Organizer role only (not admin) — for "Manage my events" pages. */
+@Injectable({ providedIn: 'root' })
+export class OrganizerOnlyGuard implements CanActivate {
+  constructor(private authService: AuthService, private router: Router) {}
+
+  canActivate(): boolean {
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/auth/login']);
+      return false;
+    }
+    if (this.authService.hasRole('ORGANIZER')) {
+      return true;
+    }
+    if (this.authService.isAdmin()) {
+      this.router.navigate(['/admin']);
+      return false;
+    }
+    this.router.navigate(['/home']);
+    return false;
+  }
+}

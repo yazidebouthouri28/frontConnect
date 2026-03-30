@@ -1,4 +1,7 @@
 import { Injectable } from '@angular/core';
+import { AuthService } from './auth.service';
+import { AccountProfileService } from './account-profile.service';
+import { User as SessionUser } from '../models/api.models';
 
 export interface User {
     id: string;
@@ -21,7 +24,7 @@ export interface User {
     providedIn: 'root'
 })
 export class UserService {
-    private currentUser: User = {
+    private fallbackCurrentUser: User = {
         id: 'me',
         name: 'Ahmed Ben Salem',
         avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150',
@@ -85,14 +88,47 @@ export class UserService {
         }
     ];
 
-    constructor() { }
+    constructor(
+        private authService: AuthService,
+        private accountProfile: AccountProfileService
+    ) { }
 
     getCurrentUser(): User {
-        return this.currentUser;
+        return this.mapSessionUser(this.authService.getCurrentUser()) || this.fallbackCurrentUser;
     }
 
     getUserById(id: string): User | undefined {
-        if (id === 'me') return this.currentUser;
+        const currentUser = this.getCurrentUser();
+        if (id === 'me' || id === currentUser.id) return currentUser;
         return this.mockUsers.find(u => u.id === id);
+    }
+
+    private mapSessionUser(user: SessionUser | null): User | null {
+        if (!user) {
+            return null;
+        }
+
+        const name = user.name || user.username || 'ConnectCamp User';
+        const avatar =
+            this.accountProfile.resolveStoredImageUrl(user.avatar)
+            || this.accountProfile.buildGeneratedAvatar(name);
+        const coverImage =
+            this.accountProfile.resolveStoredImageUrl(user.coverImage)
+            || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200';
+
+        return {
+            id: String(user.id),
+            name,
+            avatar,
+            role: user.role,
+            email: user.email,
+            bio: user.bio || 'ConnectCamp member.',
+            coverImage,
+            location: user.location || user.country || 'Tunisia',
+            hashtags: [],
+            followers: '0',
+            gallery: [avatar],
+            achievements: []
+        };
     }
 }

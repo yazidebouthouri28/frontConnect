@@ -35,9 +35,10 @@ export class AppComponent implements OnInit {
   }
 
   private updateLayoutVisibility(url: string) {
-    const noLayoutRoutes = ['/auth', '/login', '/register'];
+    const normalizedUrl = url.split(/[?#]/)[0];
+    const noLayoutRoutes = ['/auth', '/login', '/register', '/admin'];
     this.showLayout = !noLayoutRoutes.some(route =>
-      url === route || url.startsWith(`${route}/`)
+      normalizedUrl === route || normalizedUrl.startsWith(`${route}/`)
     );
   }
 }

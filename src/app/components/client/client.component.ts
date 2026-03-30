@@ -6,6 +6,7 @@ import { CartService } from '../../services/cart.service';
 import { WalletService } from '../../services/wallet.service';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
+import { AccountProfileService } from '../../services/account-profile.service';
 import { NotificationService } from '../../services/notification.service';
 import { ApiService } from '../../services/api.service';
 import { CartItem, Wallet, WalletTransaction, Order, CreateOrderDto } from '../../models/api.models';
@@ -71,6 +72,7 @@ export class ClientComponent implements OnInit {
     private walletService: WalletService,
     private orderService: OrderService,
     private authService: AuthService,
+    private accountProfile: AccountProfileService,
     private notificationService: NotificationService,
     private apiService: ApiService
   ) {}
@@ -168,6 +170,18 @@ export class ClientComponent implements OnInit {
     if (cartMenuItem) {
       cartMenuItem.badge = this.cartItems.length > 0 ? this.cartItems.length.toString() : '';
     }
+  }
+
+  get customerAvatar(): string {
+    return this.accountProfile.resolveStoredImageUrl(this.authService.getCurrentUser()?.avatar) || '';
+  }
+
+  get customerInitials(): string {
+    return this.accountProfile.initialsFromName(this.customerName || this.customerEmail || 'Client', 'CC');
+  }
+
+  goToAccountSettings() {
+    this.router.navigate(['/settings']);
   }
 
   updateQuantity(index: number, change: number) {

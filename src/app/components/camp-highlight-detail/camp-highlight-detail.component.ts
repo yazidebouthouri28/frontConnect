@@ -8,6 +8,8 @@ import { AuthService } from '../../services/auth.service';
 
 interface HighlightFeedback {
   id: number;
+  siteId: number;
+  highlightId: number;
   userName: string;
   comment: string;
   rating?: number;
@@ -36,10 +38,6 @@ export class CampHighlightDetailComponent implements OnInit {
   ratingStars = [1, 2, 3, 4, 5];
   feedbacks: HighlightFeedback[] = [];
 
-  // Reaction bar properties
-  locationName = 'Ain Draham, Tunisia';
-  rating = 4.5;
-  reactionsCount = 1;
   likes = 1;
   dislikes = 0;
 
@@ -208,6 +206,8 @@ export class CampHighlightDetailComponent implements OnInit {
 
     const feedback: HighlightFeedback = {
       id: Date.now(),
+      siteId: this.siteId,
+      highlightId: this.highlightId,
       userName,
       comment,
       rating: this.feedbackRating,
@@ -290,7 +290,18 @@ export class CampHighlightDetailComponent implements OnInit {
     try {
       const raw = localStorage.getItem(this.getFeedbackStorageKey());
       const parsed = raw ? JSON.parse(raw) : [];
-      this.feedbacks = Array.isArray(parsed) ? parsed : [];
+      const storedFeedbacks: Partial<HighlightFeedback>[] = Array.isArray(parsed) ? parsed : [];
+      this.feedbacks = storedFeedbacks.filter((feedback): feedback is HighlightFeedback =>
+        feedback.siteId === this.siteId
+        && feedback.highlightId === this.highlightId
+        && typeof feedback.id === 'number'
+        && typeof feedback.userName === 'string'
+        && typeof feedback.comment === 'string'
+        && typeof feedback.createdAt === 'string'
+        && typeof feedback.likes === 'number'
+        && typeof feedback.dislikes === 'number'
+      );
+      this.persistFeedbacks();
     } catch {
       this.feedbacks = [];
     }

@@ -43,6 +43,7 @@ export class EventDetailComponent {
     private cdr = inject(ChangeDetectorRef);
 
     newComment: string = '';
+    newCommentRating: number = 0;
     userRating: number = 0;
     ticketCount: number = 1;
     showClaimForm: boolean = false;
@@ -290,36 +291,57 @@ export class EventDetailComponent {
         });
     }
 
-    addComment() {
-        if (!this.event || !this.newComment.trim()) return;
+    addCommentWithStars() {
+        if (!this.event) return;
+        const commentText = this.newComment.trim();
+        const ratingVal = this.newCommentRating;
+        
+        // If neither comment text nor rating is provided, do nothing
+        if (!commentText && ratingVal === 0) return;
+        
         if (!this.authService.isAuthenticated()) {
-            alert('Veuillez vous connecter pour ajouter un commentaire.');
+            alert('Veuillez vous connecter pour ajouter un avis.');
             this.router.navigate(['/auth/login']);
             return;
         }
+        
+        this.isProcessing = true;
         const userId = this.authService.getCurrentUser()?.id;
+        
+        // Use GeneralReview endpoint which supports both rating and comment text
         const payload = {
-            eventId: this.event.id,
-            userId: Number(userId),
-            content: this.newComment
+            targetType: 'EVENT',
+            targetId: this.event.id,
+            rating: ratingVal > 0 ? ratingVal : null,
+            comment: commentText || null
         };
-        this.http.post(`${this.apiUrl}/api/comments`, payload).subscribe({
+        
+        this.http.post(`${this.apiUrl}/api/general-reviews?userId=${userId}`, payload).subscribe({
             next: () => {
                 this.newComment = '';
+                this.newCommentRating = 0;
+                this.isProcessing = false;
                 this.refreshEventData();
                 this.loadComments();
             },
-            error: (err) => console.error('Comment failed', err)
+            error: (err) => {
+                this.isProcessing = false;
+                console.error('Review submission failed', err);
+            }
         });
     }
 
     public comments: any[] = [];
     loadComments() {
         if (!this.event) return;
-        this.http.get<any>(`${this.apiUrl}/api/comments/event/${this.event.id}`).subscribe({
+        // Fetch from general-reviews endpoint instead of comments
+        this.http.get<any>(`${this.apiUrl}/api/general-reviews/EVENT/${this.event.id}?size=100&sort=createdAt,desc`).subscribe({
             next: (res) => {
-                this.comments = res.data || res;
-            }
+                // PageResponse wrapped in ApiResponse
+                const pageData = res.data || res;
+                this.comments = pageData.content || pageData;
+            },
+            error: (err) => console.error('Failed to load reviews', err)
         });
     }
 

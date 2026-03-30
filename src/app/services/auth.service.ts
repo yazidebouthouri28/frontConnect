@@ -75,7 +75,7 @@ export class AuthService {
       tap(auth => {
         this.handleAuthSuccess(auth);
         // If user is an organizer, fetch their organizerId and update the stored user
-        if (auth.user.role === 'ORGANIZER' && auth.user.id) {
+        if (auth.user.role === 'ORGANIZER' && auth.user.id && auth.user.organizerId == null) {
           this.http.get<ApiResponse<number>>(`${environment.apiUrl}/api/organizers/by-user/${auth.user.id}`)
             .subscribe({
               next: (res) => {
@@ -188,6 +188,11 @@ export class AuthService {
     this.currentUserSubject.next(auth.user);
   }
 
+  private preferencesKeyFor(email?: string | null): string | null {
+    const normalizedEmail = String(email ?? '').trim().toLowerCase();
+    return normalizedEmail ? `campconnect_preferences_done_${normalizedEmail}` : null;
+  }
+
   private canUseOfflineAuth(error: any): boolean {
     if (environment.production || !environment.allowOfflineAuth) return false;
 
@@ -292,6 +297,36 @@ export class AuthService {
   }
 
   getCurrentUser(): User | null { return this.currentUserSubject.value; }
+
+  hasCompletedPreferences(user: Pick<User, 'email' | 'role'> | null = this.getCurrentUser()): boolean {
+    if (!user) {
+      return false;
+    }
+    if (user.role === 'ADMIN') {
+      return true;
+    }
+    const key = this.preferencesKeyFor(user.email);
+    return key ? this.storageGet(key) === 'true' : false;
+  }
+
+  markPreferencesCompleted(user: Pick<User, 'email'> | null = this.getCurrentUser()): void {
+    const key = this.preferencesKeyFor(user?.email);
+    if (key) {
+      this.storageSet(key, 'true');
+    }
+  }
+
+  /** Merge updates into stored user (e.g. after profile save). */
+  patchStoredUser(updates: Partial<User>): void {
+    const cur = this.getCurrentUser();
+    if (!cur) {
+      return;
+    }
+    const merged = { ...cur, ...updates } as User;
+    this.storageSet(this.userKey, JSON.stringify(merged));
+    this.currentUserSubject.next(merged);
+  }
+
   hasRole(role: string): boolean { return this.getCurrentUser()?.role === role; }
 
   isAdmin(): boolean { return this.hasRole('ADMIN'); }

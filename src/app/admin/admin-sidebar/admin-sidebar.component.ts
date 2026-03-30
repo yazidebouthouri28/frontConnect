@@ -1,6 +1,7 @@
 import { Component, input, output, inject, OnInit } from '@angular/core';
 import { NgClass, CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { AccountProfileService } from '../../services/account-profile.service';
 import { User } from '../../models/api.models';
 
 interface NavItem {
@@ -28,6 +29,7 @@ export class AdminSidebarComponent implements OnInit {
   logoutClicked = output<void>();
 
   private authService = inject(AuthService);
+  private accountProfile = inject(AccountProfileService);
 
   currentUser: User | null = null;
   isAdmin = false;
@@ -90,6 +92,14 @@ export class AdminSidebarComponent implements OnInit {
 
   selectSection(id: string) {
     this.onSectionChange.emit(id);
+  }
+
+  get profileAvatar(): string {
+    return this.accountProfile.resolveStoredImageUrl(this.currentUser?.avatar) || '';
+  }
+
+  get profileInitials(): string {
+    return this.accountProfile.initialsFromName(this.currentUser?.name || this.currentUser?.username || 'Admin', 'AD');
   }
 
   toggleCollapsed() {
