@@ -66,31 +66,9 @@ export const routes: Routes = [
   // --- Sponsor dashboard ---
   { path: 'sponsor-dashboard', loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent), canActivate: [AuthGuard], data: { role: 'SPONSOR' } },
 
-  // --- Emergency module (Farah) ---
-  { path: 'emergency', loadChildren: () => import('./modules/emergency/emergency.routes').then(m => m.EMERGENCY_ROUTES) },
-
-  // --- Services / Pack / Promotion module (Farah) ---
-  { path: 'services', loadChildren: () => import('./modules/services/services.routes').then(m => m.SERVICES_ROUTES) },
-
   // --- Admin panel (admin only) ---
   { path: 'admin', loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent), canActivate: [AdminGuard] },
   { path: 'admin/settings', loadComponent: () => import('./components/account-settings/account-settings.component').then(m => m.AccountSettingsComponent), canActivate: [AdminGuard] },
-
-  // --- Admin: Emergency sub-routes (Farah) ---
-  { path: 'admin/emergency/protocols', loadComponent: () => import('./modules/emergency/components/protocole-list/protocole-list.component').then(m => m.ProtocoleListComponent), canActivate: [AdminGuard] },
-  { path: 'admin/emergency/detail/:id', loadComponent: () => import('./modules/emergency/components/alerte-detail/alerte-detail.component').then(m => m.AlerteDetailComponent), canActivate: [AdminGuard] },
-  { path: 'admin/emergency/intervention/create/:alertId', loadComponent: () => import('./modules/emergency/components/intervention-create/intervention-create.component').then(m => m.InterventionCreateComponent), canActivate: [AdminGuard] },
-  { path: 'admin/emergency/protocole/create', loadComponent: () => import('./modules/emergency/components/protocole-create/protocole-create.component').then(m => m.ProtocoleCreateComponent), canActivate: [AdminGuard] },
-  { path: 'admin/emergency/protocole/detail/:id', loadComponent: () => import('./modules/emergency/components/protocole-detail/protocole-detail.component').then(m => m.ProtocoleDetailComponent), canActivate: [AdminGuard] },
-  { path: 'admin/emergency/protocole/edit/:id', loadComponent: () => import('./modules/emergency/components/protocole-edit/protocole-edit.component').then(m => m.ProtocoleEditComponent), canActivate: [AdminGuard] },
-
-  // --- Admin: Services / Pack / Promotion sub-routes (Farah) ---
-  { path: 'admin/services/create', loadComponent: () => import('./modules/services/components/service-create/service-create.component').then(m => m.ServiceCreateComponent), canActivate: [AdminGuard] },
-  { path: 'admin/services/edit/:id', loadComponent: () => import('./modules/services/components/service-edit/service-edit.component').then(m => m.ServiceEditComponent), canActivate: [AdminGuard] },
-  { path: 'admin/services/packs/create', loadComponent: () => import('./modules/services/components/pack-create/pack-create.component').then(m => m.PackCreateComponent), canActivate: [AdminGuard] },
-  { path: 'admin/services/packs/edit/:id', loadComponent: () => import('./modules/services/components/pack-edit/pack-edit.component').then(m => m.PackEditComponent), canActivate: [AdminGuard] },
-  { path: 'admin/services/promotions/create', loadComponent: () => import('./modules/services/components/promotion-create/promotion-create.component').then(m => m.PromotionCreateComponent), canActivate: [AdminGuard] },
-  { path: 'admin/services/promotions/edit/:id', loadComponent: () => import('./modules/services/components/promotion-edit/promotion-edit.component').then(m => m.PromotionEditComponent), canActivate: [AdminGuard] },
 
   // --- Authentication routes ---
   { path: 'auth', loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent) },
