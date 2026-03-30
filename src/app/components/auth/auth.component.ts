@@ -292,7 +292,7 @@ export class AuthComponent implements OnInit, OnDestroy {
       this.owlAudio.volume = 0.25;
       this.cricketAudio = new Audio(this.publicUrl('Cricket  Sound Effect.mp3'));
       this.cricketAudio.loop = true;
-      this.cricketAudio.volume = 0.2;
+      this.cricketAudio.volume = 0.02;
     } catch {
       this.campfireAudio = null;
       this.owlAudio = null;
