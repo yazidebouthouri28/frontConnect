@@ -1,0 +1,212 @@
+<!-- cart.component.html - Version moderne avec Tailwind CSS -->
+<div class="py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 min-h-screen">
+  <div class="mx-auto max-w-7xl space-y-6">
+
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">🛒 My Cart</h1>
+          <p class="text-slate-600 mt-1">Review your items and complete your purchase</p>
+        </div>
+        <button (click)="goBack()" class="px-4 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
+          ⬅ Back
+        </button>
+      </div>
+    </div>
+
+    <!-- Cart Items & Summary Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Cart Items Column -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 class="text-lg font-semibold text-slate-900 mb-4">Cart Items</h2>
+
+          <div *ngIf="cartItems.length > 0; else emptyCart">
+            <div *ngFor="let item of cartItems" class="border-b border-slate-100 py-4 last:border-0">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <h4 class="font-semibold text-slate-900">{{ item.productName }}</h4>
+                  <p class="text-slate-600 text-sm mt-1">Price: {{ item.price }} DT</p>
+                </div>
+                <div class="text-right">
+                  <p class="font-semibold text-slate-900">{{ item.price * item.quantity }} DT</p>
+                  <div class="flex items-center gap-2 mt-2">
+                    <button (click)="decrementQuantity(item)" class="w-8 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition">-</button>
+                    <span class="w-8 text-center">{{ item.quantity }}</span>
+                    <button (click)="incrementQuantity(item)" class="w-8 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition">+</button>
+                    <button (click)="removeItem(item)" class="ml-2 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">❌ Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #emptyCart>
+            <div class="text-center py-8">
+              <p class="text-slate-500">Your cart is empty 😢</p>
+              <button routerLink="/products" class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Continue Shopping</button>
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Clear Cart Button -->
+        <div class="flex justify-end" *ngIf="cartItems.length > 0">
+          <button (click)="clearCart()" class="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">
+            🗑 Clear Cart
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary & Wallet Column -->
+      <div class="space-y-6">
+
+        <!-- Order Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 class="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
+          <div class="space-y-2">
+            <div class="flex justify-between text-slate-600">
+              <span>Subtotal</span>
+              <span>{{ subtotal }} DT</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>Shipping</span>
+              <span>{{ shipping }} DT</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>Tax (10%)</span>
+              <span>{{ tax }} DT</span>
+            </div>
+            <div class="border-t border-slate-200 pt-2 mt-2">
+              <div class="flex justify-between font-bold text-slate-900">
+                <span>Total</span>
+                <span class="text-xl">{{ total }} DT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 💳 WALLET SECTION - CRUD + Payment Buttons -->
+        <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl shadow-sm p-6 text-white">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">💼 My Wallet</h2>
+            <span class="text-2xl font-bold">{{ walletBalance }} DT</span>
+          </div>
+
+          <!-- CRUD Buttons for Wallet -->
+          <div class="mb-4">
+            <p class="text-sm text-white/80 mb-2">Manage Wallet:</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button (click)="showCreateWalletForm = true" class="px-3 py-2 text-sm bg-emerald-500 hover:bg-emerald-400 rounded-lg transition flex items-center justify-center gap-2">
+                ➕ Create Wallet
+              </button>
+              <button (click)="loadWalletDetails()" class="px-3 py-2 text-sm bg-teal-500 hover:bg-teal-400 rounded-lg transition flex items-center justify-center gap-2">
+                🔄 Refresh
+              </button>
+              <button *ngIf="walletId" (click)="showUpdateWalletForm = true" class="px-3 py-2 text-sm bg-amber-500 hover:bg-amber-400 rounded-lg transition flex items-center justify-center gap-2">
+                ✏️ Update
+              </button>
+              <button *ngIf="walletId" (click)="deleteWallet()" class="px-3 py-2 text-sm bg-red-500 hover:bg-red-400 rounded-lg transition flex items-center justify-center gap-2">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+
+          <!-- Deposit / Withdraw Actions -->
+          <div class="mb-4">
+            <p class="text-sm text-white/80 mb-2">Add or Withdraw Funds:</p>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <div class="flex gap-2">
+                <button (click)="addFunds(10)" class="flex-1 px-2 py-2 text-sm bg-white/20 hover:bg-white/30 rounded-lg transition">+10</button>
+                <button (click)="addFunds(20)" class="flex-1 px-2 py-2 text-sm bg-white/20 hover:bg-white/30 rounded-lg transition">+20</button>
+                <button (click)="addFunds(50)" class="flex-1 px-2 py-2 text-sm bg-white/20 hover:bg-white/30 rounded-lg transition">+50</button>
+              </div>
+              <div class="flex gap-2">
+                <button (click)="withdrawFunds(10)" class="flex-1 px-2 py-2 text-sm bg-white/20 hover:bg-white/30 rounded-lg transition">-10</button>
+                <button (click)="withdrawFunds(20)" class="flex-1 px-2 py-2 text-sm bg-white/20 hover:bg-white/30 rounded-lg transition">-20</button>
+                <button (click)="withdrawFunds(50)" class="flex-1 px-2 py-2 text-sm bg-white/20 hover:bg-white/30 rounded-lg transition">-50</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="flex">
+                <input type="number" [(ngModel)]="customAmount" placeholder="Custom amount" class="flex-1 px-2 py-2 text-sm text-slate-900 rounded-l-lg border-0 focus:ring-0">
+                <button (click)="addFunds(customAmount)" class="px-3 py-2 text-sm bg-emerald-500 hover:bg-emerald-400 rounded-r-lg transition">Add</button>
+              </div>
+              <div class="flex">
+                <input type="number" [(ngModel)]="customWithdrawAmount" placeholder="Custom amount" class="flex-1 px-2 py-2 text-sm text-slate-900 rounded-l-lg border-0 focus:ring-0">
+                <button (click)="withdrawFunds(customWithdrawAmount)" class="px-3 py-2 text-sm bg-red-500 hover:bg-red-400 rounded-r-lg transition">Withdraw</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loyalty Points -->
+          <div class="flex items-center justify-between border-t border-white/20 pt-3">
+            <div class="flex items-center gap-2">
+
+              <span class="font-bold">{{ loyaltyPoints }}</span>
+            </div>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" [(ngModel)]="usePoints">
+              Use points
+            </label>
+          </div>
+        </div>
+
+        <!-- Checkout Button -->
+        <button (click)="proceedToCheckout()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition shadow-sm">
+          💳 Pay Now - {{ usePoints ? (total - loyaltyPoints > 0 ? total - loyaltyPoints : 0) : total }} DT
+        </button>
+
+        <!-- Wallet Info Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 text-sm" *ngIf="walletInfo">
+          <h3 class="font-semibold text-slate-900 mb-2">Wallet Info</h3>
+          <div class="space-y-1 text-slate-600">
+            <p>ID: {{ walletInfo.id }}</p>
+            <p>Currency: {{ walletInfo.currency }}</p>
+            <p>Status: {{ walletInfo.isActive ? '✅ Active' : '❌ Inactive' }}</p>
+            <p>Total Deposited: {{ walletInfo.totalDeposited }} DT</p>
+            <p>Total Withdrawn: {{ walletInfo.totalWithdrawn }} DT</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Wallet Modal -->
+<div *ngIf="showCreateWalletForm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-6 w-full max-w-md">
+    <h3 class="text-lg font-semibold mb-4">Create New Wallet</h3>
+    <div class="space-y-3">
+      <input type="number" [(ngModel)]="newWallet.userId" placeholder="User ID" class="w-full px-3 py-2 border rounded-lg">
+      <input type="number" step="0.01" [(ngModel)]="newWallet.balance" placeholder="Initial Balance" class="w-full px-3 py-2 border rounded-lg">
+      <input type="text" [(ngModel)]="newWallet.currency" placeholder="Currency (TND)" class="w-full px-3 py-2 border rounded-lg">
+      <label class="flex items-center gap-2">
+        <input type="checkbox" [(ngModel)]="newWallet.isActive"> Active
+      </label>
+      <div class="flex gap-2 mt-4">
+        <button (click)="createWallet()" class="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg">Create</button>
+        <button (click)="showCreateWalletForm = false" class="flex-1 px-4 py-2 bg-slate-200 rounded-lg">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Update Wallet Modal -->
+<div *ngIf="showUpdateWalletForm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-6 w-full max-w-md">
+    <h3 class="text-lg font-semibold mb-4">Update Wallet</h3>
+    <div class="space-y-3">
+      <input type="number" step="0.01" [(ngModel)]="updateWalletData.balance" placeholder="Balance" class="w-full px-3 py-2 border rounded-lg">
+      <input type="text" [(ngModel)]="updateWalletData.currency" placeholder="Currency" class="w-full px-3 py-2 border rounded-lg">
+      <label class="flex items-center gap-2">
+        <input type="checkbox" [(ngModel)]="updateWalletData.isActive"> Active
+      </label>
+      <div class="flex gap-2 mt-4">
+        <button (click)="updateWallet()" class="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg">Update</button>
+        <button (click)="showUpdateWalletForm = false" class="flex-1 px-4 py-2 bg-slate-200 rounded-lg">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
