@@ -27,6 +27,7 @@ export interface Event {
     sponsors?: string[];
     features?: string[];
     images?: string[];
+    gamifications?: any[];
 }
 
 @Component({
@@ -295,19 +296,19 @@ export class EventDetailComponent {
         if (!this.event) return;
         const commentText = this.newComment.trim();
         const ratingVal = this.newCommentRating;
-        
+
         // If neither comment text nor rating is provided, do nothing
         if (!commentText && ratingVal === 0) return;
-        
+
         if (!this.authService.isAuthenticated()) {
             alert('Veuillez vous connecter pour ajouter un avis.');
             this.router.navigate(['/auth/login']);
             return;
         }
-        
+
         this.isProcessing = true;
         const userId = this.authService.getCurrentUser()?.id;
-        
+
         // Use GeneralReview endpoint which supports both rating and comment text
         const payload = {
             targetType: 'EVENT',
@@ -315,7 +316,7 @@ export class EventDetailComponent {
             rating: ratingVal > 0 ? ratingVal : null,
             comment: commentText || null
         };
-        
+
         this.http.post(`${this.apiUrl}/api/general-reviews?userId=${userId}`, payload).subscribe({
             next: () => {
                 this.newComment = '';
@@ -346,9 +347,41 @@ export class EventDetailComponent {
     }
 
     buyTickets() {
-        if (!this.event || !this.authService.isAuthenticated()) return;
-        this.purchaseSuccess = true;
-        setTimeout(() => this.purchaseSuccess = false, 5000);
+        if (!this.event || !this.authService.isAuthenticated()) {
+            this.router.navigate(['/auth/login']);
+            return;
+        }
+        const user = this.authService.getCurrentUser();
+        if (!user) return;
+
+        this.isProcessing = true;
+        // The backend expects RequestParams
+        const params = {
+            userId: user.id.toString(),
+            eventId: this.event.id.toString(),
+            guestName: user.name || user.username || 'Guest',
+            guestEmail: user.email || '',
+            guestPhone: user.phone || '00000000'
+        };
+
+        this.http.post(`${this.apiUrl}/api/reservations/event`, null, { params }).subscribe({
+            next: () => {
+                this.purchaseSuccess = true;
+                this.isProcessing = false;
+                this.cdr.detectChanges();
+                setTimeout(() => {
+                    this.purchaseSuccess = false;
+                    this.cdr.detectChanges();
+                }, 5000);
+                this.refreshEventData();
+            },
+            error: (err) => {
+                this.isProcessing = false;
+                console.error('Reservation failed:', err);
+                alert(err.error?.message || 'Erreur lors de la réservation. Veuillez réessayer.');
+                this.cdr.detectChanges();
+            }
+        });
     }
 
     submitClaim() {
@@ -385,6 +418,9 @@ export class EventDetailComponent {
                     // Actualiser la note si elle est présente dans la réponse
                     if (refreshedEvent.rating !== undefined) {
                         this._event.rating = refreshedEvent.rating;
+                    }
+                    if (refreshedEvent.gamifications !== undefined) {
+                        this._event.gamifications = refreshedEvent.gamifications;
                     }
                     // Force Angular change detection so the updated counts render immediately
                     this.cdr.detectChanges();

@@ -95,7 +95,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly profilePersonalization: ProfilePersonalizationService,
     private readonly accountProfile: AccountProfileService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.authSubscription = this.authService.currentUser$.subscribe(() => this.loadProfile());
@@ -128,6 +128,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   get introLocation(): string {
     return this.viewedUser?.location || 'The Wild';
+  }
+
+  get xpProgress(): number {
+    if (!this.viewedUser || this.viewedUser.experiencePoints == null) return 0;
+    return (this.viewedUser.experiencePoints % 1000) / 10;
   }
 
   get currentStory() {
@@ -551,14 +556,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
     if (this.isSyncingLiveData) return;
     const targetUserId = this.isOwnProfile && authUser ? authUser.id : (viewedId && viewedId !== 'me' ? viewedId : null);
-    
+
     if (targetUserId) {
       this.isSyncingLiveData = true;
       this.accountProfile.getProfile(Number(targetUserId)).subscribe({
         next: (profile) => {
           const freshSessionUser = this.accountProfile.toSessionUser(profile);
           this.viewedUser = { ...this.viewedUser, ...freshSessionUser } as User;
-          
+
           if (this.isOwnProfile) {
             this.currentUser = { ...this.currentUser, ...freshSessionUser } as User;
             this.authService.patchStoredUser(freshSessionUser as any);
@@ -632,17 +637,17 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const storyUploads = this.highlightStories.map((story) =>
       story.mediaFile
         ? this.profilePersonalization.uploadMedia(story.mediaFile).pipe(
-            map((storedPath) => ({
-              id: story.id,
-              mediaUrl: storedPath,
-              mediaType: story.mediaType
-            } satisfies ProfileStoryInput))
-          )
-        : of({
+          map((storedPath) => ({
             id: story.id,
-            mediaUrl: story.storedMediaUrl,
+            mediaUrl: storedPath,
             mediaType: story.mediaType
-          } satisfies ProfileStoryInput)
+          } satisfies ProfileStoryInput))
+        )
+        : of({
+          id: story.id,
+          mediaUrl: story.storedMediaUrl,
+          mediaType: story.mediaType
+        } satisfies ProfileStoryInput)
     );
 
     forkJoin(storyUploads).subscribe({

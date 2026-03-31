@@ -68,6 +68,7 @@ export const routes: Routes = [
 
   // --- Admin panel (admin only) ---
   { path: 'admin', loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent), canActivate: [AdminGuard] },
+  { path: 'admin/gamification', loadComponent: () => import('./admin/gamification-management/gamification-management.component').then(m => m.GamificationManagementComponent), canActivate: [AdminGuard] },
   { path: 'admin/settings', loadComponent: () => import('./components/account-settings/account-settings.component').then(m => m.AccountSettingsComponent), canActivate: [AdminGuard] },
 
   // --- Authentication routes ---
@@ -84,6 +85,11 @@ export const routes: Routes = [
   {
     path: 'organizer/events',
     loadComponent: () => import('./components/organizer-events/organizer-events.component').then(m => m.OrganizerEventsComponent),
+    canActivate: [OrganizerOnlyGuard]
+  },
+  {
+    path: 'organizer/gamification',
+    loadComponent: () => import('./admin/gamification-management/gamification-management.component').then(m => m.GamificationManagementComponent),
     canActivate: [OrganizerOnlyGuard]
   },
 

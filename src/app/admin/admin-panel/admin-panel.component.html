@@ -1,106 +1,104 @@
 <div class="flex min-h-screen bg-[#F5F2E8] overflow-hidden font-sans">
-  <app-admin-sidebar
-    [activeSection]="activeSection()"
-    (onSectionChange)="setSection($event)"
+  <app-admin-sidebar [activeSection]="activeSection()" (onSectionChange)="setSection($event)"
     (logoutClicked)="onLogout()" />
 
   <div class="flex-1 min-w-0 flex flex-col">
-    <header class="h-16 border-b border-[#d8d1c1] bg-[#2f5642] text-white/90 px-8 flex items-center justify-between shadow-sm">
+    <header
+      class="h-16 border-b border-[#d8d1c1] bg-[#2f5642] text-white/90 px-8 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-4">
-        <span class="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-black tracking-[0.2em] uppercase">
+        <span
+          class="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-black tracking-[0.2em] uppercase">
           Live Node
         </span>
         <span class="text-sm font-semibold text-white/60">|</span>
         <span class="text-sm font-semibold text-white/70">System Time: {{ systemTimeLabel }}</span>
       </div>
       <div class="flex items-center gap-5 relative" data-admin-profile-root>
-        <button type="button" class="text-xl text-[#d9c26f] hover:text-white transition-colors" aria-label="Notifications">
+        <button type="button" class="text-xl text-[#d9c26f] hover:text-white transition-colors"
+          aria-label="Notifications">
           !
         </button>
-        <button
-          type="button"
-          (click)="toggleProfileMenu()"
+        <button type="button" (click)="toggleProfileMenu()"
           class="flex items-center gap-3 rounded-2xl bg-white/10 border border-white/10 pl-5 pr-3 py-2 hover:bg-white/15 transition-colors">
           <span class="max-w-[14rem] truncate text-sm font-black tracking-tight">{{ headerName }}</span>
           @if (headerAvatar) {
-            <img [src]="headerAvatar" [alt]="headerName" class="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm" />
+          <img [src]="headerAvatar" [alt]="headerName"
+            class="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm" />
           } @else {
-            <span class="w-10 h-10 rounded-full bg-white text-[#2f5642] flex items-center justify-center text-sm font-black">
-              {{ headerInitials }}
-            </span>
+          <span
+            class="w-10 h-10 rounded-full bg-white text-[#2f5642] flex items-center justify-center text-sm font-black">
+            {{ headerInitials }}
+          </span>
           }
         </button>
         @if (profileMenuOpen) {
-          <div
-            class="absolute right-0 top-full mt-2 w-56 rounded-xl border border-white/20 bg-[#1f3d2e] shadow-xl z-50 py-2 text-left">
-            <button
-              type="button"
-              (click)="goToSettings()"
-              class="w-full px-4 py-2.5 text-left text-sm font-semibold text-white/90 hover:bg-white/10">
-              Settings
-            </button>
-            <button
-              type="button"
-              (click)="switchToCamperSpace()"
-              class="w-full px-4 py-2.5 text-left text-sm font-semibold text-white/90 hover:bg-white/10">
-              Switch space
-            </button>
-            <div class="my-1 border-t border-white/10"></div>
-            <button
-              type="button"
-              (click)="logoutFromMenu()"
-              class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-300 hover:bg-red-500/20">
-              Logout
-            </button>
-          </div>
+        <div
+          class="absolute right-0 top-full mt-2 w-56 rounded-xl border border-white/20 bg-[#1f3d2e] shadow-xl z-50 py-2 text-left">
+          <button type="button" (click)="goToSettings()"
+            class="w-full px-4 py-2.5 text-left text-sm font-semibold text-white/90 hover:bg-white/10">
+            Settings
+          </button>
+          <button type="button" (click)="switchToCamperSpace()"
+            class="w-full px-4 py-2.5 text-left text-sm font-semibold text-white/90 hover:bg-white/10">
+            Switch space
+          </button>
+          <div class="my-1 border-t border-white/10"></div>
+          <button type="button" (click)="logoutFromMenu()"
+            class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-300 hover:bg-red-500/20">
+            Logout
+          </button>
+        </div>
         }
       </div>
     </header>
 
     <main class="flex-1 overflow-y-auto">
       @switch (activeSection()) {
-        @case ('dashboard') {
-          <app-admin-dashboard />
-        }
-        @case ('users') {
-          <app-users-management />
-        }
-        @case ('sponsors') {
-          <app-sponsors-management />
-        }
-        @case ('campsites') {
-          <app-campsites-management />
-        }
-        @case ('camp_highlights') {
-          <app-camp-highlights-management />
-        }
-        @case ('events') {
-          <app-events-admin-management />
-        }
-        @case ('products_categories') {
-          <app-marketplace-management [section]="activeSection()" />
-        }
-        @case ('inventory') {
-          <app-marketplace-management [section]="activeSection()" />
-        }
-        @case ('orders') {
-          <app-marketplace-management [section]="activeSection()" />
-        }
-        @case ('rentals_management') {
-          <app-marketplace-management [section]="activeSection()" />
-        }
-        @case ('reservations') {
-          <app-reservations-management />
-        }
-        @case ('reports') {
-          <app-reports-management />
-        }
-        @case ('moderation') {
-          <app-moderation-panel />
-        }
-        @default {
-          <app-admin-dashboard />
-        }
+      @case ('dashboard') {
+      <app-admin-dashboard />
+      }
+      @case ('users') {
+      <app-users-management />
+      }
+      @case ('sponsors') {
+      <app-sponsors-management />
+      }
+      @case ('campsites') {
+      <app-campsites-management />
+      }
+      @case ('camp_highlights') {
+      <app-camp-highlights-management />
+      }
+      @case ('events') {
+      <app-events-admin-management />
+      }
+      @case ('products_categories') {
+      <app-marketplace-management [section]="activeSection()" />
+      }
+      @case ('inventory') {
+      <app-marketplace-management [section]="activeSection()" />
+      }
+      @case ('orders') {
+      <app-marketplace-management [section]="activeSection()" />
+      }
+      @case ('rentals_management') {
+      <app-marketplace-management [section]="activeSection()" />
+      }
+      @case ('reservations') {
+      <app-reservations-management />
+      }
+      @case ('reports') {
+      <app-reports-management />
+      }
+      @case ('moderation') {
+      <app-moderation-panel />
+      }
+      @case ('gamification') {
+      <app-gamification-management />
+      }
+      @default {
+      <app-admin-dashboard />
+      }
       }
     </main>
   </div>

@@ -80,6 +80,9 @@ export interface User {
   isSeller?: boolean;
   isBuyer?: boolean;
   storeName?: string;
+  experiencePoints?: number;
+  level?: number;
+  earnedBadges?: any[];
 }
 
 // ========== PRODUCT ==========

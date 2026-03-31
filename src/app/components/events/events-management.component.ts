@@ -31,6 +31,7 @@ type EventResponse = {
   thumbnail?: string;
   organizerName?: string;
   status?: string;
+  gamifications?: any[];
 };
 
 @Component({
@@ -57,7 +58,7 @@ export class EventsManagementComponent implements OnInit {
     private readonly http: HttpClient,
     private readonly authService: AuthService,
     private readonly profilePersonalization: ProfilePersonalizationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadEvents();
@@ -118,6 +119,7 @@ export class EventsManagementComponent implements OnInit {
       price: e.isFree ? 0 : e.price ?? 0,
       organizer: e.organizerName || 'Organizer',
       images: (e.images ?? []).map((img) => this.resolveMediaUrl(img)),
+      gamifications: e.gamifications || [],
     };
   }
 

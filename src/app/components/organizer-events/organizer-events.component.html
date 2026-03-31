@@ -3,7 +3,8 @@
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-black text-[#1a2e1a]">My Events</h1>
-            <p class="text-sm text-[#617152] font-medium">Create and manage only events linked to your organizer account.</p>
+            <p class="text-sm text-[#617152] font-medium">Create and manage only events linked to your organizer
+                account.</p>
         </div>
         <div class="flex gap-3">
             <button (click)="toggleDeleteMode()"
@@ -42,7 +43,7 @@
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Views</span>
             </div>
             <div class="flex items-end gap-3">
-                <p class="text-3xl font-black text-[#1a2e1a]">1,245</p>
+                <p class="text-3xl font-black text-[#1a2e1a]">{{ totalViews | number }}</p>
             </div>
             <p class="text-[10px] text-gray-400 font-bold mt-1">Event Page Views</p>
         </div>
@@ -79,12 +80,12 @@
     <!-- Filter Bar -->
     <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
         <div class="relative flex-1 w-full">
-            <input type="text" placeholder="Search events by name or location..."
+            <input type="text" [(ngModel)]="searchTerm" placeholder="Search events by name or location..."
                 class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2e1a]/10 focus:border-[#1a2e1a]/30 transition-all">
             <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
         </div>
         <div class="flex gap-2">
-            <select
+            <select [(ngModel)]="statusFilter"
                 class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-bold text-[#1a2e1a] focus:outline-none cursor-pointer">
                 <option>All Status</option>
                 <option>Published</option>
@@ -143,18 +144,18 @@
                             </div>
                         </td>
                     </tr>
-                    } @else if (events.length === 0) {
+                    } @else if (filteredEvents.length === 0) {
                     <tr>
                         <td [attr.colspan]="deleteMode ? 11 : 10" class="px-6 py-12 text-center">
                             <div class="flex flex-col items-center gap-3">
                                 <span class="text-3xl">📭</span>
                                 <p class="text-sm font-bold text-gray-400">No events found</p>
-                                <p class="text-[10px] text-gray-300">Create your first event to get started</p>
+                                <p class="text-[10px] text-gray-300">Try adjusting your filters or search terms</p>
                             </div>
                         </td>
                     </tr>
                     } @else {
-                    @for (event of events; track event.id) {
+                    @for (event of filteredEvents; track event.id) {
                     <tr class="transition-colors group"
                         [ngClass]="deleteMode && isSelected(event.id) ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-gray-50/50'">
                         @if (deleteMode) {
@@ -414,17 +415,16 @@
                 </div>
             </div>
 
-            <!-- Location + End Date (2 cols) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label
-                        class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Location</label>
-                    <input [(ngModel)]="newEvent.location" name="location" #location="ngModel" required type="text"
-                        placeholder="e.g. Zaghouan, Tunisia"
+                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Start
+                        Date</label>
+                    <input [(ngModel)]="newEvent.startDate" name="startDate" #startDate="ngModel" required
+                        type="datetime-local"
                         class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/20 focus:border-[#2C4A3C]/40 transition-all"
-                        [ngClass]="{'border-red-500 bg-red-50': location.invalid && (location.touched || eventForm.submitted)}">
-                    @if (location.invalid && (location.touched || eventForm.submitted)) {
-                    <p class="text-[10px] text-red-500 font-bold mt-1">Le lieu est obligatoire</p>
+                        [ngClass]="{'border-red-500 bg-red-50': startDate.invalid && (startDate.touched || eventForm.submitted)}">
+                    @if (startDate.invalid && (startDate.touched || eventForm.submitted)) {
+                    <p class="text-[10px] text-red-500 font-bold mt-1">La date de début est obligatoire</p>
                     }
                 </div>
                 <div>
@@ -438,6 +438,27 @@
                     <p class="text-[10px] text-red-500 font-bold mt-1">La date de fin est obligatoire</p>
                     }
                 </div>
+            </div>
+
+            <!-- Location Row -->
+            <div>
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Location</label>
+                <input [(ngModel)]="newEvent.location" name="location" #location="ngModel"
+                    [required]="['CAMPING', 'HIKING', 'OUTDOOR_ACTIVITY'].includes(newEvent.eventType)" type="text"
+                    list="organizer-campsites-options" (ngModelChange)="onLocationComboboxChange($event)"
+                    placeholder="Search or type location..."
+                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/20 focus:border-[#2C4A3C]/40 transition-all"
+                    [ngClass]="{'border-red-500 bg-red-50': location.invalid && (location.touched || eventForm.submitted)}">
+                <datalist id="organizer-campsites-options">
+                    @for (site of availableSites; track site.id) { <option [value]="formatSiteLabel(site)"></option> }
+                </datalist>
+                @if (!newEvent.siteId && newEvent.location && newEvent.eventType === 'CAMPING') {
+                <p class="text-[10px] text-orange-500 font-bold mt-1">⚠️ Veuillez choisir un campsite de la liste pour
+                    valider le lieu.</p>
+                }
+                @if (location.invalid && (location.touched || eventForm.submitted)) {
+                <p class="text-[10px] text-red-500 font-bold mt-1">Le lieu est obligatoire pour ce type d'événement</p>
+                }
             </div>
 
             <!-- Max Participants + Price (2 cols) -->
@@ -514,6 +535,35 @@
                 </div>
                 }
             </div>
+
+            <!-- Badges Selection -->
+            @if (availableBadges.length > 0) {
+            <div>
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Event Badges
+                    (Gamification)</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    @for (badge of availableBadges; track badge.id) {
+                    <div (click)="toggleBadgeSelection(badge.id!)"
+                        class="flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group"
+                        [ngClass]="selectedBadgeIds.has(badge.id!) ? 'bg-[#2C4A3C]/5 border-[#2C4A3C] shadow-sm' : 'bg-white border-gray-100 hover:border-gray-300'">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-xl group-hover:scale-110 transition-transform shadow-inner">
+                            {{ badge.icon }}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-black text-[#1a2e1a] truncate">{{ badge.name }}</p>
+                            <p class="text-[9px] text-gray-400 font-bold truncate">{{ badge.pointsValue }} pts</p>
+                        </div>
+                        @if (selectedBadgeIds.has(badge.id!)) {
+                        <div class="ml-auto text-[#2C4A3C] font-black text-xs">✓</div>
+                        }
+                    </div>
+                    }
+                </div>
+                <p class="text-[10px] text-gray-400 font-medium mt-2">Participants will earn these badges upon
+                    completing the event.</p>
+            </div>
+            }
 
             <!-- Status -->
             <div>

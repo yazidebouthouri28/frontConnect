@@ -6,6 +6,9 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../models/api.models';
+import { Site } from '../../models/camping.models';
+import { SiteService } from '../../services/site.service';
+import { GamificationService, Gamification } from '../../services/gamification.service';
 
 interface AdminEvent {
     id: number;
@@ -18,9 +21,9 @@ interface AdminEvent {
     capacity: number;
     price: number;
     description: string;
-    status: 'Published' | 'Draft';
+    status: string;
     category: string;
-    startDate: string;         // ADDED
+    startDate: string;
     endDate: string;
     picture: string;
     isFree: boolean;
@@ -32,6 +35,7 @@ interface AdminEvent {
     siteId: number | null;
     siteName: string;
 }
+
 
 interface EventForm {
     title: string;             // CHANGED: from 'name' to 'title'
@@ -48,6 +52,7 @@ interface EventForm {
     status: string;
     organizerId: number | null;
     siteId: number | null;
+    gamificationIds: number[];
 }
 
 @Component({
@@ -63,6 +68,8 @@ export class OrganizerEventsComponent implements OnInit {
     private cdr = inject(ChangeDetectorRef);
     private route = inject(ActivatedRoute);
     private authService = inject(AuthService);
+    private siteService = inject(SiteService);
+    private gamificationService = inject(GamificationService);
 
     private apiUrl = `${environment.apiUrl}/api/events`;
     private uploadUrl = `${environment.apiUrl}/api/files/upload`;
@@ -85,6 +92,9 @@ export class OrganizerEventsComponent implements OnInit {
     otherEventType = '';
     otherCategory = '';
     myOrganizerId: number | null = null;
+    availableBadges: Gamification[] = [];
+    selectedBadgeIds = new Set<number>();
+    availableSites: Site[] = [];
 
     private readonly ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
     private readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -103,13 +113,17 @@ export class OrganizerEventsComponent implements OnInit {
         picture: '',
         status: 'PUBLISHED',
         organizerId: null,
-        siteId: null
+        siteId: null,
+        gamificationIds: []
     };
 
     events: AdminEvent[] = [];
     loading = true;
     errorMessage = '';
     modalErrorMessage = '';
+    totalViews = 0;
+    searchTerm = '';
+    statusFilter = 'All Status';
 
     eventTypes = ['WORKSHOP', 'CONFERENCE', 'FESTIVAL', 'OUTDOOR_ACTIVITY', 'CAMPING', 'HIKING', 'CONCERT', 'EXHIBITION', 'SPORTS', 'SOCIAL', 'Other'];
     categories = ['Nature', 'Adventure', 'Music', 'Sport', 'Education', 'Culture', 'Technology', 'Other'];
@@ -118,19 +132,26 @@ export class OrganizerEventsComponent implements OnInit {
         this.resetForm();
         this.setOrganizerId();
         this.newEvent.price = this.getAvgPrice();
-        // Set a default start date (tomorrow at 10:00) – you can remove or adjust
-        if (!this.newEvent.startDate) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(10, 0, 0);
-            this.newEvent.startDate = tomorrow.toISOString().slice(0, 16);
-        }
+
+        // Set a default start date (tomorrow at 10:00) and end date (tomorrow at 11:00)
+        const start = new Date();
+        start.setDate(start.getDate() + 1);
+        start.setHours(10, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setHours(11, 0, 0, 0);
+
+        this.newEvent.startDate = start.toISOString().slice(0, 16);
+        this.newEvent.endDate = end.toISOString().slice(0, 16);
+
         this.showAddForm = true;
     }
 
     ngOnInit() {
         this.resolveOrganizerId(() => {
             this.loadEvents();
+            this.loadAvailableBadges();
+            this.loadAvailableSites();
 
             this.route.queryParams.subscribe(params => {
                 const action = params['action'];
@@ -206,6 +227,7 @@ export class OrganizerEventsComponent implements OnInit {
         }
         this.loading = true;
         this.errorMessage = '';
+        this.loadStats();
         this.http.get<any>(`${this.apiUrl}`).subscribe({
             next: (response) => {
                 const payload = response.data ?? response;
@@ -250,6 +272,72 @@ export class OrganizerEventsComponent implements OnInit {
                 this.loading = false;
                 this.cdr.detectChanges();
             }
+        });
+    }
+
+    loadAvailableBadges() {
+        this.gamificationService.getAll().subscribe({
+            next: (data) => {
+                this.availableBadges = data;
+                this.cdr.detectChanges();
+            },
+            error: (err) => console.error('Failed to load badges:', err)
+        });
+    }
+
+    loadAvailableSites() {
+        this.siteService.getAllSites().subscribe({
+            next: (sites) => {
+                this.availableSites = sites || [];
+                this.cdr.detectChanges();
+            },
+            error: (err) => console.error('Failed to load sites:', err)
+        });
+    }
+
+    onLocationComboboxChange(value: string) {
+        const selectedLabel = (value || '').trim();
+        const matched = this.availableSites.find((site) => {
+            const label = this.formatSiteLabel(site);
+            return label === selectedLabel || site.name === selectedLabel;
+        });
+
+        if (matched) {
+            this.newEvent.siteId = matched.id ?? null;
+            this.newEvent.location = matched.city || matched.address || matched.name;
+        } else {
+            this.newEvent.siteId = null;
+        }
+        this.cdr.detectChanges();
+    }
+
+    formatSiteLabel(site: Site): string {
+        if (!site) return '';
+        const city = site.city || site.location || '';
+        return city ? `${site.name} - ${city}` : site.name;
+    }
+
+    loadStats() {
+        if (this.myOrganizerId == null) return;
+        this.http.get<ApiResponse<any>>(`${this.apiUrl}/organizer/${this.myOrganizerId}/stats`).subscribe({
+            next: (res) => {
+                this.totalViews = res.data?.totalViews || 0;
+                this.cdr.detectChanges();
+            },
+            error: (err) => console.error('Failed to load stats:', err)
+        });
+    }
+
+    get filteredEvents() {
+        return this.events.filter(event => {
+            const matchesSearch = !this.searchTerm ||
+                event.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                event.location.toLowerCase().includes(this.searchTerm.toLowerCase());
+
+            const matchesStatus = this.statusFilter === 'All Status' ||
+                event.status === this.statusFilter;
+
+            return matchesSearch && matchesStatus;
         });
     }
 
@@ -316,8 +404,10 @@ export class OrganizerEventsComponent implements OnInit {
             picture: '',
             status: 'PUBLISHED',
             organizerId: null,
-            siteId: null
+            siteId: null,
+            gamificationIds: []
         };
+        this.selectedBadgeIds.clear();
         this.editingEventId = null;
         this.otherEventType = '';
         this.otherCategory = '';
@@ -439,6 +529,16 @@ export class OrganizerEventsComponent implements OnInit {
             this.loading = false;
             return;
         }
+
+        // Conditional Location Validation
+        const typeNeedsLocation = ['TRIP', 'CAMPING', 'HIKING'].includes(finalEventType.toUpperCase());
+        if (typeNeedsLocation && !this.newEvent.location) {
+            this.modalErrorMessage = 'Le lieu est obligatoire pour ce type d\'événement.';
+            this.loading = false;
+            this.cdr.detectChanges();
+            return;
+        }
+
         if (!this.newEvent.startDate) {
             this.modalErrorMessage = 'La date de début est obligatoire.';
             this.loading = false;
@@ -458,18 +558,20 @@ export class OrganizerEventsComponent implements OnInit {
             (this.newEvent.endDate.length === 16 ? this.newEvent.endDate + ':00' : this.newEvent.endDate) :
             this.newEvent.endDate;
 
+        const normalizedPicture = this.normalizeStoredImagePath(this.newEvent.picture);
         const payload: Record<string, unknown> = {
-            title: this.newEvent.title,               // CHANGED: use title instead of name
+            title: this.newEvent.title,
             description: this.newEvent.description,
             eventType: finalEventType,
             category: finalCategory,
-            startDate: startDateFormatted,            // ADDED
+            startDate: startDateFormatted,
             endDate: endDateFormatted,
             location: this.newEvent.location,
             maxParticipants: this.newEvent.maxParticipants,
             price: this.newEvent.price,
             isFree: this.newEvent.isFree,
-            picture: this.newEvent.picture,
+            thumbnail: normalizedPicture,
+            images: normalizedPicture ? [normalizedPicture] : [],
             status: this.newEvent.status,
             organizerId
         };
@@ -477,6 +579,8 @@ export class OrganizerEventsComponent implements OnInit {
         if (this.newEvent.siteId != null) {
             payload['siteId'] = this.newEvent.siteId;
         }
+
+        payload['gamificationIds'] = Array.from(this.selectedBadgeIds);
 
         if (this.editingEventId !== null) {
             this.http.put<any>(`${this.apiUrl}/${this.editingEventId}`, payload).subscribe({
@@ -552,20 +656,17 @@ export class OrganizerEventsComponent implements OnInit {
     deleteSelectedEvents() {
         if (confirm(`Are you sure you want to delete ${this.selectedEventIds.size} events?`)) {
             const ids = Array.from(this.selectedEventIds);
-            let deletedCount = 0;
-
-            ids.forEach(id => {
-                this.http.delete(`${this.apiUrl}/${id}`).subscribe({
-                    next: () => {
-                        deletedCount++;
-                        if (deletedCount === ids.length) {
-                            this.loadEvents();
-                            this.selectedEventIds.clear();
-                            this.deleteMode = false;
-                        }
-                    },
-                    error: (err) => console.error(`Failed to delete event ${id}:`, err)
-                });
+            this.http.request('delete', `${this.apiUrl}/bulk`, { body: ids }).subscribe({
+                next: () => {
+                    this.loadEvents();
+                    this.selectedEventIds.clear();
+                    this.deleteMode = false;
+                },
+                error: (err) => {
+                    console.error('Bulk delete failed:', err);
+                    alert('Failed to delete some events.');
+                    this.loadEvents();
+                }
             });
         }
     }
@@ -595,10 +696,20 @@ export class OrganizerEventsComponent implements OnInit {
             price: event.price,
             isFree: event.isFree,
             picture: event.picture,
-            status: event.status === 'Published' ? 'PUBLISHED' : 'DRAFT',
+            status: (event.status === 'PUBLISHED' || event.status === 'Published') ? 'PUBLISHED' : 'DRAFT',
             organizerId: event.organizerId,
-            siteId: event.siteId
+            siteId: event.siteId,
+            gamificationIds: []
         };
+
+        const originalEvent = this.events.find(e => e.id === event.id);
+        // We need to get the real event object which has gamifications
+        this.http.get<ApiResponse<any>>(`${this.apiUrl}/${event.id}`).subscribe({
+            next: (res) => {
+                const gams = res.data?.gamifications || [];
+                this.selectedBadgeIds = new Set(gams.map((g: any) => g.id));
+            }
+        });
 
         if (!this.eventTypes.includes(event.eventType)) {
             this.newEvent.eventType = 'Other';
@@ -615,10 +726,8 @@ export class OrganizerEventsComponent implements OnInit {
         }
 
         if (event.picture) {
-            this.selectedFileName = event.picture;
-            this.imagePreview = (event.picture.startsWith('http') || event.picture.startsWith('blob'))
-                ? event.picture
-                : this.imageUrlBase + event.picture;
+            this.selectedFileName = event.picture.split('/').pop() || event.picture;
+            this.imagePreview = this.resolveStoredImageUrl(event.picture);
         }
 
         this.showAddForm = true;
@@ -654,5 +763,48 @@ export class OrganizerEventsComponent implements OnInit {
                 this.cdr.detectChanges();
             }
         });
+    }
+
+    toggleBadgeSelection(badgeId: number) {
+        if (this.selectedBadgeIds.has(badgeId)) {
+            this.selectedBadgeIds.delete(badgeId);
+        } else {
+            this.selectedBadgeIds.add(badgeId);
+        }
+        this.cdr.detectChanges();
+    }
+
+    private resolveStoredImageUrl(path: string): string {
+        if (!path) return '';
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+            return path;
+        }
+        if (path.startsWith('/uploads/')) {
+            return `${environment.apiUrl}${path}`;
+        }
+        return `${this.imageUrlBase}${path}`;
+    }
+
+    private normalizeStoredImagePath(path: string): string {
+        if (!path) return '';
+        if (path.startsWith(this.imageUrlBase)) {
+            return path.substring(this.imageUrlBase.length);
+        }
+        if (path.startsWith('/uploads/')) {
+            return path.substring('/uploads/'.length);
+        }
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            try {
+                const url = new URL(path);
+                const uploadsPrefix = '/uploads/';
+                const uploadsIndex = url.pathname.indexOf(uploadsPrefix);
+                if (uploadsIndex >= 0) {
+                    return url.pathname.substring(uploadsIndex + uploadsPrefix.length);
+                }
+            } catch {
+                return path;
+            }
+        }
+        return path.replace(/^\/+/, '');
     }
 }

@@ -7,6 +7,9 @@ import { AuthService } from '../../services/auth.service';
 import { SiteService } from '../../services/site.service';
 import { environment } from '../../../environments/environment';
 import { Site } from '../../models/camping.models';
+import { ApiResponse } from '../../models/api.models';
+import { GamificationService, Gamification } from '../../services/gamification.service';
+import { GamificationManagementComponent } from '../gamification-management/gamification-management.component';
 
 interface AdminEvent {
     id: number;
@@ -19,7 +22,7 @@ interface AdminEvent {
     capacity: number;
     price: number;
     description: string;
-    status: 'Published' | 'Draft';
+    status: string;
     category: string;
     startDate: string;         // ADDED
     endDate: string;
@@ -32,6 +35,7 @@ interface AdminEvent {
     organizerName: string;
     siteId: number | null;
     siteName: string;
+    gamifications?: Gamification[];
 }
 
 interface EventForm {
@@ -49,12 +53,13 @@ interface EventForm {
     status: string;
     organizerId: number | null;
     siteId: number | null;
+    gamificationIds: number[];
 }
 
 @Component({
     selector: 'app-events-admin-management',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, GamificationManagementComponent],
     templateUrl: './events-management.component.html',
     styleUrls: ['./events-management.component.css']
 })
@@ -65,6 +70,7 @@ export class EventsAdminManagementComponent implements OnInit {
     private route = inject(ActivatedRoute);
     private authService = inject(AuthService);
     private siteService = inject(SiteService);
+    private gamificationService = inject(GamificationService);
 
     private apiUrl = `${environment.apiUrl}/api/events`;
     private uploadUrl = `${environment.apiUrl}/api/files/upload`;
@@ -74,6 +80,8 @@ export class EventsAdminManagementComponent implements OnInit {
     onDocumentClick() {
         this.activeActionMenu = null;
     }
+
+    activeTab: 'events' | 'gamifications' = 'events';
 
     showAddForm = false;
     deleteMode = false;
@@ -86,6 +94,9 @@ export class EventsAdminManagementComponent implements OnInit {
     editingEventId: number | null = null;
     otherEventType = '';
     otherCategory = '';
+    myOrganizerId: number | null = null;
+    availableBadges: Gamification[] = [];
+    selectedBadgeIds = new Set<number>();
     availableSites: Site[] = [];
 
     private readonly ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -105,13 +116,17 @@ export class EventsAdminManagementComponent implements OnInit {
         picture: '',
         status: 'PUBLISHED',
         organizerId: null,
-        siteId: null
+        siteId: null,
+        gamificationIds: []
     };
 
     events: AdminEvent[] = [];
     loading = true;
     errorMessage = '';
     modalErrorMessage = '';
+    totalViews = 0;
+    searchTerm = '';
+    statusFilter = 'All Status';
 
     eventTypes = ['WORKSHOP', 'CONFERENCE', 'FESTIVAL', 'OUTDOOR_ACTIVITY', 'CAMPING', 'HIKING', 'CONCERT', 'EXHIBITION', 'SPORTS', 'SOCIAL', 'Other'];
     categories = ['Nature', 'Adventure', 'Music', 'Sport', 'Education', 'Culture', 'Technology', 'Other'];
@@ -120,19 +135,27 @@ export class EventsAdminManagementComponent implements OnInit {
         this.resetForm();
         this.setOrganizerId();
         this.newEvent.price = this.getAvgPrice();
-        // Set a default start date (tomorrow at 10:00) – you can remove or adjust
-        if (!this.newEvent.startDate) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(10, 0, 0);
-            this.newEvent.startDate = tomorrow.toISOString().slice(0, 16);
-        }
+
+        // Set a default start date (tomorrow at 10:00) and end date (tomorrow at 11:00)
+        const start = new Date();
+        start.setDate(start.getDate() + 1);
+        start.setHours(10, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setHours(11, 0, 0, 0);
+
+        this.newEvent.startDate = start.toISOString().slice(0, 16);
+        this.newEvent.endDate = end.toISOString().slice(0, 16);
+
         this.showAddForm = true;
     }
 
     ngOnInit() {
         this.loadSites();
         this.loadEvents();
+        this.loadBadges();
+
+        // Handle direct navigation for Add/Edit
 
         // Handle direct navigation for Add/Edit
         this.route.queryParams.subscribe(params => {
@@ -164,55 +187,75 @@ export class EventsAdminManagementComponent implements OnInit {
             },
             error: (err) => {
                 console.error('Failed to load sites:', err);
-                this.availableSites = [];
             }
         });
     }
 
-private setOrganizerId() {
-  const user = this.authService.getCurrentUser();
-  if (user && user.organizerId !== undefined && user.organizerId !== null) {
-    // user.organizerId is already a number; assign directly
-    this.newEvent.organizerId = user.organizerId;
-  } else {
-    // fallback to null if no organizer ID
-    this.newEvent.organizerId = null;
-  }
-}
+    private loadBadges() {
+        this.gamificationService.getAll().subscribe({
+            next: (badges) => {
+                this.availableBadges = badges;
+                this.cdr.detectChanges();
+            },
+            error: (err) => console.error('Error loading badges:', err)
+        });
+    }
+
+    toggleBadgeSelection(badgeId: number) {
+        if (this.selectedBadgeIds.has(badgeId)) {
+            this.selectedBadgeIds.delete(badgeId);
+        } else {
+            this.selectedBadgeIds.add(badgeId);
+        }
+        this.newEvent.gamificationIds = Array.from(this.selectedBadgeIds);
+        this.cdr.detectChanges();
+    }
+
+    private setOrganizerId() {
+        const user = this.authService.getCurrentUser();
+        if (user && user.organizerId !== undefined && user.organizerId !== null) {
+            // user.organizerId is already a number; assign directly
+            this.newEvent.organizerId = user.organizerId;
+        } else {
+            // fallback to null if no organizer ID
+            this.newEvent.organizerId = null;
+        }
+    }
 
     loadEvents() {
         this.loading = true;
         this.errorMessage = '';
+        this.loadTotalViews();
         this.http.get<any>(`${this.apiUrl}`).subscribe({
             next: (response) => {
                 const data = response.data || response;
                 this.events = (Array.isArray(data) ? data : [])
                     .filter((e: any) => e?.status !== 'CANCELLED')
                     .map((e: any) => ({
-                    id: e.id,
-                    name: e.title || '',                    // CHANGED: backend returns title
-                    title: (e.title || e.description || 'Untitled').substring(0, 30),
-                    type: this.mapEventType(e.eventType),
-                    location: e.location || '',
-                    date: e.startDate ? new Date(e.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD', // CHANGED: use startDate
-                    participants: e.currentParticipants || 0,
-                    capacity: e.maxParticipants || 0,
-                    price: e.price || 0,
-                    description: e.description || '',
-                    status: this.mapStatus(e.status),
-                    category: e.category || '',
-                    startDate: e.startDate ? e.startDate.replace('T', 'T').substring(0, 16) : '', // ADDED
-                    endDate: e.endDate ? e.endDate.replace('T', 'T').substring(0, 16) : '',
-                    picture: e.thumbnail || e.picture || e.images?.[0] || '',
-                    isFree: e.isFree || false,
-                    eventType: e.eventType || '',
-                    createdAt: e.createdAt || '',
-                    reviewCount: e.reviewCount || 0,
-                    organizerId: e.organizerId || null,
-                    organizerName: e.organizerName || '',
-                    siteId: e.siteId || null,
-                    siteName: e.siteName || ''
-                }));
+                        id: e.id,
+                        name: e.title || '',                    // CHANGED: backend returns title
+                        title: (e.title || e.description || 'Untitled').substring(0, 30),
+                        type: this.mapEventType(e.eventType),
+                        location: e.location || '',
+                        date: e.startDate ? new Date(e.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD', // CHANGED: use startDate
+                        participants: e.currentParticipants || 0,
+                        capacity: e.maxParticipants || 0,
+                        price: e.price || 0,
+                        description: e.description || '',
+                        status: this.mapStatus(e.status),
+                        category: e.category || '',
+                        startDate: e.startDate ? e.startDate.replace('T', 'T').substring(0, 16) : '', // ADDED
+                        endDate: e.endDate ? e.endDate.replace('T', 'T').substring(0, 16) : '',
+                        picture: e.thumbnail || e.picture || e.images?.[0] || '',
+                        isFree: e.isFree || false,
+                        eventType: e.eventType || '',
+                        createdAt: e.createdAt || '',
+                        reviewCount: e.reviewCount || 0,
+                        organizerId: e.organizerId || null,
+                        organizerName: e.organizerName || '',
+                        siteId: e.siteId || null,
+                        siteName: e.siteName || ''
+                    }));
                 this.loading = false;
                 this.cdr.detectChanges();
             },
@@ -222,6 +265,30 @@ private setOrganizerId() {
                 this.loading = false;
                 this.cdr.detectChanges();
             }
+        });
+    }
+
+    loadTotalViews() {
+        this.http.get<ApiResponse<any>>(`${this.apiUrl}/stats/total-views`).subscribe({
+            next: (res) => {
+                this.totalViews = res.data?.totalViews || 0;
+                this.cdr.detectChanges();
+            },
+            error: (err) => console.error('Failed to load total views:', err)
+        });
+    }
+
+    get filteredEvents() {
+        return this.events.filter(event => {
+            const matchesSearch = !this.searchTerm ||
+                event.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                event.location.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                event.organizerName?.toLowerCase().includes(this.searchTerm.toLowerCase());
+
+            const matchesStatus = this.statusFilter === 'All Status' ||
+                event.status === this.statusFilter;
+
+            return matchesSearch && matchesStatus;
         });
     }
 
@@ -236,10 +303,9 @@ private setOrganizerId() {
     }
 
     private mapStatus(status: string): 'Published' | 'Draft' {
-        switch (status) {
-            case 'PUBLISHED': return 'Published';
-            default: return 'Draft';
-        }
+        const s = (status || '').toUpperCase();
+        if (s === 'PUBLISHED') return 'Published';
+        return 'Draft';
     }
 
     getCategoryIcon(category: string): string {
@@ -271,6 +337,7 @@ private setOrganizerId() {
         this.editingEventId = null;
         this.modalErrorMessage = '';
         this.removeImage();
+        this.selectedBadgeIds.clear();
     }
 
     resetForm() {
@@ -288,7 +355,8 @@ private setOrganizerId() {
             picture: '',
             status: 'PUBLISHED',
             organizerId: null,
-            siteId: null
+            siteId: null,
+            gamificationIds: []
         };
         this.editingEventId = null;
         this.otherEventType = '';
@@ -355,7 +423,7 @@ private setOrganizerId() {
     }
 
     submitEvent() {
-          console.log('submitEvent called');
+        console.log('submitEvent called');
         this.modalErrorMessage = '';
 
         let finalEventType = this.newEvent.eventType;
@@ -370,6 +438,28 @@ private setOrganizerId() {
 
         if (this.editingEventId === null && !this.newEvent.picture && !this.imagePreview) {
             this.modalErrorMessage = 'L\'image de l\'événement est obligatoire.';
+            return;
+        }
+
+        if (!this.newEvent.title || this.newEvent.title.length < 3) {
+            this.modalErrorMessage = 'Le titre doit contenir au moins 3 caractères.';
+            return;
+        }
+
+        if (this.newEvent.startDate && this.newEvent.endDate) {
+            if (new Date(this.newEvent.startDate) >= new Date(this.newEvent.endDate)) {
+                this.modalErrorMessage = 'La date de début doit être antérieure à la date de fin.';
+                return;
+            }
+        }
+
+        if (this.newEvent.maxParticipants !== null && this.newEvent.maxParticipants <= 0) {
+            this.modalErrorMessage = 'Le nombre de participants doit être supérieur à 0.';
+            return;
+        }
+
+        if (!this.newEvent.isFree && (this.newEvent.price === null || this.newEvent.price < 0)) {
+            this.modalErrorMessage = 'Le prix ne peut pas être négatif.';
             return;
         }
 
@@ -404,6 +494,16 @@ private setOrganizerId() {
             this.loading = false;
             return;
         }
+
+        // Conditional Location Validation
+        const typeNeedsLocation = ['TRIP', 'CAMPING', 'HIKING'].includes(finalEventType.toUpperCase());
+        if (typeNeedsLocation && !this.newEvent.location) {
+            this.modalErrorMessage = 'Le lieu est obligatoire pour ce type d\'événement.';
+            this.loading = false;
+            this.cdr.detectChanges();
+            return;
+        }
+
         if (!this.newEvent.startDate) {
             this.modalErrorMessage = 'La date de début est obligatoire.';
             this.loading = false;
@@ -411,11 +511,6 @@ private setOrganizerId() {
         }
         if (!this.newEvent.endDate) {
             this.modalErrorMessage = 'La date de fin est obligatoire.';
-            this.loading = false;
-            return;
-        }
-        if (!this.newEvent.siteId) {
-            this.modalErrorMessage = 'Veuillez sélectionner un campsite valide.';
             this.loading = false;
             return;
         }
@@ -429,12 +524,12 @@ private setOrganizerId() {
             this.newEvent.endDate;
 
         const normalizedThumbnail = this.normalizeStoredImagePath(this.newEvent.picture);
-        const payload = {
-            title: this.newEvent.title,               // CHANGED: use title instead of name
+        const payload: any = {
+            title: this.newEvent.title,
             description: this.newEvent.description,
             eventType: finalEventType,
             category: finalCategory,
-            startDate: startDateFormatted,            // ADDED
+            startDate: startDateFormatted,
             endDate: endDateFormatted,
             location: this.newEvent.location,
             maxParticipants: this.newEvent.maxParticipants,
@@ -443,9 +538,12 @@ private setOrganizerId() {
             thumbnail: normalizedThumbnail,
             images: normalizedThumbnail ? [normalizedThumbnail] : [],
             status: this.newEvent.status,
-            organizerId: this.newEvent.organizerId || 1,
-            siteId: this.newEvent.siteId || 1
+            organizerId: this.newEvent.organizerId || 1
         };
+
+        if (this.newEvent.siteId != null) {
+            payload.siteId = this.newEvent.siteId;
+        }
 
         if (this.editingEventId !== null) {
             this.http.put<any>(`${this.apiUrl}/${this.editingEventId}`, payload).subscribe({
@@ -521,20 +619,17 @@ private setOrganizerId() {
     deleteSelectedEvents() {
         if (confirm(`Are you sure you want to delete ${this.selectedEventIds.size} events?`)) {
             const ids = Array.from(this.selectedEventIds);
-            let deletedCount = 0;
-
-            ids.forEach(id => {
-                this.http.delete(`${this.apiUrl}/${id}`).subscribe({
-                    next: () => {
-                        deletedCount++;
-                        if (deletedCount === ids.length) {
-                            this.loadEvents();
-                            this.selectedEventIds.clear();
-                            this.deleteMode = false;
-                        }
-                    },
-                    error: (err) => console.error(`Failed to delete event ${id}:`, err)
-                });
+            this.http.request('delete', `${this.apiUrl}/bulk`, { body: ids }).subscribe({
+                next: () => {
+                    this.loadEvents();
+                    this.selectedEventIds.clear();
+                    this.deleteMode = false;
+                },
+                error: (err) => {
+                    console.error('Bulk delete failed:', err);
+                    alert('Failed to delete some events.');
+                    this.loadEvents();
+                }
             });
         }
     }
@@ -553,21 +648,34 @@ private setOrganizerId() {
         this.editingEventId = event.id;
 
         this.newEvent = {
-            title: event.name || event.title,        // CHANGED
+            title: event.name || event.title,
             description: event.description,
             eventType: event.eventType,
             category: event.category,
-            startDate: event.startDate ? event.startDate.substring(0, 16) : '', // ADDED
+            startDate: event.startDate ? event.startDate.substring(0, 16) : '',
             endDate: event.endDate ? event.endDate.substring(0, 16) : '',
             location: event.location,
             maxParticipants: event.capacity,
             price: event.price,
             isFree: event.isFree,
             picture: event.picture,
-            status: event.status === 'Published' ? 'PUBLISHED' : 'DRAFT',
+            status: (event.status || '').toUpperCase() === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
             organizerId: event.organizerId,
-            siteId: event.siteId
+            siteId: event.siteId,
+            gamificationIds: []
         };
+
+        // Fetch full event details to get gamifications
+        this.http.get<ApiResponse<any>>(`${this.apiUrl}/${event.id}`).subscribe({
+            next: (res) => {
+                const fullEvent = res.data;
+                if (fullEvent && fullEvent.gamifications) {
+                    this.newEvent.gamificationIds = fullEvent.gamifications.map((g: any) => g.id);
+                    this.selectedBadgeIds = new Set(this.newEvent.gamificationIds);
+                    this.cdr.detectChanges();
+                }
+            }
+        });
 
         if (!this.eventTypes.includes(event.eventType)) {
             this.newEvent.eventType = 'Other';
@@ -597,11 +705,10 @@ private setOrganizerId() {
     }
 
     onLocationComboboxChange(value: string) {
-        const selectedLabel = (value || '').trim().toLowerCase();
+        const selectedLabel = (value || '').trim();
         const matched = this.availableSites.find((site) => {
-            const byLabel = this.formatSiteLabel(site).toLowerCase() === selectedLabel;
-            const byName = site.name.toLowerCase() === selectedLabel;
-            return byLabel || byName;
+            const label = this.formatSiteLabel(site);
+            return label === selectedLabel || site.name === selectedLabel;
         });
 
         if (matched) {
@@ -609,7 +716,10 @@ private setOrganizerId() {
             this.newEvent.location = matched.city || matched.address || matched.name;
         } else {
             this.newEvent.siteId = null;
+            // Keep the location text so they can see what they typed, 
+            // but the UI will show the warning about selecting from list.
         }
+        this.cdr.detectChanges();
     }
 
     deleteSingleEvent(eventId: number) {

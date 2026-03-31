@@ -18,6 +18,9 @@ export interface User {
     followers?: string;
     gallery?: string[];
     achievements?: { title: string; icon: string; description?: string; date?: string }[];
+    experiencePoints?: number;
+    level?: number;
+    earnedBadges?: any[];
 }
 
 @Injectable({
@@ -128,7 +131,10 @@ export class UserService {
             hashtags: [],
             followers: '0',
             gallery: [avatar],
-            achievements: []
+            achievements: [],
+            experiencePoints: user.experiencePoints || 0,
+            level: user.level || 1,
+            earnedBadges: user.earnedBadges || []
         };
     }
 }

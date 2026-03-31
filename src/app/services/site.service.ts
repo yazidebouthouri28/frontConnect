@@ -30,6 +30,7 @@ interface SiteApiResponse {
     checkInTime?: string;
     checkOutTime?: string;
     houseRules?: string;
+    ownerId?: number;
 }
 
 interface SiteApiRequest {
@@ -51,7 +52,7 @@ interface SiteApiRequest {
     checkInTime?: string;
     checkOutTime?: string;
     houseRules?: string;
-        ownerId?: number;    
+    ownerId?: number;
 }
 
 interface SiteSummaryApiResponse {
@@ -77,6 +78,7 @@ interface SiteSummaryApiResponse {
     checkInTime?: string;
     checkOutTime?: string;
     houseRules?: string;
+    ownerId?: number;
 }
 
 interface SitePageResponse<T> {
@@ -115,6 +117,13 @@ export class SiteService {
                     map((response) => this.toSiteList(response))
                 )
             )
+        );
+    }
+
+    getAllSitesAdmin(): Observable<Site[]> {
+        return this.http.get<SiteListResponse>(`${this.apiUrl}/admin/all`).pipe(
+            timeout(this.readTimeoutMs),
+            map((response) => this.toSiteList(response))
         );
     }
 
@@ -222,6 +231,7 @@ export class SiteService {
             checkInTime: fullSite.checkInTime ?? '',
             checkOutTime: fullSite.checkOutTime ?? '',
             houseRules: fullSite.houseRules ?? '',
+            ownerId: site.ownerId,
             status: site.isActive === false ? 'Maintenance' : 'Available'
         };
     }
@@ -276,7 +286,7 @@ export class SiteService {
             checkInTime: site.checkInTime,
             checkOutTime: site.checkOutTime,
             houseRules: site.houseRules,
-            ownerId: site.ownerId 
+            ownerId: site.ownerId
         };
     }
 }

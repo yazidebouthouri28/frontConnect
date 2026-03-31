@@ -1,0 +1,169 @@
+<div class="p-8 bg-[#F9F7F2] min-h-screen">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-4xl font-black text-forest tracking-tighter">Gamification <span class="text-olive">&
+                        Badges</span></h1>
+                <p class="text-olive/60 font-medium">Manage event rewards and visual achievements.</p>
+            </div>
+            <button (click)="openModal()"
+                class="bg-forest text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-olive transition-all transform active:scale-95 shadow-xl shadow-forest/10 uppercase tracking-widest text-xs">
+                <span class="text-xl leading-none font-normal">+</span> New Badge
+            </button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-3xl border border-forest/5 shadow-sm">
+                <div class="text-[10px] font-black text-olive/40 uppercase tracking-widest mb-1">Total Badges</div>
+                <div class="text-3xl font-black text-forest">{{ badges.length }}</div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border border-forest/5 shadow-sm">
+                <div class="text-[10px] font-black text-olive/40 uppercase tracking-widest mb-1">Active Rewards</div>
+                <div class="text-3xl font-black text-forest">{{ badges.length }}</div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border border-forest/5 shadow-sm">
+                <div class="text-[10px] font-black text-olive/40 uppercase tracking-widest mb-1">System Status</div>
+                <div class="flex items-center gap-2 text-green-600 font-bold">
+                    <span class="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
+                    Operational
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges Grid -->
+        <div *ngIf="loading" class="flex justify-center p-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-olive/20 border-t-olive"></div>
+        </div>
+
+        <div *ngIf="!loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div *ngFor="let badge of badges"
+                class="group bg-white p-6 rounded-[2.5rem] border border-forest/5 shadow-sm hover:shadow-2xl hover:shadow-forest/5 transition-all duration-500 relative overflow-hidden">
+
+                <div class="flex items-start justify-between relative z-10">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-sage/10 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-500">
+                        {{ badge.icon || '🏆' }}
+                    </div>
+                    <div class="flex gap-2">
+                        <button (click)="openModal(badge)" class="p-2 text-gray-400 hover:text-olive transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                </path>
+                            </svg>
+                        </button>
+                        <button (click)="deleteBadge(badge.id!)"
+                            class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-6 relative z-10">
+                    <h3 class="text-xl font-black text-forest mb-2">{{ badge.name }}</h3>
+                    <p class="text-olive/60 text-sm font-medium line-clamp-2 mb-4">{{ badge.description }}</p>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="px-3 py-1 bg-olive/10 text-olive rounded-full text-[10px] font-black uppercase tracking-widest">{{
+                            badge.pointsValue }} Points</span>
+                    </div>
+                </div>
+
+                <!-- Background Accent -->
+                <div
+                    class="absolute -right-12 -bottom-12 w-48 h-48 bg-olive/5 rounded-full blur-3xl group-hover:bg-olive/10 transition-colors duration-500">
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div *ngIf="badges.length === 0" class="col-span-full py-20 text-center">
+                <div class="text-6xl mb-4">✨</div>
+                <h3 class="text-xl font-bold text-forest">No badges created yet</h3>
+                <p class="text-olive/60 mb-8">Start by creating your first gamification reward.</p>
+                <button (click)="openModal()"
+                    class="text-olive font-black uppercase tracking-widest text-[10px] hover:underline">Create
+                    Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div *ngIf="showModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-forest/80 backdrop-blur-sm">
+        <div
+            class="bg-white rounded-[3rem] w-full max-w-xl shadow-2xl overflow-hidden p-8 md:p-12 animate-in fade-in zoom-in duration-300">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-black text-forest tracking-tighter">{{ isEditing ? 'Edit' : 'Create' }} <span
+                        class="text-olive">Badge</span></h2>
+                <button (click)="closeModal()" class="text-gray-400 hover:text-forest transition-colors">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div *ngIf="modalErrorMessage"
+                class="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <span class="text-red-500 text-lg">⚠️</span>
+                <p class="text-sm font-bold text-red-600 flex-1">{{ modalErrorMessage }}</p>
+                <button (click)="modalErrorMessage = ''" class="text-red-400 hover:text-red-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-olive/40 uppercase tracking-widest mb-2 px-1">Badge
+                        Name</label>
+                    <input [(ngModel)]="currentBadge.name" type="text" placeholder="e.g. Master Hiker"
+                        class="w-full bg-sage/5 border border-forest/10 rounded-2xl px-6 py-4 font-bold text-forest focus:ring-2 focus:ring-olive focus:border-transparent outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-olive/40 uppercase tracking-widest mb-2 px-1">Icon
+                        (Emoji or Icon Name)</label>
+                    <input [(ngModel)]="currentBadge.icon" type="text" placeholder="e.g. 🏔️"
+                        class="w-full bg-sage/5 border border-forest/10 rounded-2xl px-6 py-4 font-bold text-forest focus:ring-2 focus:ring-olive focus:border-transparent outline-none transition-all">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-olive/40 uppercase tracking-widest mb-2 px-1">Points
+                            Value</label>
+                        <input [(ngModel)]="currentBadge.pointsValue" type="number"
+                            class="w-full bg-sage/5 border border-forest/10 rounded-2xl px-6 py-4 font-bold text-forest focus:ring-2 focus:ring-olive focus:border-transparent outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-olive/40 uppercase tracking-widest mb-2 px-1">Description</label>
+                    <textarea [(ngModel)]="currentBadge.description" placeholder="What is this badge for?"
+                        class="w-full bg-sage/5 border border-forest/10 rounded-2xl px-6 py-4 font-bold text-forest h-32 focus:ring-2 focus:ring-olive focus:border-transparent outline-none transition-all"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-10 flex gap-4">
+                <button (click)="closeModal()"
+                    class="flex-1 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 border-forest/5 text-forest hover:bg-forest/5 transition-all">
+                    Cancel
+                </button>
+                <button (click)="saveBadge()"
+                    class="flex-[2] bg-forest text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-olive shadow-xl shadow-forest/10 transform active:scale-95 transition-all">
+                    {{ isEditing ? 'Update Reward' : 'Create Achievement' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

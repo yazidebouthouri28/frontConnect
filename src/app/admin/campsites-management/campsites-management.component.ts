@@ -64,7 +64,7 @@ export class CampsitesManagementComponent implements OnInit {
         this.isLoading = true;
         this.errorMessage = '';
 
-        this.siteService.getAllSites().subscribe({
+        this.siteService.getAllSitesAdmin().subscribe({
             next: (sites) => {
                 this.campsites = sites.map((site) => ({
                     ...site,

@@ -12,6 +12,7 @@ import { MarketplaceManagementComponent } from '../marketplace-management/market
 import { ReportsManagementComponent } from '../reports-management/reports-management.component';
 import { ReservationsManagementComponent } from '../reservations-management/reservations-management.component';
 import { ModerationPanelComponent } from '../moderation-panel/moderation-panel.component';
+import { GamificationManagementComponent } from '../gamification-management/gamification-management.component';
 import { AuthService } from '../../services/auth.service';
 import { ViewModeService } from '../../services/view-mode.service';
 import { AccountProfileService } from '../../services/account-profile.service';
@@ -33,6 +34,7 @@ import { User } from '../../models/api.models';
     ReportsManagementComponent,
     ReservationsManagementComponent,
     ModerationPanelComponent,
+    GamificationManagementComponent,
   ],
   templateUrl: './admin-panel.component.html',
   styleUrls: ['./admin-panel.component.css'],
@@ -53,7 +55,7 @@ export class AdminPanelComponent {
     private router: Router,
     private viewMode: ViewModeService,
     private accountProfile: AccountProfileService
-  ) {}
+  ) { }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(ev: MouseEvent): void {
