@@ -39,7 +39,7 @@ interface ChatGroup {
   styleUrls: ['./community-forum.component.css']
 })
 export class CommunityForumComponent implements OnInit {
-  currentUser: User = {
+  currentUser: User | undefined = {
     id: 'me',
     name: 'Ahmed Ben Salem',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150',
@@ -133,7 +133,7 @@ export class CommunityForumComponent implements OnInit {
     }
   };
 
-  activeGroup: ChatGroup = this.allGroups['g1'];
+  activeGroup: ChatGroup | undefined = this.allGroups['g1'];
   newMessage: string = '';
   selectedUser: User | null = null;
   isLoading = false;
@@ -163,7 +163,7 @@ export class CommunityForumComponent implements OnInit {
   // For debugging – you can remove later
   testApi() {
     console.log('Test API button clicked');
-    this.http.get(`/api/chat-rooms/user/${this.currentUser.id}`)
+    this.http.get(`/api/chat-rooms/user/${this.currentUser?.id}`)
       .subscribe({
         next: (data) => console.log('API response:', data),
         error: (err) => console.error('API error:', err)
@@ -269,7 +269,7 @@ export class CommunityForumComponent implements OnInit {
     this.isLoading = true;
     const payload = { name, description, isPublic };
     // Note: backend expects creatorId as a query parameter. We'll send it.
-    this.http.post<any>(`/api/chat-rooms?creatorId=${this.currentUser.id}`, payload)
+    this.http.post<any>(`/api/chat-rooms?creatorId=${this.currentUser?.id}`, payload)
       .subscribe({
         next: (response) => {
           this.isLoading = false;

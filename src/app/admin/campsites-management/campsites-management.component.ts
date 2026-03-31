@@ -148,8 +148,13 @@ export class CampsitesManagementComponent implements OnInit {
         this.clearNewSiteImages();
     }
 
-    submitCreateSite() {
+    submitCreateSite(siteForm?: any) {
         if (this.isCreatingSite) return;
+
+        if (siteForm && siteForm.invalid) {
+            this.createSiteError = 'Please fix the validation errors before submitting.';
+            return;
+        }
 
         const name = this.newSiteForm.name?.trim();
         const city = (this.newSiteForm.city || this.newSiteForm.location || '').trim();

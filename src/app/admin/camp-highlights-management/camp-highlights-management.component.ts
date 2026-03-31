@@ -38,23 +38,27 @@ import { CampHighlight, Site } from '../../models/camping.models';
       <div *ngIf="showForm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl space-y-6">
           <h2 class="text-xl font-bold text-[#1a2e1a]">{{ editingHighlight ? 'Edit' : 'Add' }} Highlight</h2>
-          <div class="grid grid-cols-2 gap-4">
+          <form #highlightForm="ngForm" (ngSubmit)="saveHighlight(highlightForm)" class="grid grid-cols-2 gap-4">
             <div class="col-span-2">
               <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Campsite *</label>
-              <select [(ngModel)]="currentHighlight.siteId"
-                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+              <select [(ngModel)]="currentHighlight.siteId" name="siteId" required #siteRef="ngModel"
+                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none"
+                [ngClass]="{'border-red-500': siteRef.invalid && siteRef.touched}">
                 <option [ngValue]="undefined">Select campsite</option>
                 <option *ngFor="let site of sites" [ngValue]="site.id">{{ site.name }}</option>
               </select>
+              <div *ngIf="siteRef.invalid && siteRef.touched" class="text-xs text-red-500 mt-1">Campsite is required</div>
             </div>
             <div class="col-span-2">
               <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Title</label>
-              <input [(ngModel)]="currentHighlight.title"
-                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#1a2e1a]/10 outline-none">
+              <input [(ngModel)]="currentHighlight.title" name="title" required minlength="3" maxlength="200" #titleRef="ngModel"
+                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#1a2e1a]/10 outline-none"
+                [ngClass]="{'border-red-500': titleRef.invalid && titleRef.touched}">
+              <div *ngIf="titleRef.invalid && titleRef.touched" class="text-xs text-red-500 mt-1">Title is required (3-200 chars)</div>
             </div>
             <div>
               <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Category</label>
-              <select [(ngModel)]="currentHighlight.category"
+              <select [(ngModel)]="currentHighlight.category" name="category" required #catRef="ngModel"
                 class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none">
                 <option value="FLORA">Flora</option>
                 <option value="FAUNA">Fauna</option>
@@ -93,22 +97,24 @@ import { CampHighlight, Site } from '../../models/camping.models';
             </div>
             <div class="col-span-2">
               <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Content</label>
-              <textarea [(ngModel)]="currentHighlight.content" rows="4"
-                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none"></textarea>
+              <textarea [(ngModel)]="currentHighlight.content" name="content" required minlength="10" maxlength="5000" rows="4" #contentRef="ngModel"
+                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none"
+                [ngClass]="{'border-red-500': contentRef.invalid && contentRef.touched}"></textarea>
+              <div *ngIf="contentRef.invalid && contentRef.touched" class="text-xs text-red-500 mt-1">Content is required (10-5000 chars)</div>
             </div>
             <div class="col-span-2 flex items-center gap-2">
-              <input id="published" type="checkbox" [(ngModel)]="currentHighlight.isPublished">
+              <input id="published" type="checkbox" name="isPublished" [(ngModel)]="currentHighlight.isPublished">
               <label for="published" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Published</label>
             </div>
-          </div>
-          <div class="flex justify-end gap-3 pt-4">
-            <button (click)="closeForm()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Cancel</button>
-            <button (click)="saveHighlight()"
-              [disabled]="isSaving"
+          <div class="flex justify-end gap-3 pt-4 col-span-2">
+            <button type="button" (click)="closeForm()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Cancel</button>
+            <button type="submit"
+              [disabled]="isSaving || highlightForm.invalid"
               class="px-6 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed">
               {{ isSaving ? 'Saving...' : 'Save Highlight' }}
             </button>
           </div>
+          </form>
         </div>
       </div>
 
@@ -268,8 +274,13 @@ export class CampHighlightsManagementComponent implements OnInit {
     this.showForm = true;
   }
 
-  saveHighlight() {
+  saveHighlight(highlightForm?: any) {
     if (this.isSaving) return;
+    
+    if (highlightForm && highlightForm.invalid) {
+      this.errorMessage = 'Please fix the validation errors before saving.';
+      return;
+    }
 
     const targetSiteId = this.currentHighlight.siteId ?? this.selectedSiteId;
     if (!targetSiteId) {

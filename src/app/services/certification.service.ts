@@ -78,8 +78,12 @@ export class CertificationService {
     constructor(private http: HttpClient) { }
 
     getCertificationsBySite(siteId: number): Observable<Certification[]> {
-        return this.http.get<CertificationApiResponse[]>(`${this.certUrl}/site/${siteId}`).pipe(
-            map((certifications) => certifications.map((cert) => this.fromCertificationApi(cert, siteId)))
+        return this.http.get<any>(`${this.certUrl}/site/${siteId}`).pipe(
+            map((res) => {
+                const certifications = res.data ? res.data : res;
+                if (!Array.isArray(certifications)) return [];
+                return certifications.map((cert: any) => this.fromCertificationApi(cert, siteId));
+            })
         );
     }
 
@@ -96,8 +100,11 @@ export class CertificationService {
             siteId
         };
 
-        return this.http.post<CertificationApiResponse>(`${this.certUrl}/site/${siteId}`, payload).pipe(
-            map((created) => this.fromCertificationApi(created, siteId))
+        return this.http.post<any>(`${this.certUrl}/site/${siteId}`, payload).pipe(
+            map((res) => {
+                const created = res.data ? res.data : res;
+                return this.fromCertificationApi(created, siteId);
+            })
         );
     }
 
@@ -105,8 +112,11 @@ export class CertificationService {
         const backendStatus = this.toBackendStatus(status);
         const params = new HttpParams().set('status', backendStatus);
 
-        return this.http.put<CertificationApiResponse>(`${this.certUrl}/${id}/status`, null, { params }).pipe(
-            map((updated) => this.fromCertificationApi(updated, updated.siteId ?? 0))
+        return this.http.put<any>(`${this.certUrl}/${id}/status`, null, { params }).pipe(
+            map((res) => {
+                const updated = res.data ? res.data : res;
+                return this.fromCertificationApi(updated, updated.siteId ?? 0);
+            })
         );
     }
 

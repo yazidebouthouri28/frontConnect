@@ -91,14 +91,17 @@ import { VirtualTour, Scene360 } from '../../../models/camping.models';
                   class="px-4 py-2 bg-[#2C4A3C] text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-[#1a2e1a] transition-all">
                   + Import Thumbnail
                 </button>
-                <span class="text-xs text-[#617152] font-bold" *ngIf="createTourForm.thumbnailUrl">
+                <span class="text-xs text-[#617152] font-bold" *ngIf="createTourForm.thumbnailUrl && !isUploadingThumb">
                   Image selected
                 </span>
-                <span class="text-xs text-gray-400 font-bold" *ngIf="!createTourForm.thumbnailUrl">
+                <span class="text-xs text-amber-500 font-bold" *ngIf="isUploadingThumb">
+                  Uploading...
+                </span>
+                <span class="text-xs text-gray-400 font-bold" *ngIf="!createTourForm.thumbnailUrl && !isUploadingThumb">
                   No image selected
                 </span>
               </div>
-              <div *ngIf="createTourForm.thumbnailUrl"
+              <div *ngIf="createTourForm.thumbnailUrl && !isUploadingThumb"
                 class="mt-3 inline-block relative rounded-xl overflow-hidden border border-gray-200 bg-white">
                 <img [src]="createTourForm.thumbnailUrl" alt="Tour thumbnail preview" class="w-40 h-24 object-cover">
                 <button type="button" (click)="clearTourThumbnail()"
@@ -117,7 +120,7 @@ import { VirtualTour, Scene360 } from '../../../models/camping.models';
           <div class="flex justify-end gap-3 pt-4">
             <button (click)="closeCreateTourForm()"
               class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Cancel</button>
-            <button (click)="createNewTour()" [disabled]="isCreatingTour"
+            <button (click)="createNewTour()" [disabled]="isCreatingTour || isUploadingThumb"
               class="px-6 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">
               {{ isCreatingTour ? 'Creating...' : 'Create Tour' }}
             </button>
@@ -168,14 +171,17 @@ import { VirtualTour, Scene360 } from '../../../models/camping.models';
                   class="px-4 py-2 bg-[#2C4A3C] text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-[#1a2e1a] transition-all">
                   + Import Panorama
                 </button>
-                <span class="text-xs text-[#617152] font-bold" *ngIf="newScene.panoramaUrl">
+                <span class="text-xs text-[#617152] font-bold" *ngIf="newScene.panoramaUrl && !isUploadingScene">
                   Image selected
                 </span>
-                <span class="text-xs text-gray-400 font-bold" *ngIf="!newScene.panoramaUrl">
+                <span class="text-xs text-amber-500 font-bold" *ngIf="isUploadingScene">
+                  Uploading...
+                </span>
+                <span class="text-xs text-gray-400 font-bold" *ngIf="!newScene.panoramaUrl && !isUploadingScene">
                   No image selected
                 </span>
               </div>
-              <div *ngIf="newScene.panoramaUrl"
+              <div *ngIf="newScene.panoramaUrl && !isUploadingScene"
                 class="mt-3 flex flex-wrap items-center gap-3">
                 <div class="relative rounded-xl overflow-hidden border border-gray-200 bg-white">
                   <img [src]="newScene.panoramaUrl" alt="Scene preview" class="w-40 h-24 object-cover">
@@ -197,7 +203,7 @@ import { VirtualTour, Scene360 } from '../../../models/camping.models';
           </div>
           <div class="flex justify-end gap-3 pt-4">
             <button type="button" (click)="selectedTour = null" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Cancel</button>
-            <button type="button" (click)="addScene()" class="px-6 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold">Add Scene</button>
+            <button type="button" (click)="addScene()" [disabled]="isUploadingScene" class="px-6 py-2 bg-[#2C4A3C] text-white rounded-lg text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">Add Scene</button>
           </div>
         </div>
       </div>
@@ -228,6 +234,8 @@ export class SiteVirtualToursComponent implements OnInit, OnChanges {
   showCreateTour = false;
   createTourForm: Partial<VirtualTour> = {};
   showPanorama = false;
+  isUploadingThumb = false;
+  isUploadingScene = false;
   private panoViewer: { destroy?: () => void } | null = null;
 
   constructor(private tourService: VirtualTourService) { }
@@ -311,11 +319,17 @@ export class SiteVirtualToursComponent implements OnInit, OnChanges {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.createTourForm.thumbnailUrl = typeof reader.result === 'string' ? reader.result : '';
-    };
-    reader.readAsDataURL(file);
+    this.isUploadingThumb = true;
+    this.tourService.uploadFile(file).subscribe({
+      next: (res) => {
+        this.createTourForm.thumbnailUrl = 'http://localhost:8089/uploads/' + res.data.fileName;
+        this.isUploadingThumb = false;
+      },
+      error: () => {
+        this.tourActionError = 'Failed to upload thumbnail.';
+        this.isUploadingThumb = false;
+      }
+    });
     input.value = '';
   }
 
@@ -373,13 +387,19 @@ export class SiteVirtualToursComponent implements OnInit, OnChanges {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const data = typeof reader.result === 'string' ? reader.result : '';
-      this.newScene.panoramaUrl = data;
-      this.newScene.thumbnailUrl = data;
-    };
-    reader.readAsDataURL(file);
+    this.isUploadingScene = true;
+    this.tourService.uploadFile(file).subscribe({
+      next: (res) => {
+        const url = 'http://localhost:8089/uploads/' + res.data.fileName;
+        this.newScene.panoramaUrl = url;
+        this.newScene.thumbnailUrl = url;
+        this.isUploadingScene = false;
+      },
+      error: () => {
+        alert('Failed to upload panorama image');
+        this.isUploadingScene = false;
+      }
+    });
     input.value = '';
   }
 

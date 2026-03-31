@@ -58,8 +58,15 @@ interface SceneApiRequest {
 export class VirtualTourService {
     private tourUrl = `${environment.apiUrl}/api/virtual-tours`;
     private sceneUrl = `${environment.apiUrl}/api/scenes-360`;
+    private fileUploadUrl = `${environment.apiUrl}/api/files/upload`;
 
     constructor(private http: HttpClient) { }
+
+    uploadFile(file: File): Observable<{ data: { fileName: string } }> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.post<{ data: { fileName: string } }>(this.fileUploadUrl, formData);
+    }
 
     // Virtual Tour
     getToursBySite(siteId: number): Observable<VirtualTour[]> {

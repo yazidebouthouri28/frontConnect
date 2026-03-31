@@ -145,6 +145,9 @@ export class CampsiteDetailComponent implements OnInit {
         default: { icon: '⛺', label: 'Standard Amenity' }
     };
 
+    showPanorama = false;
+    panoViewer: { destroy?: () => void } | null = null;
+
     constructor(
         private route: ActivatedRoute,
         private router: Router,
@@ -320,21 +323,114 @@ export class CampsiteDetailComponent implements OnInit {
         }
 
         const firstTour = this.virtualTours[0];
-        const sceneImages = (firstTour.scenes || [])
-            .map((scene) => scene.panoramaUrl || scene.imageUrl || '')
-            .filter((url) => !!url && String(url).trim().length > 0);
-
-        if (sceneImages.length > 0) {
-            this.galleryImages = sceneImages;
-            this.activeGalleryIndex = 0;
-            this.isGalleryOpen = true;
-            document.body.style.overflow = 'hidden';
-            this.cdr.detectChanges();
+        if (firstTour.scenes && firstTour.scenes.length > 0) {
+            this.openTourPanorama(firstTour);
             return;
         }
 
         const target = document.getElementById('virtual-tours');
         target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    openTourPanorama(tour: VirtualTour): void {
+        if (!tour.scenes || tour.scenes.length === 0) return;
+        
+        this.showPanorama = true;
+        document.body.style.overflow = 'hidden';
+        this.cdr.detectChanges();
+
+        // Sort scenes by orderIndex
+        const sortedScenes = [...tour.scenes].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+        
+        const scenesConfig: Record<string, any> = {};
+        
+        sortedScenes.forEach((scene, index) => {
+            const sceneId = `scene_${scene.id}`;
+            const hotSpots: any[] = [];
+            
+            // Add custom hotspots if defined
+            if (scene.hotspots && Array.isArray(scene.hotspots)) {
+                try {
+                    scene.hotspots.forEach(hs => {
+                        if (typeof hs === 'string') {
+                            const parsed = JSON.parse(hs);
+                            hotSpots.push(parsed);
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Failed to parse hotspot', e);
+                }
+            }
+
+            // Automatically link scenes like Google Street View
+            // If there's a next scene, add arrow pointing forward
+            if (index < sortedScenes.length - 1) {
+                hotSpots.push({
+                    pitch: -15, // Point slightly down onto the floor
+                    yaw: 0,     // Arrow straight ahead
+                    type: 'scene',
+                    text: 'Avancer (Next)',
+                    sceneId: `scene_${sortedScenes[index + 1].id}`,
+                    targetYaw: 0
+                });
+            }
+            // If there's a previous scene, add arrow pointing back
+            if (index > 0) {
+                hotSpots.push({
+                    pitch: -15,   // Point slightly down
+                    yaw: 180,     // Arrow behind
+                    type: 'scene',
+                    text: 'Reculer (Previous)',
+                    sceneId: `scene_${sortedScenes[index - 1].id}`,
+                    targetYaw: 180
+                });
+            }
+
+            scenesConfig[sceneId] = {
+                title: scene.title || 'Scene',
+                type: 'equirectangular',
+                panorama: scene.panoramaUrl || scene.imageUrl,
+                yaw: scene.initialYaw || 0,
+                pitch: scene.initialPitch || 0,
+                hfov: scene.initialFov || 110,
+                hotSpots: hotSpots
+            };
+        });
+
+        setTimeout(() => {
+            const innerId = 'public-pannellum-host';
+            const container = document.getElementById(innerId);
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const g = window as any;
+            if (typeof g.pannellum === 'undefined') {
+                console.error('Pannellum script not loaded.');
+                return;
+            }
+
+            const firstSceneId = `scene_${sortedScenes[0].id}`;
+
+            this.panoViewer = g.pannellum.viewer(innerId, {
+                default: {
+                    firstScene: firstSceneId,
+                    sceneFadeDuration: 1000,
+                    autoLoad: true,
+                    compass: true
+                },
+                scenes: scenesConfig
+            });
+        }, 300);
+    }
+
+    closePanorama(): void {
+        this.showPanorama = false;
+        document.body.style.overflow = '';
+        if (this.panoViewer && this.panoViewer.destroy) {
+            this.panoViewer.destroy();
+            this.panoViewer = null;
+        }
+        this.cdr.detectChanges();
     }
 
     get directionsUrl(): string {

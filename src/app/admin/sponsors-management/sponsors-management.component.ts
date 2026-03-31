@@ -25,6 +25,7 @@ export class SponsorsManagementComponent implements OnInit {
   selectedSponsor: any = null;
   editForm: any = {};
   isSaving = false;
+  isUploadingFile = false;
 
   showDeleteModal = false;
   isDeleting = false;
@@ -136,6 +137,25 @@ loadSponsors() {
         this.isSaving = false;
       }
     });
+  }
+
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      this.isUploadingFile = true;
+      const formData = new FormData();
+      formData.append('file', file);
+      this.http.post<any>('http://localhost:8089/api/files/upload', formData).subscribe({
+        next: (res) => {
+          this.editForm.logo = 'http://localhost:8089/uploads/' + res.data.fileName;
+          this.isUploadingFile = false;
+        },
+        error: (err) => {
+          console.error('File upload failed', err);
+          this.isUploadingFile = false;
+        }
+      });
+    }
   }
 
   openDeleteModal(sponsor: any) {

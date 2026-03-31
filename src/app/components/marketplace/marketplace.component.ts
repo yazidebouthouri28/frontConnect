@@ -37,7 +37,7 @@ interface Product {
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [CommonModule, NgClass, ProductDetailComponent],
+  imports: [CommonModule, ProductDetailComponent],
   templateUrl: './marketplace.component.html',
   styleUrls: ['./marketplace.component.css'],
 })
