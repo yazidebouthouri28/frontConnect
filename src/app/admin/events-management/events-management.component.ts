@@ -545,6 +545,8 @@ export class EventsAdminManagementComponent implements OnInit {
             payload.siteId = this.newEvent.siteId;
         }
 
+        payload.gamificationIds = Array.from(this.selectedBadgeIds);
+
         if (this.editingEventId !== null) {
             this.http.put<any>(`${this.apiUrl}/${this.editingEventId}`, payload).subscribe({
                 next: () => {
@@ -555,7 +557,12 @@ export class EventsAdminManagementComponent implements OnInit {
                 },
                 error: (err) => {
                     console.error('Update failed:', err);
-                    this.modalErrorMessage = err.error?.message || 'Échec de la mise à jour de l\'événement.';
+                    if (err.error?.data && typeof err.error.data === 'object' && Object.keys(err.error.data).length > 0) {
+                        const errors = Object.values(err.error.data).join(', ');
+                        this.modalErrorMessage = err.error.message ? `${err.error.message}: ${errors}` : errors;
+                    } else {
+                        this.modalErrorMessage = err.error?.message || 'Échec de la mise à jour de l\'événement.';
+                    }
                     this.loading = false;
                     this.cdr.detectChanges();
                 }
@@ -569,7 +576,12 @@ export class EventsAdminManagementComponent implements OnInit {
                 },
                 error: (err) => {
                     console.error('Creation failed:', err);
-                    this.modalErrorMessage = err.error?.message || 'Échec de la création de l\'événement. Vérifiez que tous les champs obligatoires sont remplis.';
+                    if (err.error?.data && typeof err.error.data === 'object' && Object.keys(err.error.data).length > 0) {
+                        const errors = Object.values(err.error.data).join(', ');
+                        this.modalErrorMessage = err.error.message ? `${err.error.message}: ${errors}` : errors;
+                    } else {
+                        this.modalErrorMessage = err.error?.message || 'Échec de la création de l\'événement. Vérifiez que tous les champs obligatoires sont remplis.';
+                    }
                     this.loading = false;
                     this.cdr.detectChanges();
                 }
