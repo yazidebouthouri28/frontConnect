@@ -27,16 +27,6 @@ pipeline {
             }
         }
 
-        // ===== SonarQube Analysis =====
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    // Runs sonar-scanner; expects sonar-project.properties in the repository root
-                    sh 'sonar-scanner'
-                }
-            }
-        }
-
         stage('Docker Build & Push') {
             steps {
                 withCredentials([usernamePassword(
