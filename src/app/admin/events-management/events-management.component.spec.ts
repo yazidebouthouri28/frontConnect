@@ -44,12 +44,14 @@ describe('EventsAdminManagementComponent', () => {
     });
 
     it('should show error if title is too short', () => {
+        component.newEvent.picture = 'dummy.jpg';
         component.newEvent.title = 'Hi'; // Less than 3
         component.submitEvent();
         expect(component.modalErrorMessage).toBe('Le titre doit contenir au moins 3 caractères.');
     });
 
     it('should show error if end date is before start date', () => {
+        component.newEvent.picture = 'dummy.jpg';
         component.newEvent.title = 'Valid Title';
         component.newEvent.startDate = '2026-12-01T10:00';
         component.newEvent.endDate = '2026-11-01T10:00';
@@ -58,6 +60,7 @@ describe('EventsAdminManagementComponent', () => {
     });
 
     it('should show error if price is negative', () => {
+        component.newEvent.picture = 'dummy.jpg';
         component.newEvent.title = 'Valid Title';
         component.newEvent.isFree = false;
         component.newEvent.price = -5;

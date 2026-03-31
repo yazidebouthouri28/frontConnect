@@ -14,11 +14,12 @@ describe('CampsitesManagementComponent', () => {
     let mockAuthService: jasmine.SpyObj<AuthService>;
 
     beforeEach(async () => {
-        mockSiteService = jasmine.createSpyObj('SiteService', ['getAllSites', 'createSite', 'updateSite', 'deleteSite', 'uploadSiteImages']);
+        mockSiteService = jasmine.createSpyObj('SiteService', ['getAllSites', 'getAllSitesAdmin', 'createSite', 'updateSite', 'deleteSite', 'uploadSiteImages']);
         mockAuthService = jasmine.createSpyObj('AuthService', ['getCurrentUser']);
 
         mockSiteService.getAllSites.and.returnValue(of([]));
-        mockAuthService.getCurrentUser.and.returnValue({ id: 1, name: 'Test User' });
+        mockSiteService.getAllSitesAdmin.and.returnValue(of([]));
+        mockAuthService.getCurrentUser.and.returnValue({ id: '1', name: 'Test User' } as any);
 
         await TestBed.configureTestingModule({
             imports: [CampsitesManagementComponent, HttpClientTestingModule, FormsModule],

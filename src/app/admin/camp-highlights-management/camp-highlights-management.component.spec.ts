@@ -17,7 +17,7 @@ describe('CampHighlightsManagementComponent', () => {
     mockHighlightService = jasmine.createSpyObj('CampHighlightService', ['getHighlightsBySite', 'createHighlight', 'updateHighlight', 'deleteHighlight']);
     mockSiteService = jasmine.createSpyObj('SiteService', ['getAllSites']);
 
-    mockSiteService.getAllSites.and.returnValue(of([{ id: 1, name: 'Test Site' }]));
+    mockSiteService.getAllSites.and.returnValue(of([{ id: 1, name: 'Test Site' } as any]));
     mockHighlightService.getHighlightsBySite.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
