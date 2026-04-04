@@ -79,7 +79,17 @@
           <p class="text-xs text-gray-500 mb-3">{{ campsite?.location || 'Location unavailable' }}</p>
           <div class="text-sm space-y-2">
             <div class="flex justify-between"><span>{{ campsite?.price || 0 }} DT x {{ nights }} nights</span><span>{{ subtotal }} DT</span></div>
-            <div class="flex justify-between"><span>Service fee</span><span>{{ serviceFee }} DT</span></div>
+            <div class="flex justify-between"><span>Service fee (8%)</span><span>{{ serviceFee }} DT</span></div>
+            <div *ngIf="selectedExtra" class="flex justify-between items-center text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1">
+              <span class="flex items-center gap-1.5">
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 bg-emerald-100 rounded">{{ selectedExtra.type }}</span>
+                {{ selectedExtra.name }}
+              </span>
+              <span class="flex items-center gap-2">
+                +{{ selectedExtra.price }} DT
+                <button type="button" (click)="removeExtra()" class="text-red-400 hover:text-red-600 text-[10px]" title="Remove">✕</button>
+              </span>
+            </div>
             <div class="flex justify-between font-black text-[#1a2e1a] border-t border-[#e8e3d9] pt-2"><span>Total</span><span>{{ total }} DT</span></div>
           </div>
         </aside>

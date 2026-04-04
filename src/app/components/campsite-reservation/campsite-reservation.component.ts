@@ -20,6 +20,7 @@ export class CampsiteReservationComponent implements OnInit {
   isSubmitting = false;
   error = '';
   success = '';
+  selectedExtra: { id: number; name: string; price: number; type: string } | null = null;
 
   form = {
     checkInDate: '',
@@ -50,6 +51,11 @@ export class CampsiteReservationComponent implements OnInit {
 
     this.form.fullName = user.name || user.username || '';
     this.form.email = user.email || '';
+
+    const storedExtra = localStorage.getItem('campingExtra');
+    if (storedExtra) {
+      try { this.selectedExtra = JSON.parse(storedExtra); } catch { this.selectedExtra = null; }
+    }
 
     this.route.params.subscribe((params) => {
       this.siteId = Number(params['id']);
@@ -87,8 +93,17 @@ export class CampsiteReservationComponent implements OnInit {
     return this.subtotal > 0 ? Number((this.subtotal * 0.08).toFixed(2)) : 0;
   }
 
+  get extraPrice(): number {
+    return this.selectedExtra?.price || 0;
+  }
+
   get total(): number {
-    return Number((this.subtotal + this.serviceFee).toFixed(2));
+    return Number((this.subtotal + this.serviceFee + this.extraPrice).toFixed(2));
+  }
+
+  removeExtra(): void {
+    this.selectedExtra = null;
+    localStorage.removeItem('campingExtra');
   }
 
   goBack(): void {

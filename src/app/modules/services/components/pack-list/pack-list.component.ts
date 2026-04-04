@@ -48,6 +48,15 @@ export class PackListComponent implements OnInit {
     }
 
     onBook(packId: number, promoCode?: string): void {
+        const pack = this.packs.find(p => p.id === packId);
+        if (pack) {
+            localStorage.setItem('campingExtra', JSON.stringify({
+                id: pack.id,
+                name: pack.name,
+                price: pack.price,
+                type: 'BUNDLE'
+            }));
+        }
         this.router.navigate(['/campsites'], {
             queryParams: {
                 pack: packId,

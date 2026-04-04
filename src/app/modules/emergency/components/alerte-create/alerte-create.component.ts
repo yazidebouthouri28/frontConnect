@@ -17,7 +17,7 @@ declare var L: any;
     templateUrl: './alerte-create.component.html',
     styleUrls: ['./alerte-create.component.css']
 })
-export class AlerteCreateComponent implements OnInit {
+export class AlerteCreateComponent implements OnInit, AfterViewInit {
     alertForm: FormGroup;
     loading = false;
     submitted = false;
@@ -60,6 +60,7 @@ export class AlerteCreateComponent implements OnInit {
     }
 
     initMap(): void {
+        if (typeof L === 'undefined') { console.warn('Leaflet not loaded'); return; }
         // Default center
         this.map = L.map('map').setView([36.0, 10.0], 7);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

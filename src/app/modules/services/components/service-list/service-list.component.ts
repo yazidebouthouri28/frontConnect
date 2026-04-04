@@ -59,6 +59,15 @@ export class ServiceListComponent implements OnInit {
     }
 
     onBook(serviceId: number): void {
+        const service = this.services.find(s => s.id === serviceId);
+        if (service) {
+            localStorage.setItem('campingExtra', JSON.stringify({
+                id: service.id,
+                name: service.name,
+                price: service.price,
+                type: 'SERVICE'
+            }));
+        }
         this.router.navigate(['/campsites'], {
             queryParams: {
                 service: serviceId,
