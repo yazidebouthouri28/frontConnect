@@ -1,6 +1,6 @@
 import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CandidatureService } from '../../services/candidature.service';
 import { Candidature } from '../../models/candidature.model';
 import { ServiceService } from '../../services/service.service';
@@ -23,7 +23,8 @@ export class CandidatureListComponent implements OnInit {
 
     constructor(
         private candidatureService: CandidatureService,
-        private serviceService: ServiceService
+        private serviceService: ServiceService,
+        private router: Router
     ) { }
 
     ngOnInit(): void {
@@ -64,6 +65,14 @@ export class CandidatureListComponent implements OnInit {
             case 'EN_ATTENTE': return 'bg-orange-50 text-orange-500 border-orange-100';
             case 'RETIREE': return 'bg-gray-50 text-gray-500 border-gray-100';
             default: return 'bg-blue-50 text-blue-500 border-blue-100';
+        }
+    }
+
+    browseEventsAndServices(): void {
+        if (this.browseEvents.observed) {
+            this.browseEvents.emit();
+        } else {
+            this.router.navigate(['/events']);
         }
     }
 
