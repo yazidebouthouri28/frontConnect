@@ -13,8 +13,8 @@ export class CandidatureService {
     constructor(private http: HttpClient) { }
 
     getMyCandidatures(): Observable<Candidature[]> {
-        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const userId = user.userId;
+        const user = JSON.parse(localStorage.getItem('current_user') || '{}');
+        const userId = user.id;
         return this.getByUser(userId);
     }
 
@@ -42,8 +42,8 @@ export class CandidatureService {
     }
 
     withdraw(id: number): Observable<void> {
-        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const userId = user.userId;
+        const user = JSON.parse(localStorage.getItem('current_user') || '{}');
+        const userId = user.id;
         const params = new HttpParams().set('userId', userId);
         return this.http.post<any>(`${this.apiUrl}/${id}/withdraw`, {}, { params }).pipe(
             map(response => response.data)
