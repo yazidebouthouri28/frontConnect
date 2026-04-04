@@ -113,25 +113,15 @@ export class ServiceListComponent implements OnInit {
         const user = this.userService.getLoggedInUser();
         if (!user) return;
 
-        const userIdStr = user.id?.toString();
-        const userNameLow = user.name?.toLowerCase();
-        const userUsernameLow = user.username?.toLowerCase();
+        const userOrgIdStr = (user as any).organizerId?.toString();
 
         this.eventService.getEvents().subscribe({
             next: (events) => {
                 const eventsList = Array.isArray(events) ? events : [];
-                
-                console.log('--- DIAGNOSTIC ---');
-                console.log('Searching for User ID:', userIdStr);
+
                 this.userEvents = eventsList.filter((e: any) => {
                     const eOrgId = e.organizerId?.toString();
-                    const eOrgName = (e.organizerName || '').toLowerCase();
-
-                    console.log(`Checking event ${e.id}: orgId=${eOrgId}, orgName=${eOrgName}`);
-
-                    return eOrgId === userIdStr ||
-                           eOrgName === userNameLow ||
-                           eOrgName === userUsernameLow;
+                    return userOrgIdStr && eOrgId === userOrgIdStr;
                 });
                 console.log('Found user events:', this.userEvents.length);
                 
