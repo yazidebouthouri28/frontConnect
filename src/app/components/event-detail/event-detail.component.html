@@ -273,6 +273,63 @@
                     </p>
                 </div>
 
+                <!-- Event Services Section -->
+                <div class="border-t border-gray-200 pt-10">
+                    <h3 class="text-2xl font-black text-forest mb-8">Services for this Event</h3>
+
+                    <div *ngIf="servicesLoading" class="text-olive font-bold text-sm py-4">Loading services...</div>
+
+                    <div *ngIf="!servicesLoading && requestedServices.length > 0"
+                        class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        <div *ngFor="let s of requestedServices"
+                            class="flex items-start gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                            <div class="w-10 h-10 rounded-xl bg-olive/10 flex items-center justify-center shrink-0 text-lg">
+                                💼
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-black text-forest text-sm uppercase tracking-wide mb-1">{{ s.name }}</h4>
+                                <p class="text-xs text-gray-400 font-medium mb-2">{{ s.serviceType }}</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-olive">{{ s.price }} DT</span>
+                                    <span class="text-[10px] font-black px-2 py-0.5 rounded-lg"
+                                        [ngClass]="s.included ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-400'">
+                                        {{ s.included ? 'Included' : 'Optional' }}
+                                    </span>
+                                </div>
+                                <div class="mt-2 text-[10px] text-gray-400 font-bold">
+                                    Spots: {{ s.quantiteAcceptee || 0 }}/{{ s.quantiteRequise || 0 }} filled
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="!servicesLoading && requestedServices.length === 0"
+                        class="py-8 text-center text-gray-400 font-medium text-sm italic">
+                        No services linked to this event yet.
+                    </div>
+
+                    <!-- Work at Event CTA (for participants) -->
+                    <div *ngIf="isParticipant && requestedServices.length > 0"
+                        class="mt-4 p-6 bg-forest/5 rounded-2xl border border-forest/10">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+                            <div>
+                                <h4 class="font-black text-forest text-sm uppercase tracking-widest mb-1">Work at this Event</h4>
+                                <p class="text-xs text-gray-500 font-medium">Apply as staff for one of the service roles above.</p>
+                            </div>
+                            <div class="flex gap-3 shrink-0">
+                                <button (click)="goToWorkAtEvent()"
+                                    class="bg-forest text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-olive transition-colors shadow-sm">
+                                    Apply Now
+                                </button>
+                                <button (click)="goToMyCandidatures()"
+                                    class="bg-white border-2 border-forest text-forest px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-forest hover:text-white transition-colors">
+                                    My Applications
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Essential Information -->
                 <div class="border-t border-gray-200 pt-10">
                     <h3 class="text-2xl font-black text-forest mb-8">Essential Information</h3>

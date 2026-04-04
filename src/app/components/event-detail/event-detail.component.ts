@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { EventServiceEntity } from '../../models/event-service-entity.model';
 
 export interface Event {
     id: number;
@@ -42,6 +43,9 @@ export class EventDetailComponent {
     private router = inject(Router);
     public authService = inject(AuthService);
     private cdr = inject(ChangeDetectorRef);
+
+    requestedServices: EventServiceEntity[] = [];
+    servicesLoading = false;
 
     newComment: string = '';
     newCommentRating: number = 0;
@@ -81,9 +85,11 @@ export class EventDetailComponent {
         // Reset reaction state each time a new event is opened
         this.userLiked = false;
         this.userDisliked = false;
+        this.requestedServices = [];
         if (clonedValue) {
             this.loadComments();
             this.loadUserReaction();
+            this.loadRequestedServices();
         }
     }
     get event(): Event | null { return this._event; }
@@ -330,6 +336,37 @@ export class EventDetailComponent {
                 console.error('Review submission failed', err);
             }
         });
+    }
+
+    loadRequestedServices() {
+        if (!this._event) return;
+        this.servicesLoading = true;
+        this.http.get<any>(`${this.apiUrl}/api/event-services/event/${this._event.id}`).subscribe({
+            next: (res) => {
+                const data = res?.data || res || [];
+                this.requestedServices = Array.isArray(data) ? data : (data.content || []);
+                this.servicesLoading = false;
+                this.cdr.detectChanges();
+            },
+            error: () => {
+                this.requestedServices = [];
+                this.servicesLoading = false;
+            }
+        });
+    }
+
+    get isParticipant(): boolean {
+        const role = this.authService.getCurrentUser()?.role as string;
+        return role === 'PARTICIPANT' || role === 'CAMPER' || role === 'USER' || role === 'CLIENT';
+    }
+
+    goToWorkAtEvent() {
+        if (!this.event) return;
+        this.router.navigate(['/events', this.event.id, 'work-roles']);
+    }
+
+    goToMyCandidatures() {
+        this.router.navigate(['/services/candidatures']);
     }
 
     public comments: any[] = [];
