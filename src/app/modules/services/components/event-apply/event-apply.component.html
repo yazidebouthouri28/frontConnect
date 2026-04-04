@@ -7,12 +7,40 @@
             <i class="fas fa-arrow-left"></i> Back to Event
         </a>
 
-        <div class="mb-10">
+        <!-- Dual choice banner for participant -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+            <!-- Option 1: Attend (friend's logic) -->
+            <a [routerLink]="['/events', eventId]"
+                class="flex items-center gap-4 bg-white border-2 border-gray-100 hover:border-olive rounded-2xl p-5 transition-all group">
+                <div class="w-12 h-12 bg-olive/10 rounded-xl flex items-center justify-center text-olive group-hover:bg-olive group-hover:text-white transition-colors flex-shrink-0">
+                    <i class="fas fa-ticket-alt text-lg"></i>
+                </div>
+                <div>
+                    <p class="font-black text-forest text-sm">Attend as Participant</p>
+                    <p class="text-gray-400 text-[11px]">Buy a ticket and join the event as an attendee</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-300 ml-auto group-hover:text-olive transition-colors"></i>
+            </a>
+
+            <!-- Option 2: Work (Farah's logic — current page) -->
+            <div class="flex items-center gap-4 bg-forest border-2 border-forest rounded-2xl p-5">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                    <i class="fas fa-hard-hat text-lg"></i>
+                </div>
+                <div>
+                    <p class="font-black text-white text-sm">Apply as a Worker</p>
+                    <p class="text-white/60 text-[11px]">Choose a work role and submit your candidature below</p>
+                </div>
+                <i class="fas fa-check-circle text-white/60 ml-auto"></i>
+            </div>
+        </div>
+
+        <div class="mb-8">
             <span class="inline-flex items-center gap-2 px-3 py-1 bg-olive/10 text-olive rounded-full text-[10px] font-black uppercase tracking-widest mb-3">
-                <i class="fas fa-hard-hat"></i> Work Opportunities
+                <i class="fas fa-hard-hat"></i> Available Work Roles
             </span>
             <h1 class="text-4xl font-black text-forest">Apply as a Worker</h1>
-            <p class="text-gray-500 font-medium mt-2">Browse available work roles for this event and submit your application.</p>
+            <p class="text-gray-500 font-medium mt-2">Choose a role and submit your application. Only Participants can apply.</p>
         </div>
 
         <!-- Success message -->
