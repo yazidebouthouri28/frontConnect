@@ -142,6 +142,27 @@
               My Dashboard
             </a>
             }
+            <!-- Candidature links based on role -->
+            @if (userRole === 'ORGANIZER' || userRole === 'ADMIN') {
+            <a routerLink="/services/candidatures/manage" class="profile-dropdown-item" (click)="profileDropdownOpen = false">
+              <i class="fas fa-tasks h-4 w-4 text-olive"></i>
+              Manage Applications
+            </a>
+            <a routerLink="/services/list" class="profile-dropdown-item" (click)="profileDropdownOpen = false">
+              <i class="fas fa-briefcase h-4 w-4 text-indigo-500"></i>
+              B2B Services
+            </a>
+            }
+            @if (userRole === 'PARTICIPANT') {
+            <a routerLink="/services/candidatures" class="profile-dropdown-item" (click)="profileDropdownOpen = false">
+              <i class="fas fa-file-alt h-4 w-4 text-olive"></i>
+              My Applications
+            </a>
+            <a routerLink="/events" class="profile-dropdown-item" (click)="profileDropdownOpen = false">
+              <i class="fas fa-hard-hat h-4 w-4 text-amber-500"></i>
+              Work at Events
+            </a>
+            }
             <div class="profile-dropdown-divider"></div>
             <button (click)="logout()" class="profile-dropdown-item text-red-600 hover:bg-red-50 w-full text-left">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

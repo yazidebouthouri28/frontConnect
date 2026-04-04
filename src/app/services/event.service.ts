@@ -24,7 +24,13 @@ export class EventService {
     }
 
     addRequestedService(eventId: number, service: any): Observable<any> {
-        return this.http.post<any>(`${environment.apiUrl}/event-services`, service);
+        return this.http.post<any>(`${environment.apiUrl}/api/event-services`, service);
+    }
+
+    getEventWorkRoles(eventId: number): Observable<EventServiceEntity[]> {
+        return this.http.get<any>(`${environment.apiUrl}/api/event-services/event/${eventId}`).pipe(
+            map(res => res.data || res || [])
+        );
     }
 
     updateRequestedServiceSpots(eventId: number, requestedServiceId: number, change: number): Observable<void> {

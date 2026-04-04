@@ -89,6 +89,26 @@
       </div>
     </div>
 
+    <!-- Admin Filter Tabs -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">View:</span>
+      <button (click)="adminViewMode = 'ALL'"
+        [ngClass]="adminViewMode === 'ALL' ? 'bg-[#1a2e1a] text-white shadow-md' : 'bg-white text-[#1a2e1a] border border-gray-200 hover:border-[#1a2e1a]'"
+        class="px-5 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
+        <i class="fas fa-th mr-1.5"></i> All Services
+      </button>
+      <button (click)="adminViewMode = 'USER'"
+        [ngClass]="adminViewMode === 'USER' ? 'bg-[#617152] text-white shadow-md' : 'bg-white text-[#617152] border border-gray-200 hover:border-[#617152]'"
+        class="px-5 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
+        <i class="fas fa-campground mr-1.5"></i> Camper Services
+      </button>
+      <button (click)="adminViewMode = 'ORGANIZER'"
+        [ngClass]="adminViewMode === 'ORGANIZER' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-600 border border-gray-200 hover:border-indigo-400'"
+        class="px-5 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
+        <i class="fas fa-briefcase mr-1.5"></i> B2B Organizer
+      </button>
+    </div>
+
     <hr class="border-gray-200/60 my-6">
   </div>
 
@@ -179,10 +199,15 @@
 
         <!-- Top Badges -->
         <div class="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
-          <span
+          <span *ngIf="service.targetRole === 'ORGANIZER' || service.isOrganizerService"
+            class="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+            <i class="fas fa-briefcase mr-1"></i> B2B
+          </span>
+          <span *ngIf="service.targetRole !== 'ORGANIZER' && !service.isOrganizerService"
             class="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-forest text-[10px] font-bold uppercase tracking-widest border border-white/30 shadow-sm">
             {{ service.type }}
           </span>
+
 
           <div class="flex gap-2">
             <span *ngIf="service.isActive !== false"
