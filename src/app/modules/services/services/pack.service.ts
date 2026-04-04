@@ -8,7 +8,7 @@ import { Pack } from '../models/pack.model';
     providedIn: 'root'
 })
 export class PackService {
-    private apiUrl = `${environment.apiUrl}/packs`;
+    private apiUrl = `${environment.apiUrl}/api/packs`;
 
     constructor(private http: HttpClient) { }
 

@@ -101,7 +101,7 @@ export class ServiceEditComponent implements OnInit {
             reader.readAsDataURL(file);
 
             // Upload to server
-            this.http.post<any>(`${environment.apiUrl}/files/upload`, formData)
+            this.http.post<any>(`${environment.apiUrl}/api/files/upload`, formData)
                 .subscribe({
                     next: (res: any) => {
                         const fileName = res.data?.fileName || res.fileName || res.data;

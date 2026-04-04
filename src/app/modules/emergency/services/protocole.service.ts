@@ -8,7 +8,7 @@ import { Protocole } from '../models/protocole.model';
     providedIn: 'root'
 })
 export class ProtocoleService {
-    private apiUrl = `${environment.apiUrl}/emergency-protocols`;
+    private apiUrl = `${environment.apiUrl}/api/emergency-protocols`;
 
     constructor(private http: HttpClient) { }
 

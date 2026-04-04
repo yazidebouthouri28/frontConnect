@@ -8,7 +8,7 @@ import { Intervention } from '../models/intervention.model';
     providedIn: 'root'
 })
 export class InterventionService {
-    private apiUrl = `${environment.apiUrl}/interventions`;
+    private apiUrl = `${environment.apiUrl}/api/interventions`;
 
     constructor(private http: HttpClient) { }
 

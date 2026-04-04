@@ -22,7 +22,7 @@ export class ServiceCreateComponent implements OnInit {
     imagePreviews: string[] = [];
     selectedFiles: File[] = [];
     uploadedFileNames: string[] = [];
-    private uploadUrl = `${environment.apiUrl}/files/upload`;
+    private uploadUrl = `${environment.apiUrl}/api/files/upload`;
 
     serviceTypes = [
         { value: 'ACCOMMODATION', label: 'Hébergement' },

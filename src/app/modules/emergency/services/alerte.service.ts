@@ -8,7 +8,7 @@ import { Alerte } from '../models/alerte.model';
     providedIn: 'root'
 })
 export class AlerteService {
-    private apiUrl = `${environment.apiUrl}/emergency-alerts`;
+    private apiUrl = `${environment.apiUrl}/api/emergency-alerts`;
 
     constructor(private http: HttpClient) { }
 

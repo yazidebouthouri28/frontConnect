@@ -8,7 +8,7 @@ import { Service } from '../models/service.model';
     providedIn: 'root'
 })
 export class ServiceService {
-    private apiUrl = `${environment.apiUrl}/camping-services`;
+    private apiUrl = `${environment.apiUrl}/api/camping-services`;
 
     constructor(private http: HttpClient) { }
 
@@ -29,12 +29,12 @@ export class ServiceService {
 
     create(service: Service): Observable<Service> {
         return defer(() => {
-            const userJson = localStorage.getItem('currentUser');
+            const userJson = localStorage.getItem('current_user');
             if (!userJson) {
                 return throwError(() => new Error('Utilisateur non connecté.'));
             }
             const user = JSON.parse(userJson);
-            const providerId = user.userId;
+            const providerId = user.id || user.userId;
 
             if (!providerId) {
                 return throwError(() => new Error('ID Utilisateur manquant.'));

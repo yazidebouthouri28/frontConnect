@@ -27,7 +27,7 @@ export class PackEditComponent implements OnInit {
     selectedFiles: File[] = [];
     uploadedImageNames: string[] = [];
     packId: number | null = null;
-    private uploadUrl = `${environment.apiUrl}/files/upload`;
+    private uploadUrl = `${environment.apiUrl}/api/files/upload`;
     loadingData = true;
 
     constructor(

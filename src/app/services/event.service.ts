@@ -9,7 +9,7 @@ import { EventServiceEntity } from '../models/event-service-entity.model';
     providedIn: 'root'
 })
 export class EventService {
-    private apiUrl = `${environment.apiUrl}/events`;
+    private apiUrl = `${environment.apiUrl}/api/events`;
 
     constructor(private http: HttpClient) { }
 

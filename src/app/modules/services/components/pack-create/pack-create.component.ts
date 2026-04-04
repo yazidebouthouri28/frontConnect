@@ -24,7 +24,7 @@ export class PackCreateComponent implements OnInit {
     errorMessage = '';
     imagePreviews: string[] = [];
     selectedFiles: File[] = [];
-    private uploadUrl = `${environment.apiUrl}/files/upload`;
+    private uploadUrl = `${environment.apiUrl}/api/files/upload`;
 
     constructor(
         private fb: FormBuilder,
