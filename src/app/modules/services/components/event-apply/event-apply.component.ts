@@ -126,8 +126,6 @@ export class EventApplyComponent implements OnInit {
     }
 
     isParticipant(): boolean {
-        const role = this.userService.getLoggedInUser()?.role;
-        // CAMPER (frontend UI) maps to PARTICIPANT in backend — both accepted
-        return role === 'PARTICIPANT' || role === 'CAMPER';
+        return this.userService.getLoggedInUser()?.role === 'PARTICIPANT';
     }
 }
