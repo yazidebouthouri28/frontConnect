@@ -124,13 +124,13 @@ export class ServiceListComponent implements OnInit {
                 console.log('--- DIAGNOSTIC ---');
                 console.log('Searching for User ID:', userIdStr);
                 this.userEvents = eventsList.filter((e: any) => {
-                    const eOrgUserId = e.organizerUserId?.toString();
+                    const eOrgId = e.organizerId?.toString();
                     const eOrgName = (e.organizerName || '').toLowerCase();
-                    
-                    console.log(`Checking event ${e.id}: orgUserId=${eOrgUserId}, orgName=${eOrgName}`);
-                    
-                    return eOrgUserId === userIdStr || 
-                           eOrgName === userNameLow || 
+
+                    console.log(`Checking event ${e.id}: orgId=${eOrgId}, orgName=${eOrgName}`);
+
+                    return eOrgId === userIdStr ||
+                           eOrgName === userNameLow ||
                            eOrgName === userUsernameLow;
                 });
                 console.log('Found user events:', this.userEvents.length);
