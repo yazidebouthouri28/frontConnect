@@ -184,6 +184,10 @@ export class ClientComponent implements OnInit {
     this.router.navigate(['/settings']);
   }
 
+  getImageUrl(imagePath: string | undefined): string {
+    return this.cartService.getImageUrl(imagePath);
+  }
+
   updateQuantity(index: number, change: number) {
     const item = this.cartItems[index];
     const newQuantity = item.quantity + change;

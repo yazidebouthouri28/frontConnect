@@ -178,7 +178,9 @@
           <div class="space-y-4 mb-8">
             <div *ngFor="let item of cartItems; let i = index"
               class="flex gap-4 p-4 border border-sage-green/20 rounded-lg">
-              <img [src]="item.image" [alt]="item.productName" class="w-24 h-24 object-cover rounded-lg">
+              <img [src]="getImageUrl(item.image) || 'assets/images/logo.png'"
+                   (error)="$any($event.target).src='assets/images/logo.png'"
+                   [alt]="item.productName" class="w-24 h-24 object-cover rounded-lg bg-gray-100">
               <div class="flex-1">
                 <h4 class="font-bold text-forest-green">{{ item.productName }}</h4>
                 <p class="text-olive-green text-sm mb-2">
