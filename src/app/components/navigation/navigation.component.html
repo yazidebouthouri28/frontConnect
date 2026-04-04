@@ -17,6 +17,10 @@
           class="text-cream hover:text-sage transition-colors">Campsites</a>
         <a routerLink="/marketplace" routerLinkActive="text-sage"
           class="text-cream hover:text-sage transition-colors">Marketplace</a>
+        <a routerLink="/services/home" routerLinkActive="text-sage"
+          class="text-cream hover:text-sage transition-colors">Services</a>
+        <a routerLink="/emergency" routerLinkActive="text-red-400"
+          class="text-red-300 hover:text-red-400 font-bold transition-colors">SOS</a>
         @if (showManageMyEvents) {
         <div class="events-nav-item h-full flex items-center">
           <a routerLink="/events" routerLinkActive="text-sage"
@@ -173,6 +177,10 @@
         (click)="mobileMenuOpen = false">Campsites</a>
       <a routerLink="/marketplace" class="block py-2 text-cream hover:text-sage"
         (click)="mobileMenuOpen = false">Marketplace</a>
+      <a routerLink="/services/home" class="block py-2 text-cream hover:text-sage"
+        (click)="mobileMenuOpen = false">Services</a>
+      <a routerLink="/emergency" class="block py-2 text-red-300 hover:text-red-400 font-bold"
+        (click)="mobileMenuOpen = false">SOS Emergency</a>
       <a routerLink="/events" class="block py-2 text-cream hover:text-sage" (click)="mobileMenuOpen = false">Events</a>
       <a routerLink="/community" class="block py-2 text-cream hover:text-sage"
         (click)="mobileMenuOpen = false">Community</a>
