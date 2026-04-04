@@ -84,10 +84,8 @@ export class PackService {
         );
     }
 
-    setStatus(id: number, active: boolean): Observable<Pack> {
-        return this.http.patch<any>(`${this.apiUrl}/${id}/status?active=${active}`, {}).pipe(
-            map(response => this.mapPack(response.data))
-        );
+    setStatus(id: number, active: boolean): Observable<any> {
+        return this.http.patch<any>(`${this.apiUrl}/${id}/status?active=${active}`, {});
     }
 
     delete(id: number): Observable<any> {
