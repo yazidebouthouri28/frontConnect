@@ -43,7 +43,8 @@ export class PackService {
     }
 
     getAll(): Observable<Pack[]> {
-        return this.http.get<any>(`${this.apiUrl}?page=0&size=100&sortBy=createdAt&sortDir=desc`).pipe(
+        const ts = Date.now();
+        return this.http.get<any>(`${this.apiUrl}?page=0&size=100&sortBy=createdAt&sortDir=desc&_=${ts}`).pipe(
             map(response => {
                 const data = response?.data?.content || response?.data || response || [];
                 return (Array.isArray(data) ? data : []).map((p: any) => this.mapPack(p));
@@ -79,6 +80,12 @@ export class PackService {
             isActive: pack.isActive !== undefined ? pack.isActive : pack.available
         };
         return this.http.put<any>(`${this.apiUrl}/${id}`, backendPack).pipe(
+            map(response => this.mapPack(response.data))
+        );
+    }
+
+    setStatus(id: number, active: boolean): Observable<Pack> {
+        return this.http.patch<any>(`${this.apiUrl}/${id}/status?active=${active}`, {}).pipe(
             map(response => this.mapPack(response.data))
         );
     }

@@ -132,14 +132,11 @@ export class PackListComponent implements OnInit {
     }
 
     togglePackAvailability(pack: Pack): void {
-        const action = pack.available ? 'Deactivate' : 'Activate';
+        const currentlyActive = pack.isActive === true;
+        const action = currentlyActive ? 'Deactivate' : 'Activate';
         if (confirm(`Are you sure you want to ${action.toLowerCase()} this bundle?`)) {
-            const newStatus = !pack.available;
-            const updatedPack = { ...pack, available: newStatus, isActive: newStatus };
-            this.packService.update(pack.id!, updatedPack).subscribe({
-                next: () => {
-                    this.loadData();
-                },
+            this.packService.setStatus(pack.id!, !currentlyActive).subscribe({
+                next: () => this.loadData(),
                 error: () => alert(`Failed to ${action.toLowerCase()} bundle.`)
             });
         }
