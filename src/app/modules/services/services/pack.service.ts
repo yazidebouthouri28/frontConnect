@@ -43,7 +43,7 @@ export class PackService {
     }
 
     getAll(): Observable<Pack[]> {
-        return this.http.get<any>(this.apiUrl).pipe(
+        return this.http.get<any>(`${this.apiUrl}?page=0&size=100&sortBy=createdAt&sortDir=desc`).pipe(
             map(response => {
                 const data = response?.data?.content || response?.data || response || [];
                 return (Array.isArray(data) ? data : []).map((p: any) => this.mapPack(p));
