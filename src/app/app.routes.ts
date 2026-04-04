@@ -31,7 +31,7 @@ export const routes: Routes = [
   // --- Events: public listing ---
   { path: 'events', loadComponent: () => import('./components/events/events-management.component').then(m => m.EventsManagementComponent) },
   // Must be BEFORE events/:id to avoid route conflict
-  { path: 'events/:eventId/work-roles', loadComponent: () => import('./modules/services/components/event-apply/event-apply.component').then(m => m.EventApplyComponent), canActivate: [AuthGuard] },
+  { path: 'events/:eventId/work-roles', loadComponent: () => import('./modules/services/components/event-apply/event-apply.component').then(m => m.EventApplyComponent), canActivate: [ParticipantGuard] },
   { path: 'events/:id', loadComponent: () => import('./components/event-detail/event-detail.component').then(m => m.EventDetailComponent) },
 
   // --- Events management for admin/organizer (protected) ---

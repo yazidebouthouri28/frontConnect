@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { ParticipantGuard } from '../../guards/participant.guard';
 import { ServiceListComponent } from './components/service-list/service-list.component';
 import { ServiceCreateComponent } from './components/service-create/service-create.component';
 import { ServiceEditComponent } from './components/service-edit/service-edit.component';
@@ -25,6 +26,6 @@ export const SERVICES_ROUTES: Routes = [
     { path: 'promotions', component: PromotionListComponent },
     { path: 'promotions/create', component: PromotionCreateComponent },
     { path: 'promotions/edit/:id', component: PromotionEditComponent },
-    { path: 'candidatures', component: CandidatureListComponent },
+    { path: 'candidatures', component: CandidatureListComponent, canActivate: [ParticipantGuard] },
     { path: 'candidatures/manage', component: CandidatureManageComponent }
 ];
