@@ -101,7 +101,7 @@ export class PackListComponent implements OnInit {
             next: (result) => {
                 // Ensure result.packs is an array before filtering
                 const packsArray = Array.isArray(result.packs) ? result.packs : [];
-                this.packs = isAdmin ? packsArray : packsArray.filter(p => p.isActive !== false && p.available !== false);
+                this.packs = isAdmin ? packsArray : packsArray.filter(p => p.isActive === true);
                 this.services = result.services || [];
                 this.loading = false;
             },
