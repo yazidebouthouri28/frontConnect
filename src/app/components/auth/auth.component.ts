@@ -168,7 +168,8 @@ export class AuthComponent implements OnInit, OnDestroy {
       'SELLER': 'SELLER',
       'ORGANIZER': 'ORGANIZER',
       'SPONSOR': 'SPONSOR',
-      'CAMPER': 'PARTICIPANT'
+      'CAMPER': 'PARTICIPANT',
+      'PARTICIPANT': 'PARTICIPANT'
     };
     const backendRole = roleMapping[this.registerForm.role] || 'USER';
 

@@ -248,6 +248,12 @@
     <span class="role-card-icon">⛺</span>
     <span class="role-card-name">Camper</span>
   </label>
+  <label class="role-card" [class.role-card-selected]="registerForm.role === 'PARTICIPANT'">
+    <input type="radio" name="role" value="PARTICIPANT" [(ngModel)]="registerForm.role"
+      (change)="onRoleChange()" class="hidden" />
+    <span class="role-card-icon">🧑‍💼</span>
+    <span class="role-card-name">Participant</span>
+  </label>
 </div>
 
             <!-- Seller store name (conditional) -->
