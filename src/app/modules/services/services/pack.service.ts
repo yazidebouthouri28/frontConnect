@@ -90,8 +90,8 @@ export class PackService {
         );
     }
 
-    delete(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    delete(id: number): Observable<any> {
+        return this.http.delete<any>(`${this.apiUrl}/${id}`);
     }
 
     getActive(): Observable<Pack[]> {
