@@ -14,7 +14,7 @@ import {
 } from '../models/api.models';
 
 type UserRole = User['role'];
-const VALID_ROLES: UserRole[] = ['CLIENT', 'SELLER', 'ORGANIZER', 'CAMPER', 'SPONSOR', 'ADMIN', 'USER' as any];
+const VALID_ROLES: UserRole[] = ['CLIENT', 'SELLER', 'ORGANIZER', 'CAMPER', 'SPONSOR', 'ADMIN', 'USER' as any, 'PARTICIPANT' as any];
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

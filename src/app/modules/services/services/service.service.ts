@@ -13,7 +13,7 @@ export class ServiceService {
     constructor(private http: HttpClient) { }
 
     getAll(): Observable<Service[]> {
-        return this.http.get<any>(this.apiUrl).pipe(
+        return this.http.get<any>(`${this.apiUrl}?size=200&page=0`).pipe(
             map(response => {
                 const data = response?.data?.content || response?.data || response || [];
                 return (Array.isArray(data) ? data : []).map((s: any) => this.mapToService(s));
@@ -104,6 +104,7 @@ export class ServiceService {
     }
     private mapToService(data: any): Service {
         if (!data) return {} as Service;
+        const isOrg = data.isOrganizerService === true;
         return {
             id: data.id,
             name: data.name,
@@ -112,7 +113,9 @@ export class ServiceService {
             type: data.type,
             available: data.isAvailable !== undefined ? data.isAvailable : data.available,
             campingId: data.siteId,
-            targetRole: data.isOrganizerService ? 'ORGANIZER' : 'USER',
+            targetRole: isOrg ? 'ORGANIZER' : 'USER',
+            isOrganizerService: isOrg,
+            isCamperOnly: data.isCamperOnly === true,
             images: data.images || [],
             isActive: data.isActive
         };
