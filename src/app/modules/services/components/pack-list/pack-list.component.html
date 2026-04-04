@@ -1,0 +1,243 @@
+<div class="container mx-auto px-4 py-8">
+    <!-- Admin Intelligence Header (Matching Services) -->
+    <div *ngIf="isAdmin()" class="mb-10 space-y-6 animate-fade-in">
+        <div>
+            <h1 class="text-2xl font-black text-[#1a2e1a]">Bundles Intelligence</h1>
+            <p class="text-sm text-[#617152] font-medium">Management and performance metrics for your bundle offers.</p>
+        </div>
+
+        <!-- Bundle Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div
+                class="bg-white rounded-2xl p-7 border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-gray-50 shadow-inner flex items-center justify-center text-xl transition-transform group-hover:scale-110">
+                            🎁</div>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Total
+                            Bundles</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-3xl font-black italic tracking-tighter text-[#1a2e1a]">{{ packs.length }}</h3>
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 text-gray-400">Created Offers
+                    </p>
+                </div>
+            </div>
+
+            <div
+                class="bg-white rounded-2xl p-7 border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-gray-50 shadow-inner flex items-center justify-center text-xl transition-transform group-hover:scale-110">
+                            🔥</div>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Avg
+                            Discount</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-3xl font-black italic tracking-tighter text-[#1a2e1a]">25%</h3>
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 text-gray-400">Portfolio Value
+                    </p>
+                </div>
+            </div>
+
+            <div
+                class="bg-[#1a2e1a] text-white rounded-2xl p-7 border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all lg:col-span-2">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl transition-transform group-hover:scale-110">
+                            💰</div>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Revenue
+                            Impact</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-3xl font-black italic tracking-tighter text-white">High Value Packages</h3>
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 text-white/50">Top performing
+                        bundle sets</p>
+                </div>
+            </div>
+        </div>
+        <hr class="border-gray-200/60 my-6">
+    </div>
+
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h2 class="text-3xl font-extrabold text-[#1a2e1a] flex items-center">
+            <i class="fas fa-boxes mr-4 text-[#617152]"></i>
+            Exclusive Bundles
+        </h2>
+        <button *ngIf="isAdmin()"
+            class="bg-[#1a2e1a] hover:bg-black text-white px-8 py-3 rounded-2xl font-black shadow-xl transition-all flex items-center gap-2"
+            routerLink="/admin/services/packs/create">
+            <i class="fas fa-plus"></i>
+            New Bundle
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-[#617152] border-t-transparent mb-4"></div>
+        <p class="text-[#617152] font-medium">Loading exclusive packages...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-8">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-500 mr-3 text-xl"></i>
+            <p class="text-red-700 font-medium">{{ error }}</p>
+            <button (click)="loadData()" class="ml-auto text-red-700 hover:underline font-bold">Retry</button>
+        </div>
+    </div>
+
+    <!-- Bundles Grid (Mirroring Service Style) -->
+    <div *ngIf="!loading && !error" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div *ngFor="let pack of packs"
+            class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-xl transition-all group flex flex-col h-full">
+
+            <!-- Card Header Area -->
+            <div class="h-40 relative overflow-hidden bg-gradient-to-br from-[#1a2e1a] to-[#617152]">
+                <!-- Pack Image -->
+                <img *ngIf="pack.image || (pack.images && pack.images.length > 0)"
+                    [src]="getImageUrl(pack.image || pack.images?.[0])"
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    [alt]="pack.name">
+
+                <!-- Fallback if no image -->
+                <div *ngIf="!pack.image && (!pack.images || pack.images.length === 0)"
+                    class="w-full h-full flex items-center justify-center">
+                    <i
+                        class="fas fa-gift text-white/10 text-8xl absolute -right-4 -bottom-4 rotate-12 group-hover:scale-110 transition-transform"></i>
+                </div>
+
+                <!-- Status Badges -->
+                <div class="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
+                    <span
+                        class="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[#1a2e1a] text-[10px] font-black uppercase tracking-widest border border-white/30 shadow-sm">
+                        BUNDLE OFFER
+                    </span>
+
+                    <div class="flex gap-2">
+                        <span *ngIf="pack.available !== false"
+                            class="flex items-center gap-1.5 px-3 py-1 bg-white/90 rounded-full text-[10px] font-black text-emerald-600 shadow-sm">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> ACTIVE
+                        </span>
+                        <span *ngIf="pack.available === false"
+                            class="flex items-center gap-1.5 px-3 py-1 bg-white/90 rounded-full text-[10px] font-black text-red-600 shadow-sm">
+                            <span class="w-2 h-2 bg-red-500 rounded-full"></span> DISABLED
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Discount Tag -->
+                <div *ngIf="(pack.discountPercentage || 0) > 0" class="absolute bottom-4 left-4 z-10">
+                    <div
+                        class="bg-red-500 text-white font-black px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 transform -rotate-2">
+                        <i class="fas fa-fire animate-pulse text-yellow-300"></i>
+                        <span class="text-lg">-{{ pack.discountPercentage | number:'1.0-0' }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 flex flex-col">
+                <!-- Title & Price -->
+                <div class="mb-5 flex justify-between items-start gap-4">
+                    <div class="flex-1">
+                        <h3
+                            class="text-xl font-bold text-[#1a2e1a] group-hover:text-[#617152] transition-colors leading-tight mb-1">
+                            {{ pack.name }}
+                        </h3>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            <i class="fas fa-layer-group mr-1"></i> {{ pack.serviceCount || 0 }} Services Included
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-black text-[#1a2e1a] block leading-none">{{ pack.price }} <small
+                                class="text-xs uppercase font-medium">DT</small></span>
+                        <span *ngIf="(pack.discountPercentage || 0) > 0"
+                            class="text-[11px] text-gray-400 line-through decoration-red-300">
+                            {{ (pack.originalPrice || 0) | number:'1.0-0' }} DT
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <p class="text-gray-500 text-sm line-clamp-3 leading-relaxed mb-6 flex-1">
+                    {{ pack.description }}
+                </p>
+
+                <!-- Included Services (Subtle Pills) -->
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <span *ngFor="let name of pack.serviceNames | slice:0:3"
+                        class="px-2 py-1 bg-gray-50 text-[9px] font-bold text-gray-500 rounded-md border border-gray-100 flex items-center gap-1">
+                        <span class="w-1 h-1 bg-[#617152] rounded-full"></span>
+                        {{ name }}
+                    </span>
+                    <span *ngIf="(pack.serviceNames || []).length > 3"
+                        class="px-2 py-1 bg-gray-50 text-[9px] font-bold text-gray-400 rounded-md border border-gray-100">
+                        +{{ pack.serviceNames!.length - 3 }} more
+                    </span>
+                </div>
+
+                <!-- Actions (Matching Services Style) -->
+                <div class="flex flex-col gap-3 mt-auto pt-4 border-t border-gray-100">
+                    <!-- Admin Actions -->
+                    <div *ngIf="isAdmin()" class="flex flex-col gap-2">
+                        <div class="flex gap-2">
+                            <button [routerLink]="['/admin/services/packs/edit', pack.id!]"
+                                class="flex-1 bg-[#1a2e1a] hover:bg-black text-white py-3 rounded-xl font-black text-xs transition-all uppercase shadow-md flex items-center justify-center gap-2">
+                                <i class="fas fa-edit"></i> Modify
+                            </button>
+                            <button (click)="togglePackAvailability(pack)"
+                                [ngClass]="pack.available !== false ? 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'"
+                                class="flex-1 py-3 rounded-xl font-black text-xs transition-all uppercase shadow-sm border border-transparent flex items-center justify-center gap-2">
+                                <i [class]="pack.available !== false ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                {{ pack.available !== false ? 'Disable' : 'Enable' }}
+                            </button>
+                        </div>
+                        <button (click)="applyPromotion(pack)"
+                            class="w-full bg-white border-2 border-dashed border-[#617152]/30 text-[#617152] hover:border-[#617152] hover:bg-gray-50 py-2.5 rounded-xl font-black text-xs transition-all uppercase">
+                            <i class="fas fa-tag mr-2"></i> Quick Discount
+                        </button>
+                    </div>
+
+                    <!-- User Actions: Add to Cart -->
+                    <button *ngIf="isUser()" (click)="addToCart(pack)" [disabled]="pack.available === false"
+                        class="w-full bg-[#1a2e1a] hover:bg-black text-white py-4 rounded-xl font-black text-xs transition-all uppercase shadow-xl flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:grayscale">
+                        <i class="fas fa-shopping-cart"></i>
+                        {{ pack.available === false ? 'Bundle Unavailable' : 'Add Bundle to Cart' }}
+                    </button>
+
+                    <!-- Participant Action -->
+                    <button *ngIf="isParticipant()" (click)="onBookPack(pack)"
+                        class="w-full bg-[#617152] hover:bg-[#1a2e1a] text-white py-3 rounded-xl font-black text-xs transition-all uppercase shadow-md flex items-center justify-center gap-2">
+                        <i class="fas fa-handshake"></i> {{ isCamper() ? 'Add to Stay' : 'Apply for Task' }}
+                    </button>
+
+                    <!-- Other View Only -->
+                    <div *ngIf="!isAdmin() && !isUser() && !isParticipant()"
+                        class="w-full text-center py-3 bg-gray-50 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-dashed border-gray-200">
+                        <i class="fas fa-info-circle mr-1.5 opacity-60"></i> Viewing Offer
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State (Matching Services) -->
+    <div *ngIf="!loading && !error && packs.length === 0"
+        class="col-span-full py-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-300">
+        <i class="fas fa-box-open text-gray-200 text-6xl mb-6"></i>
+        <h3 class="text-xl font-bold text-[#1a2e1a]">No bundles discovered</h3>
+        <p class="text-gray-500 mb-8 max-w-sm mx-auto">We couldn't find any bundle offers. Create your first package to
+            empower your business.</p>
+        <button *ngIf="isAdmin()" routerLink="/admin/services/packs/create"
+            class="bg-[#1a2e1a] text-white px-8 py-3 rounded-2xl font-black shadow-lg">
+            Initialize First Bundle
+        </button>
+    </div>
+</div>

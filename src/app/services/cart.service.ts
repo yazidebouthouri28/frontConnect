@@ -202,4 +202,17 @@ export class CartService {
       })
     );
   }
+
+  // Used by Farah's modules (pack-create, pack-edit, service-list)
+  getImageUrl(imagePath: string | undefined | null): string {
+    if (!imagePath || typeof imagePath !== 'string') return '';
+    if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+      return imagePath;
+    }
+    let path = imagePath.trim().replace(/^\/+/, '');
+    if (path.startsWith('uploads/')) path = path.substring(8);
+    if (!path) return '';
+    const baseUrl = environment.apiUrl.replace('/api', '').replace(/\/$/, '');
+    return `${baseUrl}/uploads/${path}`;
+  }
 }

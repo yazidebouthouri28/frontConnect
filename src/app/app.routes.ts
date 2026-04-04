@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { AuthGuard, SellerGuard, ClientGuard, AdminGuard, OrganizerOnlyGuard } from './guards/auth.guard';
+import { AuthGuard, SellerGuard, ClientGuard, AdminGuard, OrganizerOnlyGuard, OrganizerGuard } from './guards/auth.guard';
+import { ParticipantGuard } from './guards/participant.guard';
 
 export const routes: Routes = [
   // Redirect root to the auth login page
@@ -47,6 +48,12 @@ export const routes: Routes = [
   // --- Sponsors ---
   { path: 'sponsors', loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent) },
 
+  // --- Services & Packs & Bundles (Farah module) ---
+  { path: 'services', loadChildren: () => import('./modules/services/services.routes').then(m => m.SERVICES_ROUTES) },
+
+  // --- Emergency & Protocols (Farah module) ---
+  { path: 'emergency', loadChildren: () => import('./modules/emergency/emergency.routes').then(m => m.EMERGENCY_ROUTES) },
+
   // --- Client / Dashboard ---
   { path: 'cart', loadComponent: () => import('./components/client/client.component').then(m => m.ClientComponent), canActivate: [AuthGuard], data: { defaultTab: 'cart' } },
   { path: 'dashboard', loadComponent: () => import('./components/client/client.component').then(m => m.ClientComponent), canActivate: [AuthGuard] },
@@ -67,7 +74,27 @@ export const routes: Routes = [
   { path: 'sponsor-dashboard', loadComponent: () => import('./components/sponsors/sponsors.component').then(m => m.SponsorsComponent), canActivate: [AuthGuard], data: { role: 'SPONSOR' } },
 
   // --- Admin panel (admin only) ---
-  { path: 'admin', loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent), canActivate: [AdminGuard] },
+  {
+    path: 'admin',
+    loadComponent: () => import('./admin/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent),
+    canActivate: [AdminGuard],
+    children: [
+      // Emergency admin routes
+      { path: 'emergency/protocols', loadComponent: () => import('./modules/emergency/components/protocole-list/protocole-list.component').then(m => m.ProtocoleListComponent) },
+      { path: 'emergency/detail/:id', loadComponent: () => import('./modules/emergency/components/alerte-detail/alerte-detail.component').then(m => m.AlerteDetailComponent) },
+      { path: 'emergency/intervention/create/:alertId', loadComponent: () => import('./modules/emergency/components/intervention-create/intervention-create.component').then(m => m.InterventionCreateComponent) },
+      { path: 'emergency/protocole/create', loadComponent: () => import('./modules/emergency/components/protocole-create/protocole-create.component').then(m => m.ProtocoleCreateComponent) },
+      { path: 'emergency/protocole/detail/:id', loadComponent: () => import('./modules/emergency/components/protocole-detail/protocole-detail.component').then(m => m.ProtocoleDetailComponent) },
+      { path: 'emergency/protocole/edit/:id', loadComponent: () => import('./modules/emergency/components/protocole-edit/protocole-edit.component').then(m => m.ProtocoleEditComponent) },
+      // Services admin routes
+      { path: 'services/create', loadComponent: () => import('./modules/services/components/service-create/service-create.component').then(m => m.ServiceCreateComponent) },
+      { path: 'services/edit/:id', loadComponent: () => import('./modules/services/components/service-edit/service-edit.component').then(m => m.ServiceEditComponent) },
+      { path: 'services/packs/create', loadComponent: () => import('./modules/services/components/pack-create/pack-create.component').then(m => m.PackCreateComponent) },
+      { path: 'services/packs/edit/:id', loadComponent: () => import('./modules/services/components/pack-edit/pack-edit.component').then(m => m.PackEditComponent) },
+      { path: 'services/promotions/create', loadComponent: () => import('./modules/services/components/promotion-create/promotion-create.component').then(m => m.PromotionCreateComponent) },
+      { path: 'services/promotions/edit/:id', loadComponent: () => import('./modules/services/components/promotion-edit/promotion-edit.component').then(m => m.PromotionEditComponent) },
+    ]
+  },
   { path: 'admin/gamification', loadComponent: () => import('./admin/gamification-management/gamification-management.component').then(m => m.GamificationManagementComponent), canActivate: [AdminGuard] },
   { path: 'admin/settings', loadComponent: () => import('./components/account-settings/account-settings.component').then(m => m.AccountSettingsComponent), canActivate: [AdminGuard] },
 

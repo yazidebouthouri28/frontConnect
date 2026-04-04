@@ -137,4 +137,14 @@ export class UserService {
             earnedBadges: user.earnedBadges || []
         };
     }
+
+    // Aliases used by Farah's modules (emergency & services)
+    getLoggedInUser(): any | null {
+        return this.authService.getCurrentUser() || null;
+    }
+
+    isAdmin(): boolean { return this.authService.isAdmin(); }
+    isOrganizer(): boolean { return this.authService.isOrganizer(); }
+    isParticipant(): boolean { return this.authService.hasRole('PARTICIPANT'); }
+    isUser(): boolean { return this.authService.hasRole('USER') || this.authService.hasRole('CAMPER') || this.authService.isClient(); }
 }
