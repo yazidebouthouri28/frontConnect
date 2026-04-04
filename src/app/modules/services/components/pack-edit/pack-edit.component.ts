@@ -66,7 +66,7 @@ export class PackEditComponent implements OnInit {
 
     loadServices(): void {
         this.serviceService.getAll().subscribe({
-            next: (data) => this.services = data,
+            next: (data) => this.services = data.filter(s => !s.isOrganizerService),
             error: (err) => console.error('Error loading services', err)
         });
     }
