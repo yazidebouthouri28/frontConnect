@@ -470,9 +470,18 @@
                         {{ purchaseSuccess ? 'Success!' : 'Get Your Tickets' }}
                     </button>
 
-                    <p *ngIf="purchaseSuccess" class="text-center text-[10px] text-olive font-bold mb-4 animate-bounce">
-                        Thank you! Details sent to your email.
-                    </p>
+                    <div *ngIf="purchaseSuccess && purchasedTicket" class="mb-4 rounded-2xl border-2 border-forest/20 bg-green-50 p-4 text-center">
+                        <p class="text-xs font-black text-forest uppercase tracking-widest mb-3">Ticket Confirmed!</p>
+                        <div class="bg-white rounded-xl p-3 mb-3 inline-block shadow-sm border border-gray-100">
+                            <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">QR Code</p>
+                            <p class="font-mono font-black text-forest text-sm tracking-widest">{{ purchasedTicket.qrCode }}</p>
+                        </div>
+                        <div class="flex justify-center gap-4 text-[10px] text-gray-500">
+                            <span><span class="font-bold text-gray-700">#</span> {{ purchasedTicket.ticketNumber }}</span>
+                            <span><span class="font-bold text-gray-700">Type:</span> {{ purchasedTicket.ticketType }}</span>
+                            <span><span class="font-bold text-gray-700">Status:</span> {{ purchasedTicket.status }}</span>
+                        </div>
+                    </div>
 
                     <!-- Sponsored By (Mini) -->
                     <div class="pt-8 border-t border-gray-50">

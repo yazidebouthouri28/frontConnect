@@ -55,6 +55,7 @@ export class EventDetailComponent {
     claimSubject: string = '';
     claimDescription: string = '';
     purchaseSuccess: boolean = false;
+    purchasedTicket: any = null;
     errorMessage: string = '';
     isProcessing: boolean = false;
 
@@ -391,30 +392,23 @@ export class EventDetailComponent {
         if (!user) return;
 
         this.isProcessing = true;
-        // The backend expects RequestParams
         const params = {
             userId: user.id.toString(),
             eventId: this.event.id.toString(),
-            guestName: user.name || user.username || 'Guest',
-            guestEmail: user.email || '',
-            guestPhone: user.phone || '00000000'
+            ticketType: 'STANDARD'
         };
 
-        this.http.post(`${this.apiUrl}/api/reservations/event`, null, { params }).subscribe({
-            next: () => {
+        this.http.post<any>(`${this.apiUrl}/api/tickets/purchase`, null, { params }).subscribe({
+            next: (res) => {
+                this.purchasedTicket = res?.data || res;
                 this.purchaseSuccess = true;
                 this.isProcessing = false;
                 this.cdr.detectChanges();
-                setTimeout(() => {
-                    this.purchaseSuccess = false;
-                    this.cdr.detectChanges();
-                }, 5000);
                 this.refreshEventData();
             },
             error: (err) => {
                 this.isProcessing = false;
-                console.error('Reservation failed:', err);
-                alert(err.error?.message || 'Erreur lors de la réservation. Veuillez réessayer.');
+                alert(err.error?.message || 'Erreur lors de l\'achat du ticket. Veuillez réessayer.');
                 this.cdr.detectChanges();
             }
         });
