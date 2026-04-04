@@ -341,14 +341,18 @@ export class EventDetailComponent {
     loadRequestedServices() {
         if (!this._event) return;
         this.servicesLoading = true;
+        console.log('[EventDetail] Loading services for event id:', this._event.id);
         this.http.get<any>(`${this.apiUrl}/api/event-services/event/${this._event.id}`).subscribe({
             next: (res) => {
+                console.log('[EventDetail] Services response:', res);
                 const data = res?.data || res || [];
                 this.requestedServices = Array.isArray(data) ? data : (data.content || []);
+                console.log('[EventDetail] Parsed services:', this.requestedServices.length);
                 this.servicesLoading = false;
                 this.cdr.detectChanges();
             },
-            error: () => {
+            error: (err) => {
+                console.error('[EventDetail] Error loading services:', err?.status, err?.error);
                 this.requestedServices = [];
                 this.servicesLoading = false;
             }
