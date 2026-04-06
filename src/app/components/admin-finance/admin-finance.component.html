@@ -1,0 +1,297 @@
+<div class="py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 min-h-screen">
+  <div class="mx-auto max-w-7xl space-y-6">
+
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h1 class="text-2xl font-bold text-slate-900">💰 Administration Financière</h1>
+      <p class="text-slate-500 mt-1">Gestion des wallets, transactions, coupons et promotions</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm text-slate-500">Total Wallets</div>
+        <div class="text-2xl font-bold text-emerald-700 mt-1">{{ wallets.length }}</div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm text-slate-500">Total Transactions</div>
+        <div class="text-2xl font-bold text-blue-700 mt-1">{{ totalTransactions }}</div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm text-slate-500">Coupons Actifs</div>
+        <div class="text-2xl font-bold text-purple-700 mt-1">{{ getActiveCouponsCount() }}</div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div class="text-sm text-slate-500">Commandes</div>
+        <div class="text-2xl font-bold text-orange-700 mt-1">{{ totalOrders }}</div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+      <p class="mt-4 text-slate-500">Chargement des données...</p>
+    </div>
+
+    <!-- Wallets Section -->
+    <div *ngIf="!isLoading" class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">💰 Portefeuilles</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+          <tr class="text-left text-slate-500 border-b">
+            <th class="py-2 pr-4">ID</th>
+            <th class="py-2 pr-4">Utilisateur</th>
+            <th class="py-2 pr-4">Solde</th>
+            <th class="py-2 pr-4">Statut</th>
+            <th class="py-2">Créé le</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let w of wallets" class="border-b border-slate-100">
+            <td class="py-2 pr-4">{{ w.id }}</td>
+            <td class="py-2 pr-4">{{ w.userName }}</td>
+            <td class="py-2 pr-4 font-semibold text-emerald-700">{{ w.balance | number:'1.2-2' }} DT</td>
+            <td class="py-2 pr-4">
+                                <span [class]="w.isActive ? 'text-green-600' : 'text-red-600'">
+                                    {{ w.isActive ? 'Actif' : 'Inactif' }}
+                                </span>
+            </td>
+            <td class="py-2">{{ formatDate(w.createdAt) }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Transactions Section -->
+    <div *ngIf="!isLoading" class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">📋 Transactions</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+          <tr class="text-left text-slate-500 border-b">
+            <th class="py-2 pr-4">N° Transaction</th>
+            <th class="py-2 pr-4">Utilisateur</th>
+            <th class="py-2 pr-4">Type</th>
+            <th class="py-2 pr-4">Montant</th>
+            <th class="py-2 pr-4">Statut</th>
+            <th class="py-2">Date</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let t of transactions" class="border-b border-slate-100">
+            <td class="py-2 pr-4 text-xs">{{ t.transactionNumber }}</td>
+            <td class="py-2 pr-4">{{ t.userName }}</td>
+            <td class="py-2 pr-4">
+                                <span [class]="t.type === 'DEPOSIT' ? 'text-green-600' : 'text-red-600'">
+                                    {{ t.type }}
+                                </span>
+            </td>
+            <td class="py-2 pr-4">{{ t.amount | number:'1.2-2' }} DT</td>
+            <td class="py-2 pr-4">
+                                <span [class]="t.status === 'COMPLETED' ? 'text-green-600' : 'text-yellow-600'">
+                                    {{ t.status }}
+                                </span>
+            </td>
+            <td class="py-2">{{ formatDate(t.createdAt) }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination Transactions -->
+      <div class="flex justify-between items-center mt-4">
+        <button (click)="previousTransactionPage()"
+                [disabled]="transactionPage === 0"
+                class="px-3 py-1 text-sm border rounded hover:bg-slate-50 disabled:opacity-50">
+          Précédent
+        </button>
+        <span class="text-sm text-slate-500">Page {{ transactionPage + 1 }}</span>
+        <button (click)="nextTransactionPage()"
+                [disabled]="(transactionPage + 1) * 20 >= totalTransactions"
+                class="px-3 py-1 text-sm border rounded hover:bg-slate-50 disabled:opacity-50">
+          Suivant
+        </button>
+      </div>
+    </div>
+
+    <!-- Coupons Section -->
+    <div *ngIf="!isLoading" class="bg-white rounded-xl border border-slate-200 p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-semibold text-slate-900">🏷️ Coupons</h2>
+        <button (click)="showCouponForm = !showCouponForm"
+                class="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700">
+          + Nouveau coupon
+        </button>
+      </div>
+
+      <!-- Create Coupon Form -->
+      <div *ngIf="showCouponForm" class="mb-4 p-4 bg-slate-50 rounded-lg border">
+        <h3 class="font-semibold mb-3">Créer un coupon</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <input [(ngModel)]="newCoupon.code" placeholder="Code" class="px-3 py-2 border rounded text-sm">
+          <input [(ngModel)]="newCoupon.description" placeholder="Description" class="px-3 py-2 border rounded text-sm">
+          <select [(ngModel)]="newCoupon.discountType" class="px-3 py-2 border rounded text-sm">
+            <option value="PERCENTAGE">Pourcentage (%)</option>
+            <option value="FIXED_AMOUNT">Montant fixe</option>
+          </select>
+          <input [(ngModel)]="newCoupon.discountValue" type="number" placeholder="Valeur" class="px-3 py-2 border rounded text-sm">
+          <input [(ngModel)]="newCoupon.minOrderAmount" type="number" placeholder="Montant min" class="px-3 py-2 border rounded text-sm">
+          <input [(ngModel)]="newCoupon.maxDiscountAmount" type="number" placeholder="Réduction max" class="px-3 py-2 border rounded text-sm">
+          <input [(ngModel)]="newCoupon.usageLimit" type="number" placeholder="Utilisations max" class="px-3 py-2 border rounded text-sm">
+          <button (click)="createCoupon()" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700">Créer</button>
+        </div>
+      </div>
+
+      <!-- Coupons List -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div *ngFor="let c of coupons" class="bg-slate-50 rounded-lg p-3 border">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-mono font-bold text-emerald-700">{{ c.code }}</span>
+              <p class="text-xs text-slate-500 mt-1">{{ c.description }}</p>
+              <div class="text-xs text-slate-500 mt-1">
+                Réduction: {{ c.discountValue }}{{ c.discountType === 'PERCENTAGE' ? '%' : ' DT' }}
+                | Min: {{ c.minOrderAmount }} DT
+              </div>
+              <div class="text-xs text-slate-400 mt-1">
+                Utilisé: {{ c.usageCount }} / {{ c.usageLimit }}
+              </div>
+            </div>
+            <button (click)="toggleCoupon(c)"
+                    [class]="c.isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                    class="px-2 py-1 text-xs rounded">
+              {{ c.isActive ? 'Désactiver' : 'Activer' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Promotions Section -->
+    <div *ngIf="!isLoading" class="bg-white rounded-xl border border-slate-200 p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-semibold text-slate-900">🎉 Promotions</h2>
+        <button (click)="showPromotionForm = !showPromotionForm"
+                class="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700">
+          + Nouvelle promotion
+        </button>
+      </div>
+
+      <!-- Create Promotion Form -->
+      <div *ngIf="showPromotionForm" class="mb-4 p-4 bg-slate-50 rounded-lg border">
+        <h3 class="font-semibold mb-3">Créer une promotion</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <input [(ngModel)]="newPromotion.name" placeholder="Nom" class="px-3 py-2 border rounded text-sm">
+          <input [(ngModel)]="newPromotion.description" placeholder="Description" class="px-3 py-2 border rounded text-sm">
+          <select [(ngModel)]="newPromotion.type" class="px-3 py-2 border rounded text-sm">
+            <option value="PERCENTAGE">Pourcentage (%)</option>
+            <option value="FIXED_AMOUNT">Montant fixe</option>
+          </select>
+          <input [(ngModel)]="newPromotion.discountValue" type="number" placeholder="Valeur" class="px-3 py-2 border rounded text-sm">
+          <input [(ngModel)]="newPromotion.minPurchaseAmount" type="number" placeholder="Achat min" class="px-3 py-2 border rounded text-sm">
+          <input [(ngModel)]="newPromotion.maxDiscountAmount" type="number" placeholder="Réduction max" class="px-3 py-2 border rounded text-sm">
+          <button (click)="createPromotion()" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700">Créer</button>
+        </div>
+      </div>
+
+      <!-- Promotions List -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div *ngFor="let p of promotions" class="bg-slate-50 rounded-lg p-3 border">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-bold text-purple-700">{{ p.name }}</span>
+              <p class="text-xs text-slate-500 mt-1">{{ p.description }}</p>
+              <div class="text-xs text-slate-500 mt-1">
+                Réduction: {{ p.discountValue }}{{ p.type === 'PERCENTAGE' ? '%' : ' DT' }}
+                | Utilisé: {{ p.currentUsage }} / {{ p.maxUsage }}
+              </div>
+            </div>
+            <button (click)="togglePromotion(p)"
+                    [class]="p.isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                    class="px-2 py-1 text-xs rounded">
+              {{ p.isActive ? 'Désactiver' : 'Activer' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders Section -->
+    <div *ngIf="!isLoading" class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">📦 Commandes</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+          <tr class="text-left text-slate-500 border-b">
+            <th class="py-2 pr-4">N° Commande</th>
+            <th class="py-2 pr-4">Client</th>
+            <th class="py-2 pr-4">Montant</th>
+            <th class="py-2 pr-4">Paiement</th>
+            <th class="py-2 pr-4">Statut</th>
+            <th class="py-2">Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let o of orders" class="border-b border-slate-100">
+            <td class="py-2 pr-4">{{ o.orderNumber }}</td>
+            <td class="py-2 pr-4">{{ o.userName }}</td>
+            <td class="py-2 pr-4 font-semibold">{{ o.totalAmount | number:'1.2-2' }} DT</td>
+            <td class="py-2 pr-4">{{ o.paymentMethod }}</td>
+            <td class="py-2 pr-4">
+                                <span [class]="o.status === 'DELIVERED' ? 'text-green-600' : 'text-yellow-600'">
+                                    {{ o.status }}
+                                </span>
+            </td>
+            <td class="py-2">
+              <select (change)="onOrderStatusChange(o, $event)" class="px-2 py-1 text-xs border rounded">
+                <option value="PENDING" [selected]="o.status === 'PENDING'">En attente</option>
+                <option value="PROCESSING" [selected]="o.status === 'PROCESSING'">Traitement</option>
+                <option value="SHIPPED" [selected]="o.status === 'SHIPPED'">Expédié</option>
+                <option value="DELIVERED" [selected]="o.status === 'DELIVERED'">Livré</option>
+                <option value="CANCELLED" [selected]="o.status === 'CANCELLED'">Annulé</option>
+              </select>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination Orders -->
+      <div class="flex justify-between items-center mt-4">
+        <button (click)="previousOrderPage()" [disabled]="orderPage === 0"
+                class="px-3 py-1 text-sm border rounded hover:bg-slate-50 disabled:opacity-50">Précédent</button>
+        <span class="text-sm text-slate-500">Page {{ orderPage + 1 }}</span>
+        <button (click)="nextOrderPage()" [disabled]="(orderPage + 1) * 20 >= totalOrders"
+                class="px-3 py-1 text-sm border rounded hover:bg-slate-50 disabled:opacity-50">Suivant</button>
+      </div>
+    </div>
+
+    <!-- Coupon Usages Section -->
+    <div *ngIf="!isLoading" class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">📊 Utilisations des coupons</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+          <tr class="text-left text-slate-500 border-b">
+            <th class="py-2 pr-4">Code</th>
+            <th class="py-2 pr-4">Utilisateur</th>
+            <th class="py-2 pr-4">Commande</th>
+            <th class="py-2 pr-4">Réduction</th>
+            <th class="py-2">Date</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let u of couponUsages" class="border-b border-slate-100">
+            <td class="py-2 pr-4 font-mono text-emerald-700">{{ u.couponCode }}</td>
+            <td class="py-2 pr-4">{{ u.userName }}</td>
+            <td class="py-2 pr-4">{{ u.orderId }}</td>
+            <td class="py-2 pr-4">{{ u.discountAmount | number:'1.2-2' }} DT</td>
+            <td class="py-2">{{ formatDate(u.usedAt) }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>

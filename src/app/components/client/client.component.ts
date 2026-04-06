@@ -1,0 +1,446 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import { CartService } from '../../services/cart.service';
+import { WalletService } from '../../services/wallet.service';
+import { OrderService } from '../../services/order.service';
+import { AuthService } from '../../services/auth.service';
+import { AccountProfileService } from '../../services/account-profile.service';
+import { NotificationService } from '../../services/notification.service';
+import { ApiService } from '../../services/api.service';
+import { CartItem, Wallet, WalletTransaction, Order, CreateOrderDto } from '../../models/api.models';
+
+@Component({
+  selector: 'app-client',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink],
+  templateUrl: './client.component.html',
+  styleUrls: ['./client.component.css']
+})
+export class ClientComponent implements OnInit {
+  Math = Math;
+
+  activeTab = 'wallet';
+  isLoading = false;
+  errorMessage = '';
+
+  menuItems = [
+    { id: 'wallet', label: 'My Wallet', icon: '💰', badge: '' },
+    { id: 'orders', label: 'My Orders', icon: '📦', badge: '' },
+    { id: 'cart', label: 'Shopping Cart', icon: '🛒', badge: '0' },
+    { id: 'profile', label: 'Profile', icon: '⚙️', badge: '' }
+  ];
+
+  // Customer Info
+  customerName = '';
+  customerEmail = '';
+  customerPhone = '';
+  customerCountry = '';
+  customerAddress = '';
+
+  // Wallet
+  walletBalance = 0;
+  loyaltyPoints = 0;
+  walletTransactions: WalletTransaction[] = [];
+
+  // Orders
+  customerOrders: Order[] = [];
+  orderStatuses = ['All', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+  selectedOrderStatus = 'All';
+
+  // Cart
+  cartItems: CartItem[] = [];
+  selectedPaymentMethod: 'wallet' | 'card' = 'wallet';
+  shippingCost = 15.00;
+  shippingAddress = '';
+
+  // Modals
+  showAddFundsModal = false;
+  showWithdrawModal = false;
+  showCheckoutSuccess = false;
+  addFundsAmount = 100;
+  fundingSource: 'CARD' | 'BANK_TRANSFER' = 'CARD';
+  latestOrderId = '';
+  lastEarnedPoints = 0;
+
+  // Withdraw variables
+  withdrawAmount = 0;
+  withdrawBankAccount = '';
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private cartService: CartService,
+    private walletService: WalletService,
+    private orderService: OrderService,
+    private authService: AuthService,
+    private accountProfile: AccountProfileService,
+    private notificationService: NotificationService,
+    private apiService: ApiService
+  ) {}
+
+  ngOnInit() {
+    // Load user info
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.customerName = user.name;
+      this.customerEmail = user.email;
+      this.customerPhone = user.phone || '';
+      this.customerCountry = user.country || '';
+      this.customerAddress = user.address || '';
+    }
+
+    // Check route data for default tab
+    const routeData = this.route.snapshot.data;
+    if (routeData['defaultTab']) {
+      this.activeTab = routeData['defaultTab'];
+    }
+
+    // Handle query params for tab
+    this.route.queryParams.subscribe(params => {
+      if (params['tab']) this.activeTab = params['tab'];
+    });
+
+    // Subscribe to cart updates
+    this.cartService.cart$.subscribe(items => {
+      this.cartItems = items;
+      this.updateCartBadge();
+    });
+
+    // Load data
+    this.loadWallet();
+    this.loadOrders();
+  }
+
+  // ==================== LOAD METHODS ====================
+
+  loadWallet() {
+    this.walletService.getMyWallet().subscribe({
+      next: (wallet) => {
+        this.walletBalance = wallet.balance;
+        this.loyaltyPoints = 0;
+      },
+      error: () => {
+        this.walletService.getBalance().subscribe({
+          next: (balance) => {
+            this.walletBalance = balance;
+            this.loyaltyPoints = 0;
+          },
+          error: () => {
+            this.walletBalance = 0;
+            this.loyaltyPoints = 0;
+          }
+        });
+      }
+    });
+
+    this.walletService.getTransactions().subscribe({
+      next: (transactions) => this.walletTransactions = transactions,
+      error: () => this.walletTransactions = []
+    });
+  }
+
+  loadOrders() {
+    this.orderService.getMyOrders().subscribe({
+      next: (orders) => this.customerOrders = orders,
+      error: () => {
+        this.orderService.getAll().subscribe({
+          next: (orders) => this.customerOrders = orders,
+          error: () => this.customerOrders = []
+        });
+      }
+    });
+  }
+
+  // ==================== CART COMPUTATIONS ====================
+
+  get cartSubtotal(): number {
+    return this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
+  get cartTax(): number {
+    return this.cartSubtotal * 0.1;
+  }
+
+  get cartTotal(): number {
+    return this.cartSubtotal + this.shippingCost + this.cartTax;
+  }
+
+  get filteredOrders(): Order[] {
+    if (this.selectedOrderStatus === 'All') return this.customerOrders;
+    return this.customerOrders.filter(o => o.status === this.selectedOrderStatus);
+  }
+
+  // ==================== UI HELPERS ====================
+
+  updateCartBadge() {
+    const cartMenuItem = this.menuItems.find(m => m.id === 'cart');
+    if (cartMenuItem) {
+      cartMenuItem.badge = this.cartItems.length > 0 ? this.cartItems.length.toString() : '';
+    }
+  }
+
+  get customerAvatar(): string {
+    return this.accountProfile.resolveStoredImageUrl(this.authService.getCurrentUser()?.avatar) || '';
+  }
+
+  get customerInitials(): string {
+    return this.accountProfile.initialsFromName(this.customerName || this.customerEmail || 'Client', 'CC');
+  }
+
+  goToAccountSettings() {
+    this.router.navigate(['/settings']);
+  }
+
+  getImageUrl(imagePath: string | undefined): string {
+    return this.cartService.getImageUrl(imagePath);
+  }
+
+  // ==================== CART ACTIONS ====================
+
+  updateQuantity(index: number, change: number) {
+    const item = this.cartItems[index];
+    const newQuantity = item.quantity + change;
+    if (newQuantity <= 0) {
+      this.removeFromCart(index);
+    } else {
+      this.cartService.updateQuantity(item.productId, newQuantity, item.type).subscribe();
+    }
+  }
+
+  removeFromCart(index: number) {
+    const item = this.cartItems[index];
+    this.cartService.removeFromCart(item.productId, item.type).subscribe();
+  }
+
+  clearCart() {
+    if (confirm('Are you sure you want to clear your cart?')) {
+      this.cartService.clearCart().subscribe(() => {
+        alert('🛒 Cart cleared');
+      });
+    }
+  }
+
+  // ==================== WALLET ACTIONS ====================
+
+  openAddFundsModal() {
+    this.showAddFundsModal = true;
+    this.addFundsAmount = 100;
+    this.fundingSource = 'CARD';
+  }
+
+  confirmAddFunds() {
+    if (this.addFundsAmount <= 0) {
+      alert('⚠️ Please enter a valid amount');
+      return;
+    }
+
+    this.isLoading = true;
+    this.walletService.addFunds(this.addFundsAmount).subscribe({
+      next: (wallet) => {
+        this.walletBalance = wallet.balance;
+        this.loyaltyPoints = 0;
+        alert(`✅ Successfully added ${this.addFundsAmount} DT to your wallet!`);
+        this.showAddFundsModal = false;
+        this.isLoading = false;
+        this.loadWallet();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        alert('❌ Failed to add funds: ' + (err.message || 'Unknown error'));
+      }
+    });
+  }
+
+  confirmWithdraw() {
+    if (!this.withdrawAmount || this.withdrawAmount <= 0) {
+      alert('⚠️ Please enter a valid amount');
+      return;
+    }
+    if (!this.withdrawBankAccount) {
+      alert('⚠️ Please enter your bank account (IBAN)');
+      return;
+    }
+    if (this.walletBalance < this.withdrawAmount) {
+      alert('⚠️ Insufficient balance');
+      return;
+    }
+
+    this.isLoading = true;
+    this.walletService.withdraw({
+      amount: this.withdrawAmount,
+      bankAccount: this.withdrawBankAccount
+    }).subscribe({
+      next: () => {
+        alert(`✅ Withdrawal request of ${this.withdrawAmount} DT submitted successfully!`);
+        this.showWithdrawModal = false;
+        this.withdrawAmount = 0;
+        this.withdrawBankAccount = '';
+        this.isLoading = false;
+        this.loadWallet();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        alert('❌ Withdrawal failed: ' + (err.message || 'Unknown error'));
+      }
+    });
+  }
+
+  // ==================== CHECKOUT ====================
+
+  checkout() {
+    if (this.cartItems.length === 0) {
+      alert('⚠️ Your cart is empty');
+      return;
+    }
+
+    if (!this.shippingAddress) {
+      alert('⚠️ Please enter a shipping address');
+      return;
+    }
+
+    if (this.selectedPaymentMethod === 'wallet' && this.walletBalance < this.cartTotal) {
+      alert('⚠️ Insufficient wallet balance. Please add funds or choose card payment.');
+      return;
+    }
+
+    const orderData: CreateOrderDto = {
+      items: this.cartItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        type: item.type,
+        rentalDays: item.rentalDays
+      })),
+      shippingAddress: this.shippingAddress,
+      paymentMethod: this.selectedPaymentMethod === 'wallet' ? 'WALLET' : 'CARD'
+    };
+
+    this.isLoading = true;
+    this.orderService.create(orderData).subscribe({
+      next: (order: any) => {
+        this.latestOrderId = order.id;
+        this.lastEarnedPoints = Math.floor(this.cartTotal);
+        this.showCheckoutSuccess = true;
+        this.isLoading = false;
+        this.cartService.clearCart().subscribe();
+        this.loadWallet();
+        this.loadOrders();
+      },
+      error: (err: any) => {
+        this.isLoading = false;
+        alert('❌ Checkout failed: ' + (err.message || 'Unknown error'));
+      }
+    });
+  }
+
+  closeCheckoutSuccess() {
+    this.showCheckoutSuccess = false;
+    this.activeTab = 'orders';
+  }
+
+  // ==================== ORDER ACTIONS ====================
+
+  viewOrderDetails(order: Order) {
+    alert(`Order #${order.id}\nStatus: ${order.status}\nTotal: ${order.totalAmount.toFixed(2)} DT\nItems: ${order.items.length}`);
+  }
+
+  trackOrder(order: Order) {
+    if (order.trackingNumber) {
+      alert(`📍 Tracking Order #${order.id}\nTracking Number: ${order.trackingNumber}`);
+    } else {
+      alert('Tracking information not yet available.');
+    }
+  }
+
+  cancelOrder(order: Order) {
+    if (confirm(`Are you sure you want to cancel Order #${order.id}?`)) {
+      this.orderService.cancel(order.id).subscribe({
+        next: () => {
+          alert(`✅ Order #${order.id} has been cancelled.`);
+          this.loadOrders();
+        },
+        error: (err) => alert('❌ Failed to cancel order: ' + (err.message || 'Unknown error'))
+      });
+    }
+  }
+
+  downloadInvoice(order: Order) {
+    alert(`📄 Invoice for Order #${order.id} would be downloaded.\n(Feature coming soon)`);
+  }
+
+  // ==================== BADGES & HELPERS ====================
+
+  getOrderStatusBadge(status: string): string {
+    const badges: { [key: string]: string } = {
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'PROCESSING': 'bg-blue-100 text-blue-800',
+      'SHIPPED': 'bg-purple-100 text-purple-800',
+      'DELIVERED': 'bg-green-100 text-green-800',
+      'CANCELLED': 'bg-red-100 text-red-800'
+    };
+    return badges[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  getTransactionIcon(type: string): string {
+    return type === 'CREDIT' ? '📥' : '📤';
+  }
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString();
+  }
+
+  getStatusBadge(status: string): string {
+    const badges: { [key: string]: string } = {
+      'COMPLETED': 'bg-green-100 text-green-800',
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'FAILED': 'bg-red-100 text-red-800'
+    };
+    return badges[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  isCredit(type: string): boolean {
+    return type === 'CREDIT';
+  }
+
+  // ==================== PROFILE ACTIONS ====================
+
+  saveProfile() {
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      alert('❌ Not logged in');
+      return;
+    }
+
+    this.isLoading = true;
+
+    const updatedUser = {
+      name: this.customerName,
+      email: this.customerEmail,
+      phone: this.customerPhone,
+      country: this.customerCountry,
+      address: this.customerAddress
+    };
+
+    this.apiService.update('users', Number(user.id), updatedUser).subscribe({
+      next: (res: any) => {
+        this.isLoading = false;
+        alert('✅ Profile updated successfully!');
+
+        const updatedStoredUser = { ...user, ...updatedUser };
+        localStorage.setItem('current_user', JSON.stringify(updatedStoredUser));
+      },
+      error: (err: any) => {
+        this.isLoading = false;
+        alert('❌ Failed to update profile: ' + (err.message || 'Unknown error'));
+      }
+    });
+  }
+
+  // ==================== AUTH ====================
+
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['/']);
+  }
+}

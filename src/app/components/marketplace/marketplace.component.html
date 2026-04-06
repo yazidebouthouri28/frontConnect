@@ -1,0 +1,273 @@
+<section id="marketplace" class="bg-[#F9F7F2] min-h-screen">
+  <!-- HERO SECTION -->
+  @if (!selectedProduct) {
+  <div class="hero-gradient pt-24 pb-32 px-4 sm:px-6 lg:px-8 text-center text-white relative">
+    <div class="max-w-7xl mx-auto">
+      <!-- Promo Banner -->
+      <div
+        class="inline-flex items-center gap-2 bg-[#FBBF24] text-forest text-[11px] font-black px-5 py-2 rounded-full mb-10 shadow-2xl">
+        🪄 WINTER SALE: Up to 40% OFF
+      </div>
+
+      <h1 class="text-6xl md:text-7xl font-black mb-6 tracking-tight">ConnectCamp Marketplace</h1>
+      <p class="text-sage text-xl md:text-2xl mb-14 max-w-3xl mx-auto font-bold opacity-90">
+        Premium gear for unforgettable adventures
+      </p>
+
+      <!-- Search Bar -->
+      <div class="search-container mb-10">
+        <input type="text" placeholder="Search 500+ products: tents, sleeping bags, cooking gear..."
+          class="search-input" />
+        <button class="search-button">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Search
+        </button>
+      </div>
+
+      <!-- Hashtags -->
+      <div class="flex flex-wrap justify-center gap-6 text-[11px] font-black text-white/40 uppercase tracking-[0.2em]">
+        <span>#Tents</span>
+        <span>#Sleeping Bags</span>
+        <span>#Camping</span>
+        <span>#Hiking</span>
+        <span>#Outdoor</span>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- MAIN CONTENT -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-24 pt-12">
+
+    @if (selectedProduct) {
+    <app-product-detail [product]="selectedProduct" (back)="clearSelection()">
+    </app-product-detail>
+    } @else {
+    <!-- CATEGORY TABS -->
+    <div class="flex flex-wrap justify-center gap-5 mb-14">
+      @for (cat of categories; track cat.id) {
+      <div class="category-tab" [class.active]="cat.id === 'all'">
+        @if (cat.id === 'all') {
+        <span class="text-xl text-[#FBBF24]">🏷️</span>
+        } @else {
+        <span class="text-xl">{{ cat.icon }}</span>
+        }
+        <span>{{ cat.name }}</span>
+        <span class="count">{{ cat.count }}</span>
+      </div>
+      }
+    </div>
+
+    <!-- LAYOUT CONTAINER -->
+    <div class="flex gap-8 items-start">
+
+      <!-- SIDEBAR FILTERS (Hidden on small screens) -->
+      <aside class="w-64 hidden lg:block sticky top-24 shrink-0">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="font-bold text-lg text-forest">Filters</h3>
+          <button class="text-xs font-bold text-forest/60 hover:text-forest underline">Clear All</button>
+        </div>
+
+        <!-- Active Chips (Example) -->
+        <div class="flex flex-wrap gap-2 mb-8">
+          <span
+            class="inline-flex items-center gap-1 px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-600">
+            Category: Tents <button class="hover:text-red-500">×</button>
+          </span>
+        </div>
+
+        <!-- Filter Sections -->
+        <div class="space-y-8">
+
+          <!-- Category Filter -->
+          <div>
+            <h4 class="font-bold text-sm text-gray-900 mb-4 flex justify-between items-center cursor-pointer">
+              Category
+              <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </h4>
+            <div class="space-y-2">
+              <label *ngFor="let cat of categories" class="flex items-center group cursor-pointer">
+                <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-forest focus:ring-forest">
+                <span class="ml-2 text-sm text-gray-600 group-hover:text-forest transition-colors">{{ cat.name }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Price Filter -->
+          <div>
+            <h4 class="font-bold text-sm text-gray-900 mb-4 flex justify-between items-center cursor-pointer">
+              Price
+              <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </h4>
+            <div class="space-y-2">
+              <label *ngFor="let range of priceRanges" class="flex items-center group cursor-pointer">
+                <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-forest focus:ring-forest">
+                <span class="ml-2 text-sm text-gray-600 group-hover:text-forest transition-colors">{{ range.name
+                  }}</span>
+              </label>
+              <div class="flex items-center gap-2 mt-2">
+                <input type="number" placeholder="Min" class="w-full px-2 py-1 text-sm border border-gray-200 rounded">
+                <span class="text-gray-400">-</span>
+                <input type="number" placeholder="Max" class="w-full px-2 py-1 text-sm border border-gray-200 rounded">
+              </div>
+            </div>
+          </div>
+
+          <!-- Color Filter -->
+          <div>
+            <h4 class="font-bold text-sm text-gray-900 mb-4 flex justify-between items-center cursor-pointer">
+              Color
+              <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </h4>
+            <div class="flex flex-wrap gap-3">
+              <button
+                class="w-8 h-8 rounded-full bg-red-500 border-2 border-transparent hover:border-gray-300 focus:ring-2 ring-forest"></button>
+              <button
+                class="w-8 h-8 rounded-full bg-blue-500 border-2 border-transparent hover:border-gray-300 focus:ring-2 ring-forest"></button>
+              <button
+                class="w-8 h-8 rounded-full bg-green-600 border-2 border-transparent hover:border-gray-300 focus:ring-2 ring-forest"></button>
+              <button
+                class="w-8 h-8 rounded-full bg-black border-2 border-transparent hover:border-gray-300 focus:ring-2 ring-forest"></button>
+              <button
+                class="w-8 h-8 rounded-full bg-orange-400 border-2 border-transparent hover:border-gray-300 focus:ring-2 ring-forest"></button>
+            </div>
+          </div>
+
+          <!-- Rating Filter -->
+          <div>
+            <h4 class="font-bold text-sm text-gray-900 mb-4 flex justify-between items-center cursor-pointer">
+              Rating
+              <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </h4>
+            <div class="space-y-2">
+              <button *ngFor="let rate of ratings"
+                class="flex items-center gap-2 w-full hover:bg-white p-1 rounded transition-colors group">
+                <div class="flex text-yellow-500 text-xs">
+                  <span *ngFor="let _ of getStars(rate.value)">★</span>
+                </div>
+                <span class="text-xs text-gray-500 group-hover:text-forest">{{ rate.label }} Stars & Up</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN GRID CONTENT -->
+      <main class="flex-1">
+        <!-- FILTER BAR -->
+        <div class="filter-bar mb-10">
+          <div class="filter-item border-r border-sage/10 pr-8">
+            <span class="text-lg">🪄</span>
+            <select class="filter-select">
+              <option>Featured First</option>
+              <option>Newest</option>
+              <option>Price: Low to High</option>
+            </select>
+            <svg class="h-4 w-4 text-forest/30 -ml-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+
+          <div class="filter-item border-r border-sage/10 pr-8">
+            <span class="text-lg">🗾</span>
+            <select class="filter-select">
+              <option>All Prices</option>
+              <option>0 - 50 DT</option>
+              <option>50 - 150 DT</option>
+            </select>
+            <svg class="h-4 w-4 text-forest/30 -ml-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+
+          <label class="filter-item cursor-pointer group px-2">
+            <input type="checkbox" checked class="custom-checkbox checkbox-stock">
+            <span class="text-lg">📦</span>
+            <span class="group-hover:text-olive transition-colors">In Stock Only</span>
+          </label>
+
+          <label class="filter-item cursor-pointer group px-2">
+            <input type="checkbox" class="custom-checkbox checkbox-rental">
+            <span class="text-lg">🗓️</span>
+            <span class="group-hover:text-olive transition-colors">Rental Available</span>
+          </label>
+
+          <div class="price-indicator">
+            12 <span class="text-[11px] opacity-40 uppercase tracking-widest font-bold">products</span>
+          </div>
+
+          <div class="view-toggle">
+            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- PRODUCT GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          @for (product of products; track product.id) {
+          <div class="product-card group" (click)="selectProduct(product)">
+            <!-- Image Container -->
+            <div class="relative aspect-[4/5] overflow-hidden bg-gray-100 cursor-pointer">
+              <img [src]="product.image" [alt]="product.name"
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+
+              <!-- Badges -->
+              <div class="absolute top-4 left-4 flex flex-col gap-2">
+                @if (product.featured) {
+                <span class="badge badge-featured">⭐ Featured</span>
+                }
+                @if (product.discount) {
+                <span class="badge badge-discount">🏷️ {{ product.discount }}</span>
+                }
+                @if (product.rentalAvailable) {
+                <span class="badge badge-rental">⏳ Rental Available</span>
+                }
+              </div>
+            </div>
+
+            <!-- Info Area -->
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-olive uppercase tracking-widest">{{ product.category }}</span>
+                <div class="flex text-yellow-500 text-[10px]">
+                  ★ ★ ★ ★ ★
+                </div>
+              </div>
+              <h3 class="text-lg font-bold text-forest mb-4 leading-tight cursor-pointer">{{ product.name }}</h3>
+
+              <div class="flex items-center justify-between mt-auto">
+                <div class="text-2xl font-black text-forest">
+                  {{ product.price }} DT
+                </div>
+                <button
+                  class="w-10 h-10 rounded-full bg-forest text-white flex items-center justify-center hover:bg-[#1a2e25] transition-all shadow-lg hover:rotate-12">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </main>
+    </div>
+    }
+
+  </div>
+</section>
