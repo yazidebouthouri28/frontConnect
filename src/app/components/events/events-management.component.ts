@@ -76,7 +76,7 @@ export class EventsManagementComponent implements OnInit {
             throw new Error(res?.message || 'Failed to load events');
           }
           return (res.data ?? [])
-            .filter((e) => (e.status ?? '').toUpperCase() === 'PUBLISHED')
+            .filter((e) => ['PUBLISHED', 'COMPLETED'].includes((e.status ?? '').toUpperCase()))
             .map((e) => this.toUiEvent(e));
         }),
         catchError((err) => {

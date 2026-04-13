@@ -1,76 +1,83 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { ApiResponse } from '../models/api.models';
 
-export interface Gamification {
+export interface Medal {
     id?: number;
     name: string;
-    description: string;
     icon: string;
-    pointsValue: number;
-    organizerId?: number;
-    organizerName?: string;
+    type?: string;
 }
+
+export interface Badge {
+    id?: number;
+    name: string;
+    icon: string;
+    medal?: Medal;
+}
+
+export interface BadgeRule {
+    id?: number;
+    numero: number;
+    regle: string;
+}
+
+export interface UserBadge {
+    id: number;
+    badge: Badge;
+}
+
+// Keep the old name for backward compatibility or refactor if needed
+export type Gamification = Badge & { rules?: BadgeRule[] };
 
 @Injectable({
     providedIn: 'root'
 })
 export class GamificationService {
     private http = inject(HttpClient);
-    private apiUrl = `${environment.apiUrl}/api/gamifications`;
+    private apiUrl = `${environment.apiUrl}/api/badges`;
+    private medalUrl = `${environment.apiUrl}/api/medals`;
+    private ruleUrl = `${environment.apiUrl}/api/badge-rules`;
+    private userBadgeUrl = `${environment.apiUrl}/api/user-badges`;
 
-    getAll(organizerId?: number): Observable<Gamification[]> {
-        const url = organizerId ? `${this.apiUrl}?organizerId=${organizerId}` : this.apiUrl;
-        return this.http.get<ApiResponse<Gamification[]>>(url).pipe(
-            map(res => res.data || [])
-        );
+    getAll(): Observable<Badge[]> {
+        return this.http.get<Badge[]>(this.apiUrl);
     }
 
-    getById(id: number): Observable<Gamification> {
-        return this.http.get<ApiResponse<Gamification>>(`${this.apiUrl}/${id}`).pipe(
-            map(res => {
-                if (!res.data) throw new Error('Gamification not found');
-                return res.data;
-            })
-        );
+    getMedals(): Observable<Medal[]> {
+        return this.http.get<Medal[]>(this.medalUrl);
     }
 
-    create(data: Gamification): Observable<Gamification> {
-        return this.http.post<ApiResponse<Gamification>>(this.apiUrl, data).pipe(
-            map(res => {
-                if (!res.data) throw new Error('Create failed');
-                return res.data;
-            })
-        );
+    getRulesByBadgeId(badgeId: number): Observable<BadgeRule[]> {
+        return this.http.get<BadgeRule[]>(`${this.ruleUrl}/badge/${badgeId}`);
     }
 
-    update(id: number, data: Gamification): Observable<Gamification> {
-        return this.http.put<ApiResponse<Gamification>>(`${this.apiUrl}/${id}`, data).pipe(
-            map(res => {
-                if (!res.data) throw new Error('Update failed');
-                return res.data;
-            })
-        );
+    getById(id: number): Observable<Badge> {
+        return this.http.get<Badge>(`${this.apiUrl}/${id}`);
+    }
+
+    create(data: Badge): Observable<Badge> {
+        return this.http.post<Badge>(this.apiUrl, data);
+    }
+
+    update(id: number, data: Badge): Observable<Badge> {
+        return this.http.put<Badge>(`${this.apiUrl}/${id}`, data);
     }
 
     delete(id: number): Observable<void> {
-        return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`).pipe(
-            map(() => undefined)
-        );
+        return this.http.delete<void>(`${this.apiUrl}/${id}`);
     }
 
-    assignToEvent(gamificationId: number, eventId: number): Observable<void> {
-        return this.http.post<ApiResponse<void>>(`${this.apiUrl}/${gamificationId}/assign/${eventId}`, {}).pipe(
-            map(() => undefined)
-        );
+    assignToEvent(badgeId: number, eventId: number): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}/${badgeId}/assign/${eventId}`, {});
     }
 
-    unassignFromEvent(gamificationId: number, eventId: number): Observable<void> {
-        return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${gamificationId}/unassign/${eventId}`).pipe(
-            map(() => undefined)
-        );
+    unassignFromEvent(badgeId: number, eventId: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/${badgeId}/unassign/${eventId}`);
+    }
+
+    getUserBadges(userId: number): Observable<UserBadge[]> {
+        return this.http.get<UserBadge[]>(`${this.userBadgeUrl}/user/${userId}`);
     }
 }

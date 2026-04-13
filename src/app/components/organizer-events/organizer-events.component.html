@@ -552,7 +552,7 @@
                         </div>
                         <div class="min-w-0">
                             <p class="text-[11px] font-black text-[#1a2e1a] truncate">{{ badge.name }}</p>
-                            <p class="text-[9px] text-gray-400 font-bold truncate">{{ badge.pointsValue }} pts</p>
+                            <p class="text-[9px] text-gray-400 font-bold truncate">{{ badge.medal?.name || '' }}</p>
                         </div>
                         @if (selectedBadgeIds.has(badge.id!)) {
                         <div class="ml-auto text-[#2C4A3C] font-black text-xs">✓</div>

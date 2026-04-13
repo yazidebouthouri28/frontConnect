@@ -16,27 +16,51 @@ export class GamificationManagementComponent implements OnInit {
     private authService = inject(AuthService);
 
     badges: Gamification[] = [];
+    medals: any[] = [];
+    selectedMedalName: string | null = null;
     loading = false;
+    loadingRules = false;
     showModal = false;
+    showRulesModal = false;
     isEditing = false;
     modalErrorMessage = '';
+    selectedBadgeRules: any[] = [];
+    selectedBadgeName = '';
+    earnedBadgeIds: Set<number> = new Set();
+
+    private readonly MEDAL_MAPPING: { [key: string]: { label: string, icon: string } } = {
+        'Médaille de l\'Aigle de Carthage': { label: 'All Medals', icon: '🏅' },
+        'Community Leadership Medal': { label: 'Community Leadership Badges', icon: '🤝' },
+        'Science and Arts': { label: 'Science and Arts Badges', icon: '🧪' },
+        'Scout Leadership Medal': { label: 'Scout Leadership Badges', icon: '⚜️' },
+        'Rank': { label: 'Rank', icon: '🎖️' }
+    };
 
     currentBadge: Gamification = {
         name: '',
-        description: '',
-        icon: '',
-        pointsValue: 0
+        icon: ''
     };
+
+    get isAdmin(): boolean {
+        return this.authService.isAdmin();
+    }
+
+    get filteredBadges(): Gamification[] {
+        if (!this.selectedMedalName) {
+            return this.badges;
+        }
+        return this.badges.filter(b => b.medal?.name?.includes(this.selectedMedalName!));
+    }
 
     ngOnInit() {
         this.loadBadges();
+        this.loadMedals();
+        this.loadUserBadges();
     }
 
     loadBadges() {
         this.loading = true;
-        const organizerId = this.authService.hasRole('ORGANIZER') ? this.authService.getCurrentUser()?.organizerId : undefined;
-
-        this.gamificationService.getAll(organizerId).subscribe({
+        this.gamificationService.getAll().subscribe({
             next: (data) => {
                 this.badges = data;
                 this.loading = false;
@@ -48,6 +72,63 @@ export class GamificationManagementComponent implements OnInit {
         });
     }
 
+    loadUserBadges() {
+        const user = this.authService.getCurrentUser();
+        if (!user || !user.id) return;
+
+        // Convert user.id to number if it's a string (depends on User interface)
+        const userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+
+        this.gamificationService.getUserBadges(userId).subscribe({
+            next: (userBadges) => {
+                this.earnedBadgeIds = new Set(userBadges.map(ub => ub.badge.id!));
+            },
+            error: (err) => console.error('Failed to load user badges', err)
+        });
+    }
+
+    isEarned(badgeId?: number): boolean {
+        return !!badgeId && this.earnedBadgeIds.has(badgeId);
+    }
+
+    loadMedals() {
+        this.gamificationService.getMedals().subscribe({
+            next: (data) => {
+                const grouped = new Map<string, any>();
+
+                data.forEach(m => {
+                    const matchKey = Object.keys(this.MEDAL_MAPPING).find(key => m.name.includes(key));
+                    if (matchKey && !grouped.has(matchKey)) {
+                        grouped.set(matchKey, {
+                            ...m,
+                            name: this.MEDAL_MAPPING[matchKey].label,
+                            icon: this.MEDAL_MAPPING[matchKey].icon
+                        });
+                    }
+                });
+
+                // Add Rank if not present (in case it's not in backend yet)
+                if (!grouped.has('Rank')) {
+                    grouped.set('Rank', { name: 'Rank', icon: '🎖️' });
+                }
+
+                this.medals = Array.from(grouped.values());
+            },
+            error: (err) => console.error('Failed to load medals', err)
+        });
+    }
+
+    selectMedal(name: string | null) {
+        this.selectedMedalName = name;
+    }
+
+    getBadgeCount(name: string | null): number {
+        if (!name) {
+            return this.badges.length;
+        }
+        return this.badges.filter(b => b.medal?.name?.includes(name)).length;
+    }
+
     openModal(badge?: Gamification) {
         if (badge) {
             this.currentBadge = { ...badge };
@@ -55,9 +136,7 @@ export class GamificationManagementComponent implements OnInit {
         } else {
             this.currentBadge = {
                 name: '',
-                description: '',
-                icon: '',
-                pointsValue: 0
+                icon: ''
             };
             this.isEditing = false;
         }
@@ -76,19 +155,12 @@ export class GamificationManagementComponent implements OnInit {
             return;
         }
 
-        if (this.currentBadge.pointsValue < 0) {
-            this.modalErrorMessage = 'Les points ne peuvent pas être négatifs.';
-            return;
-        }
 
         if (!this.currentBadge.icon) {
             this.modalErrorMessage = 'L\'icône est obligatoire.';
             return;
         }
 
-        if (this.authService.hasRole('ORGANIZER')) {
-            this.currentBadge.organizerId = this.authService.getCurrentUser()?.organizerId;
-        }
 
         if (this.isEditing && this.currentBadge.id) {
             this.gamificationService.update(this.currentBadge.id, this.currentBadge).subscribe({
@@ -116,5 +188,28 @@ export class GamificationManagementComponent implements OnInit {
                 error: (err) => alert('Delete failed: ' + err.message)
             });
         }
+    }
+
+    showBadgeRules(badge: Gamification) {
+        if (!badge.id) return;
+        this.selectedBadgeName = badge.name;
+        this.loadingRules = true;
+        this.gamificationService.getRulesByBadgeId(badge.id).subscribe({
+            next: (rules) => {
+                this.selectedBadgeRules = rules;
+                this.showRulesModal = true;
+                this.loadingRules = false;
+            },
+            error: (err) => {
+                console.error('Failed to load rules', err);
+                this.loadingRules = false;
+            }
+        });
+    }
+
+    closeRulesModal() {
+        this.showRulesModal = false;
+        this.selectedBadgeRules = [];
+        this.selectedBadgeName = '';
     }
 }

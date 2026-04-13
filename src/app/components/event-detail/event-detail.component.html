@@ -241,10 +241,8 @@
                                     </h4>
                                     <span
                                         class="text-[10px] px-2 py-0.5 bg-orange-100 text-orange-700 rounded-lg font-black uppercase tracking-widest">{{
-                                        badge.pointsValue }} XP</span>
+                                        badge.medal?.name || 'Badge' }}</span>
                                 </div>
-                                <p class="text-xs text-gray-400 font-medium leading-relaxed line-clamp-2">{{
-                                    badge.description }}</p>
                                 <div class="mt-2 flex items-center gap-1.5">
                                     <span class="w-1 h-1 rounded-full bg-forest animate-pulse"></span>
                                     <span
@@ -283,11 +281,13 @@
                         class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                         <div *ngFor="let s of requestedServices"
                             class="flex items-start gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                            <div class="w-10 h-10 rounded-xl bg-olive/10 flex items-center justify-center shrink-0 text-lg">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-olive/10 flex items-center justify-center shrink-0 text-lg">
                                 💼
                             </div>
                             <div class="flex-1">
-                                <h4 class="font-black text-forest text-sm uppercase tracking-wide mb-1">{{ s.name }}</h4>
+                                <h4 class="font-black text-forest text-sm uppercase tracking-wide mb-1">{{ s.name }}
+                                </h4>
                                 <p class="text-xs text-gray-400 font-medium mb-2">{{ s.serviceType }}</p>
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs font-bold text-olive">{{ s.price }} DT</span>
@@ -313,8 +313,10 @@
                         class="mt-4 p-6 bg-forest/5 rounded-2xl border border-forest/10">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
                             <div>
-                                <h4 class="font-black text-forest text-sm uppercase tracking-widest mb-1">Work at this Event</h4>
-                                <p class="text-xs text-gray-500 font-medium">Apply as staff for one of the service roles above.</p>
+                                <h4 class="font-black text-forest text-sm uppercase tracking-widest mb-1">Work at this
+                                    Event</h4>
+                                <p class="text-xs text-gray-500 font-medium">Apply as staff for one of the service roles
+                                    above.</p>
                             </div>
                             <div class="flex gap-3 shrink-0">
                                 <button (click)="goToWorkAtEvent()"
@@ -470,16 +472,21 @@
                         {{ purchaseSuccess ? 'Success!' : 'Get Your Tickets' }}
                     </button>
 
-                    <div *ngIf="purchaseSuccess && purchasedTicket" class="mb-4 rounded-2xl border-2 border-forest/20 bg-green-50 p-4 text-center">
+                    <div *ngIf="purchaseSuccess && purchasedTicket"
+                        class="mb-4 rounded-2xl border-2 border-forest/20 bg-green-50 p-4 text-center">
                         <p class="text-xs font-black text-forest uppercase tracking-widest mb-3">Ticket Confirmed!</p>
                         <div class="bg-white rounded-xl p-3 mb-3 inline-block shadow-sm border border-gray-100">
                             <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">QR Code</p>
-                            <p class="font-mono font-black text-forest text-sm tracking-widest">{{ purchasedTicket.qrCode }}</p>
+                            <p class="font-mono font-black text-forest text-sm tracking-widest">{{
+                                purchasedTicket.qrCode }}</p>
                         </div>
                         <div class="flex justify-center gap-4 text-[10px] text-gray-500">
-                            <span><span class="font-bold text-gray-700">#</span> {{ purchasedTicket.ticketNumber }}</span>
-                            <span><span class="font-bold text-gray-700">Type:</span> {{ purchasedTicket.ticketType }}</span>
-                            <span><span class="font-bold text-gray-700">Status:</span> {{ purchasedTicket.status }}</span>
+                            <span><span class="font-bold text-gray-700">#</span> {{ purchasedTicket.ticketNumber
+                                }}</span>
+                            <span><span class="font-bold text-gray-700">Type:</span> {{ purchasedTicket.ticketType
+                                }}</span>
+                            <span><span class="font-bold text-gray-700">Status:</span> {{ purchasedTicket.status
+                                }}</span>
                         </div>
                     </div>
 
