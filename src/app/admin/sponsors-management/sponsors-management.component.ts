@@ -35,30 +35,86 @@ export class SponsorsManagementComponent implements OnInit {
 
   tierOptions = ['GOLD', 'SILVER', 'BRONZE', 'PLATINUM', 'DIAMOND', 'TITLE_SPONSOR'];
 
-  constructor(private http: HttpClient) {}
-ngOnInit() {
-  this.loadSponsors();
-  this.http.get<any>(`${this.apiUrl}/all`).subscribe({
-    next: (res) => this.totalSponsorsCount = (res.data || []).length,
-    error: () => {}
-  });
-}
+  sponsorStats: any[] = [];
+  eventKeywordFilter: string = '';
+  showLogsModal = false;
+  schedulerLogs: any[] = [];
 
-loadSponsors() {
-  this.isLoading = true;
-  this.errorMessage = null;
-  this.http.get<any>(this.apiUrl).subscribe({
-    next: (response) => {
-      this.sponsors = response.data || [];
-      this.isLoading = false;
-    },
-    error: (err) => {
-      this.errorMessage = 'Failed to load sponsors. Please try again.';
-      console.error(err);
-      this.isLoading = false;
+  constructor(private http: HttpClient) { }
+  ngOnInit() {
+    this.loadSponsors();
+    this.loadStats();
+    this.http.get<any>(`${this.apiUrl}/all`).subscribe({
+      next: (res) => this.totalSponsorsCount = (res.data || []).length,
+      error: () => { }
+    });
+  }
+
+  fetchSchedulerLogs() {
+    this.http.get<any>(`http://localhost:8089/api/scheduler-logs`).subscribe({
+      next: (res) => {
+        // The SchedulerLogController returns a Spring Page object directly
+        this.schedulerLogs = res.content || [];
+      },
+      error: (err) => console.error('Failed to load scheduler logs', err)
+    });
+  }
+
+  loadStats() {
+    this.http.get<any>(`${this.apiUrl}/local-events`).subscribe({
+      next: (res) => {
+        this.sponsorStats = res.data || [];
+      },
+      error: (err) => console.error('Failed to load local event matches', err)
+    });
+  }
+
+  filterByEventKeyword() {
+    this.isLoading = true;
+    this.errorMessage = null;
+    if (!this.eventKeywordFilter) {
+      this.loadSponsors();
+      return;
     }
-  });
-}
+    this.http.get<any>(`${this.apiUrl}/filter-by-event-keyword?keyword=${this.eventKeywordFilter}`).subscribe({
+      next: (response) => {
+        this.sponsors = response.data || [];
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.errorMessage = 'Failed to load filtered sponsors.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  openLogsModal() {
+    this.showLogsModal = true;
+    this.http.get<any>('http://localhost:8089/api/scheduler-logs').subscribe({
+      next: (res) => this.schedulerLogs = res.content || res,
+      error: (err) => console.error(err)
+    });
+  }
+
+  closeLogsModal() {
+    this.showLogsModal = false;
+  }
+
+  loadSponsors() {
+    this.isLoading = true;
+    this.errorMessage = null;
+    this.http.get<any>(this.apiUrl).subscribe({
+      next: (response) => {
+        this.sponsors = response.data || [];
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.errorMessage = 'Failed to load sponsors. Please try again.';
+        console.error(err);
+        this.isLoading = false;
+      }
+    });
+  }
 
   get filteredSponsors() {
     return this.sponsors.filter(s =>
@@ -75,7 +131,7 @@ loadSponsors() {
   openRequestsModal() {
     this.showRequestsModal = true;
     this.isLoadingRequests = true;
-    this.http.get<any>(`${this.apiUrl}/requests`).subscribe({
+    this.http.get<any>(`${this.apiUrl}/pending-requests`).subscribe({
       next: (res) => {
         this.pendingRequests = res.data || [];
         this.isLoadingRequests = false;
@@ -93,7 +149,7 @@ loadSponsors() {
   }
 
   approveRequest(userId: number) {
-    this.http.put(`${this.apiUrl}/requests/${userId}/approve`, {}).subscribe({
+    this.http.put(`${this.apiUrl}/pending-requests/${userId}/approve`, {}).subscribe({
       next: () => {
         this.pendingRequests = this.pendingRequests.filter(r => r.id !== userId);
         this.loadSponsors();
@@ -103,7 +159,7 @@ loadSponsors() {
   }
 
   rejectRequest(userId: number) {
-    this.http.put(`${this.apiUrl}/requests/${userId}/reject`, {}).subscribe({
+    this.http.put(`${this.apiUrl}/pending-requests/${userId}/reject`, {}).subscribe({
       next: () => this.pendingRequests = this.pendingRequests.filter(r => r.id !== userId),
       error: (err) => console.error(err)
     });

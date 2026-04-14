@@ -1,4 +1,5 @@
-<div *ngIf="currentUser && activeGroup; else loading" class="community-hub-container flex h-screen bg-cream-beige overflow-hidden">
+<div *ngIf="currentUser && activeGroup; else loading"
+    class="community-hub-container flex h-screen bg-cream-beige overflow-hidden">
     <!-- Left Sidebar (Users & Messages) -->
     <aside class="w-80 border-r border-olive-green/20 flex flex-col bg-white/50 backdrop-blur-md">
         <!-- Profile Section -->
@@ -61,7 +62,8 @@
 
             <!-- Test button – now visible and styled -->
             <div class="px-2 mb-4">
-                <button (click)="testApi()" class="bg-blue-500 text-white px-4 py-2 rounded-md shadow hover:bg-blue-600 transition">
+                <button (click)="testApi()"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-md shadow hover:bg-blue-600 transition">
                     Test API
                 </button>
             </div>
@@ -299,6 +301,10 @@
     </aside>
 </div>
 
+<ng-template #loading>
+    <div class="flex items-center justify-center h-screen text-forest-green">
+        Loading community...
+    </div>
 <ng-template #loading>
     <div class="flex items-center justify-center h-screen text-forest-green">
         Loading community...

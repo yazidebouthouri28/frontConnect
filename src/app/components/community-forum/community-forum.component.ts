@@ -144,7 +144,7 @@ export class CommunityForumComponent implements OnInit {
     private http: HttpClient,
     private authService: AuthService,
     private userService: UserService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     console.log('CommunityForumComponent initialized');
@@ -317,7 +317,7 @@ export class CommunityForumComponent implements OnInit {
   getSender(senderId: string): User | undefined {
     if (this.isCurrentUser(senderId)) return this.currentUser;
     return this.onlineUsers.find(u => u.id === senderId) ||
-           this.activeGroup?.members?.find(u => u.id === senderId);
+      this.activeGroup?.members?.find(u => u.id === senderId);
   }
 
   private formatTime(timestamp: string): string {

@@ -11,16 +11,40 @@
         <h2 class="font-bold text-forest-green text-lg">Community</h2>
         <p class="text-xs text-olive-green">{{ rooms.length }} group{{ rooms.length !== 1 ? 's' : '' }}</p>
       </div>
-      <!-- Create button — organizers only -->
-      <button *ngIf="isOrganizer"
-        (click)="openCreateModal()"
-        class="w-9 h-9 bg-forest-green text-white rounded-xl flex items-center justify-center hover:bg-forest-green/80 transition-all shadow-md"
-        title="Create new group">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </button>
+      <!-- Create button & Logs -->
+      <div class="flex gap-2">
+        <button (click)="openLogsModal()" class="w-9 h-9 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center hover:bg-blue-100 transition-all shadow-md" title="View Schedulers Logs">
+          📊
+        </button>
+        <button *ngIf="isOrganizer"
+          (click)="openCreateModal()"
+          class="w-9 h-9 bg-forest-green text-white rounded-xl flex items-center justify-center hover:bg-forest-green/80 transition-all shadow-md"
+          title="Create new group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Search / Filter -->
+    <div class="px-6 py-2 border-b border-olive-green/10 flex items-center shadow-sm">
+      <input type="text" [(ngModel)]="keywordFilter" (keyup.enter)="filterChatsByKeyword()" placeholder="Search Messages Keyword..." class="w-full bg-transparent text-sm focus:outline-none">
+      <button (click)="filterChatsByKeyword()" class="text-xs bg-forest-green text-white px-2 py-1 rounded">GO</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="px-6 py-2 border-b border-olive-green/10 bg-white/40">
+      <h3 class="text-[10px] font-black text-forest-green uppercase mb-1">Room Activity Overview</h3>
+      <div class="flex flex-col gap-1 max-h-32 overflow-y-auto">
+        <div *ngFor="let stat of chatStats" class="flex justify-between items-center text-xs border rounded p-1 mb-1 bg-white">
+          <span class="font-bold truncate text-olive-green">{{stat.roomName}}</span>
+          <span class="text-[10px] text-gray-500 mx-1">by {{stat.creatorUsername}}</span>
+          <span class="text-[10px] font-bold text-right text-forest-green">{{stat.memberCount}} members</span>
+        </div>
+        <div *ngIf="chatStats.length === 0" class="text-xs text-gray-400 p-1">No rooms found.</div>
+      </div>
     </div>
 
     <!-- Loading rooms -->
@@ -306,6 +330,31 @@
         class="flex-1 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700">
         Yes, Delete
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULER LOGS MODAL -->
+<div *ngIf="showLogsModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div class="flex justify-between items-center p-6 border-b border-olive-green/10">
+      <h2 class="text-xl font-black text-forest-green">Automatic Schedulers Logs</h2>
+      <button (click)="closeLogsModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 bg-cream-beige/10">
+      <div *ngIf="schedulerLogs.length === 0" class="text-center text-olive-green py-10 font-medium text-sm">
+        No scheduler logs recorded yet. They will appear here once they run automatically.
+      </div>
+      <div class="space-y-4">
+        <div *ngFor="let log of schedulerLogs" class="bg-white border border-olive-green/10 p-4 rounded-xl shadow-sm flex items-start gap-3">
+          <div class="text-2xl mt-1 text-forest-green">🕒</div>
+          <div class="flex-1">
+            <h4 class="font-bold text-forest-green">{{log.schedulerName}}</h4>
+            <p class="text-sm text-olive-green">{{log.details}}</p>
+            <p class="text-xs text-olive-green/60 mt-2 font-mono">{{log.executedAt | date:'medium'}}</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

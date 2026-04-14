@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { ChatService } from '../../services/chat.service';
 
@@ -35,10 +36,17 @@ export class CommunityForumComponent implements OnInit {
 
   roomTypes = ['GROUP', 'EVENT', 'CAMPSITE', 'PRIVATE'];
 
+  // New features
+  chatStats: any[] = [];
+  keywordFilter: string = '';
+  showLogsModal = false;
+  schedulerLogs: any[] = [];
+
   constructor(
     private authService: AuthService,
     private chatService: ChatService,
-    private router: Router
+    private router: Router,
+    private http: HttpClient
   ) {}
 
   ngOnInit() {
@@ -47,6 +55,51 @@ export class CommunityForumComponent implements OnInit {
     this.currentUser = user;
     this.isOrganizer = user.role === 'ORGANIZER' || user.role === 'ADMIN';
     this.loadRooms();
+    this.loadChatStats();
+  }
+
+  loadChatStats(): void {
+    this.http.get<any>(`http://localhost:8089/api/chat-rooms/room-info`).subscribe({
+      next: (res) => this.chatStats = res.data || [],
+      error: (err) => console.error(err)
+    });
+  }
+
+  fetchSchedulerLogs(): void {
+    this.http.get<any>(`http://localhost:8089/api/scheduler-logs`).subscribe({
+      next: (res) => this.schedulerLogs = res.content || res,
+      error: (err) => console.error(err)
+    });
+  }
+
+  filterChatsByKeyword(): void {
+    if (!this.keywordFilter) {
+      this.loadRooms();
+      return;
+    }
+    this.isLoadingRooms = true;
+    this.http.get<any>(`http://localhost:8089/api/chat-rooms/filter-by-keyword?keyword=${this.keywordFilter}`).subscribe({
+      next: (res) => {
+        this.isLoadingRooms = false;
+        this.rooms = res.data || [];
+      },
+      error: (err) => {
+        this.isLoadingRooms = false;
+        console.error(err);
+      }
+    });
+  }
+
+  openLogsModal(): void {
+    this.showLogsModal = true;
+    this.http.get<any>('http://localhost:8089/api/scheduler-logs').subscribe({
+      next: (res) => this.schedulerLogs = res.content || res,
+      error: (err) => console.error(err)
+    });
+  }
+
+  closeLogsModal(): void {
+    this.showLogsModal = false;
   }
 
   loadRooms() {
