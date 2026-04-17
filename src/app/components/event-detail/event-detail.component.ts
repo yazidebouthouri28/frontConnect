@@ -39,7 +39,7 @@ export interface Event {
 })
 export class EventDetailComponent {
     private http = inject(HttpClient);
-    private router = inject(Router);
+    public router = inject(Router);
     public authService = inject(AuthService);
     private cdr = inject(ChangeDetectorRef);
 
@@ -122,8 +122,15 @@ export class EventDetailComponent {
         return Number(this.event.rating);
     }
 
+    // Review-based rating (average of all comments)
+    get averageCommentRating(): number {
+        if (!this.comments || this.comments.length === 0) return 0;
+        const sum = this.comments.reduce((acc, c) => acc + (c.rating || 0), 0);
+        return sum / this.comments.length;
+    }
+
     getStarFill(s: number): number {
-        const rating = this.displayRating;
+        const rating = this.averageCommentRating; // Use comment average for the reviews section
         if (s <= rating) return 100;
         if (s - 1 < rating) return (rating - (s - 1)) * 100;
         return 0;
@@ -265,31 +272,8 @@ export class EventDetailComponent {
         });
     }
 
-    rateEvent(rating: number) {
-        if (!this.event) return;
-        if (!this.authService.isAuthenticated()) {
-            alert('Veuillez vous connecter pour noter un événement.');
-            this.router.navigate(['/auth/login']);
-            return;
-        }
-        this.userRating = rating;
-        const userId = this.authService.getCurrentUser()?.id;
-        if (!userId) return;
-
-        const payload = {
-            targetType: 'EVENT',
-            targetId: this.event.id,
-            rating: rating,
-            comment: 'Note via interface event-detail'
-        };
-        // Expects userId as RequestParam in GeneralReviewController
-        this.http.post(`${this.apiUrl}/api/general-reviews?userId=${userId}`, payload).subscribe({
-            next: () => {
-                console.log(`Rated event ${this.event?.id} with ${rating} stars`);
-                this.refreshEventData();
-            },
-            error: (err) => console.error('Rating failed', err)
-        });
+    setCommentRating(rating: number) {
+        this.newCommentRating = rating;
     }
 
     addCommentWithStars() {
@@ -297,8 +281,11 @@ export class EventDetailComponent {
         const commentText = this.newComment.trim();
         const ratingVal = this.newCommentRating;
 
-        // If neither comment text nor rating is provided, do nothing
-        if (!commentText && ratingVal === 0) return;
+        // Rating is mandatory in Play Store style
+        if (ratingVal === 0) {
+            alert('Veuillez sélectionner une note avant de publier votre avis.');
+            return;
+        }
 
         if (!this.authService.isAuthenticated()) {
             alert('Veuillez vous connecter pour ajouter un avis.');
@@ -309,15 +296,14 @@ export class EventDetailComponent {
         this.isProcessing = true;
         const userId = this.authService.getCurrentUser()?.id;
 
-        // Use GeneralReview endpoint which supports both rating and comment text
         const payload = {
-            targetType: 'EVENT',
-            targetId: this.event.id,
-            rating: ratingVal > 0 ? ratingVal : null,
-            comment: commentText || null
+            eventId: this.event.id,
+            userId,
+            content: commentText || 'Rated only',
+            rating: ratingVal
         };
 
-        this.http.post(`${this.apiUrl}/api/general-reviews?userId=${userId}`, payload).subscribe({
+        this.http.post(`${this.apiUrl}/api/comments`, payload).subscribe({
             next: () => {
                 this.newComment = '';
                 this.newCommentRating = 0;
@@ -335,14 +321,11 @@ export class EventDetailComponent {
     public comments: any[] = [];
     loadComments() {
         if (!this.event) return;
-        // Fetch from general-reviews endpoint instead of comments
-        this.http.get<any>(`${this.apiUrl}/api/general-reviews/EVENT/${this.event.id}?size=100&sort=createdAt,desc`).subscribe({
+        this.http.get<any>(`${this.apiUrl}/api/comments/event/${this.event.id}`).subscribe({
             next: (res) => {
-                // PageResponse wrapped in ApiResponse
-                const pageData = res.data || res;
-                this.comments = pageData.content || pageData;
+                this.comments = res?.data || [];
             },
-            error: (err) => console.error('Failed to load reviews', err)
+            error: (err) => console.error('Failed to load comments', err)
         });
     }
 
@@ -412,8 +395,12 @@ export class EventDetailComponent {
                 const refreshedEvent = res.data || res;
                 // Merge refreshed data into current event to preserve UI state if needed
                 if (this._event) {
-                    this._event.likesCount = refreshedEvent.likesCount;
-                    this._event.dislikesCount = refreshedEvent.dislikesCount;
+                    if (typeof refreshedEvent.likesCount === 'number') {
+                        this._event.likesCount = refreshedEvent.likesCount;
+                    }
+                    if (typeof refreshedEvent.dislikesCount === 'number') {
+                        this._event.dislikesCount = refreshedEvent.dislikesCount;
+                    }
                     this._event.participants = refreshedEvent.currentParticipants || refreshedEvent.participants;
                     // Actualiser la note si elle est présente dans la réponse
                     if (refreshedEvent.rating !== undefined) {
@@ -428,5 +415,46 @@ export class EventDetailComponent {
             },
             error: (err) => console.error('Refresh failed', err)
         });
+    }
+
+    // --- Fullscreen Gallery ---
+    isGalleryOpen = false;
+    activeGalleryIndex = 0;
+
+    get galleryImages(): string[] {
+        if (!this.event) return [];
+        const imgs: string[] = [];
+        if (this.event.image) imgs.push(this.event.image);
+        if (this.event.images) {
+            imgs.push(...this.event.images.filter(img => !!img));
+        }
+        return imgs;
+    }
+
+    openGallery(index: number) {
+        if (this.galleryImages.length === 0) return;
+        this.activeGalleryIndex = Math.min(index, this.galleryImages.length - 1);
+        this.isGalleryOpen = true;
+    }
+
+    closeGallery() {
+        this.isGalleryOpen = false;
+    }
+
+    prevImage() {
+        this.activeGalleryIndex =
+            (this.activeGalleryIndex - 1 + this.galleryImages.length) % this.galleryImages.length;
+    }
+
+    nextImage() {
+        this.activeGalleryIndex =
+            (this.activeGalleryIndex + 1) % this.galleryImages.length;
+    }
+
+    onGalleryBackdropClick(event: MouseEvent) {
+        const target = event.target as HTMLElement;
+        if (target.classList.contains('gallery-backdrop')) {
+            this.closeGallery();
+        }
     }
 }

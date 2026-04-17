@@ -494,8 +494,9 @@
                             class="absolute -right-4 -top-4 w-16 h-16 bg-orange-50 rounded-full opacity-50 group-hover:scale-150 transition-transform">
                         </div>
                         <div
-                            class="w-16 h-16 bg-orange-100/50 rounded-2xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform flex-shrink-0 relative z-10">
-                            {{ badge.icon }}
+                            class="w-16 h-16 bg-orange-100/50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0 relative z-10 overflow-hidden">
+                            <img [src]="'assets/images/Badge/' + badge.icon" [alt]="badge.name"
+                                class="w-12 h-12 object-contain">
                         </div>
                         <div class="relative z-10">
                             <h4 class="font-black text-forest text-sm uppercase tracking-wider mb-1">{{ badge.name }}
@@ -503,11 +504,13 @@
                             <div class="flex items-center gap-2">
                                 <span
                                     class="text-[9px] px-2 py-0.5 bg-orange-500 text-white rounded-lg font-black uppercase tracking-widest">{{
-                                    badge.pointsValue }} XP</span>
-                                <span class="text-[9px] text-orange-400 font-bold italic">Verified Item</span>
+                                    badge.medalName || 'Badge' }}</span>
+                                <span class="text-[9px] text-orange-400 font-bold italic">Official Reward</span>
                             </div>
-                            <p class="text-[11px] text-gray-400 font-medium mt-3 leading-relaxed">{{ badge.description
-                                }}</p>
+                            <p class="text-[11px] text-gray-400 font-medium mt-3 leading-relaxed">
+                                {{ badge.rules && badge.rules.length > 0 ? badge.rules[0].regle : 'Achievement unlocked
+                                via participation.' }}
+                            </p>
                         </div>
                     </div>
                 </div>

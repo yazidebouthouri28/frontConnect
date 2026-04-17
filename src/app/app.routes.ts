@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { AuthGuard, SellerGuard, ClientGuard, AdminGuard, OrganizerOnlyGuard } from './guards/auth.guard';
+import { AuthGuard, SellerGuard, ClientGuard, AdminGuard, OrganizerOnlyGuard, OrganizerGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   // Redirect root to the auth login page
@@ -90,7 +90,7 @@ export const routes: Routes = [
   {
     path: 'organizer/gamification',
     loadComponent: () => import('./admin/gamification-management/gamification-management.component').then(m => m.GamificationManagementComponent),
-    canActivate: [OrganizerOnlyGuard]
+    canActivate: [OrganizerGuard]
   },
 
   // --- Catch‑all: redirect to root (which goes to auth) ---

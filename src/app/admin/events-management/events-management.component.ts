@@ -8,7 +8,8 @@ import { SiteService } from '../../services/site.service';
 import { environment } from '../../../environments/environment';
 import { Site } from '../../models/camping.models';
 import { ApiResponse } from '../../models/api.models';
-import { GamificationService, Gamification } from '../../services/gamification.service';
+import { GamificationService } from '../../services/gamification.service';
+import { Badge } from '../../models/gamification.models';
 import { GamificationManagementComponent } from '../gamification-management/gamification-management.component';
 
 interface AdminEvent {
@@ -35,7 +36,7 @@ interface AdminEvent {
     organizerName: string;
     siteId: number | null;
     siteName: string;
-    gamifications?: Gamification[];
+    gamifications?: Badge[];
 }
 
 interface EventForm {
@@ -89,14 +90,18 @@ export class EventsAdminManagementComponent implements OnInit {
     imagePreview: string | null = null;
     selectedFileName = '';
     selectedFile: File | null = null;
+    imagePreviews: string[] = [];
+    selectedFiles: File[] = [];
+    uploadedImages: string[] = [];
     imageError = '';
     activeActionMenu: number | null = null;
     editingEventId: number | null = null;
     otherEventType = '';
     otherCategory = '';
     myOrganizerId: number | null = null;
-    availableBadges: Gamification[] = [];
+    availableBadges: Badge[] = [];
     selectedBadgeIds = new Set<number>();
+    selectedBadgeMedalFilter: 'ALL' | 'COMMUNITY' | 'SCIENCE' | 'SCOUT' = 'ALL';
     availableSites: Site[] = [];
 
     private readonly ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -192,12 +197,12 @@ export class EventsAdminManagementComponent implements OnInit {
     }
 
     private loadBadges() {
-        this.gamificationService.getAll().subscribe({
-            next: (badges) => {
+        this.gamificationService.getBadges().subscribe({
+            next: (badges: Badge[]) => {
                 this.availableBadges = badges;
                 this.cdr.detectChanges();
             },
-            error: (err) => console.error('Error loading badges:', err)
+            error: (err: any) => console.error('Error loading badges:', err)
         });
     }
 
@@ -209,6 +214,23 @@ export class EventsAdminManagementComponent implements OnInit {
         }
         this.newEvent.gamificationIds = Array.from(this.selectedBadgeIds);
         this.cdr.detectChanges();
+    }
+
+    get filteredAvailableBadges(): Badge[] {
+        if (this.selectedBadgeMedalFilter === 'ALL') {
+            return this.availableBadges;
+        }
+        return this.availableBadges.filter((badge) => {
+            const medal = (badge.medalName || '').toLowerCase();
+            if (this.selectedBadgeMedalFilter === 'COMMUNITY') return medal.includes('community leadership');
+            if (this.selectedBadgeMedalFilter === 'SCIENCE') return medal.includes('science and arts');
+            if (this.selectedBadgeMedalFilter === 'SCOUT') return medal.includes('scout leadership');
+            return true;
+        });
+    }
+
+    setBadgeMedalFilter(filter: 'ALL' | 'COMMUNITY' | 'SCIENCE' | 'SCOUT'): void {
+        this.selectedBadgeMedalFilter = filter;
     }
 
     private setOrganizerId() {
@@ -230,7 +252,6 @@ export class EventsAdminManagementComponent implements OnInit {
             next: (response) => {
                 const data = response.data || response;
                 this.events = (Array.isArray(data) ? data : [])
-                    .filter((e: any) => e?.status !== 'CANCELLED')
                     .map((e: any) => ({
                         id: e.id,
                         name: e.title || '',                    // CHANGED: backend returns title
@@ -246,7 +267,7 @@ export class EventsAdminManagementComponent implements OnInit {
                         category: e.category || '',
                         startDate: e.startDate ? e.startDate.replace('T', 'T').substring(0, 16) : '', // ADDED
                         endDate: e.endDate ? e.endDate.replace('T', 'T').substring(0, 16) : '',
-                        picture: e.thumbnail || e.picture || e.images?.[0] || '',
+                        picture: e.images?.[0] || e.picture || '',
                         isFree: e.isFree || false,
                         eventType: e.eventType || '',
                         createdAt: e.createdAt || '',
@@ -302,10 +323,15 @@ export class EventsAdminManagementComponent implements OnInit {
         return map[type] || 'Workshop';
     }
 
-    private mapStatus(status: string): 'Published' | 'Draft' {
+    private mapStatus(status: string): string {
         const s = (status || '').toUpperCase();
         if (s === 'PUBLISHED') return 'Published';
-        return 'Draft';
+        if (s === 'DRAFT') return 'Draft';
+        if (s === 'COMPLETED') return 'Completed';
+        if (s === 'CANCELLED') return 'Cancelled';
+        if (s === 'ONGOING') return 'Ongoing';
+        if (s === 'POSTPONED') return 'Postponed';
+        return s.charAt(0) + s.slice(1).toLowerCase();
     }
 
     getCategoryIcon(category: string): string {
@@ -361,6 +387,8 @@ export class EventsAdminManagementComponent implements OnInit {
         this.editingEventId = null;
         this.otherEventType = '';
         this.otherCategory = '';
+        this.selectedBadgeMedalFilter = 'ALL';
+        this.selectedBadgeIds.clear();
         this.removeImage();
     }
 
@@ -383,30 +411,29 @@ export class EventsAdminManagementComponent implements OnInit {
     onFileSelected(event: Event) {
         const input = event.target as HTMLInputElement;
         this.imageError = '';
-        if (input.files && input.files[0]) {
-            const file = input.files[0];
+        if (input.files && input.files.length) {
+            const files = Array.from(input.files);
+            for (const file of files) {
+                if (!this.ALLOWED_TYPES.includes(file.type)) {
+                    this.imageError = `Invalid file type "${file.type || 'unknown'}". Only JPG, PNG, and WebP are allowed.`;
+                    input.value = '';
+                    return;
+                }
 
-            if (!this.ALLOWED_TYPES.includes(file.type)) {
-                this.imageError = `Invalid file type "${file.type || 'unknown'}". Only JPG, PNG, and WebP are allowed.`;
-                input.value = '';
-                return;
+                if (file.size > this.MAX_FILE_SIZE) {
+                    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                    this.imageError = `File is too large (${sizeMB}MB). Maximum allowed size is 5MB.`;
+                    input.value = '';
+                    return;
+                }
+
+                this.selectedFiles.push(file);
+                this.imagePreviews.push(URL.createObjectURL(file));
             }
-
-            if (file.size > this.MAX_FILE_SIZE) {
-                const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-                this.imageError = `File is too large (${sizeMB}MB). Maximum allowed size is 5MB.`;
-                input.value = '';
-                return;
-            }
-
-            if (this.imagePreview) {
-                URL.revokeObjectURL(this.imagePreview);
-            }
-
-            this.selectedFile = file;
-            this.selectedFileName = file.name;
-            this.imagePreview = URL.createObjectURL(file);
-            this.newEvent.picture = file.name;
+            this.selectedFile = this.selectedFiles[0] || null;
+            this.selectedFileName = this.selectedFiles.map((f) => f.name).join(', ');
+            this.imagePreview = this.imagePreviews[0] || null;
+            this.newEvent.picture = this.selectedFiles[0]?.name || '';
             input.value = '';
         }
     }
@@ -418,8 +445,36 @@ export class EventsAdminManagementComponent implements OnInit {
         this.imagePreview = null;
         this.selectedFileName = '';
         this.selectedFile = null;
+        this.imagePreviews.forEach((preview) => {
+            if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
+        });
+        this.imagePreviews = [];
+        this.selectedFiles = [];
+        this.uploadedImages = [];
         this.newEvent.picture = '';
         this.imageError = '';
+    }
+
+    removeImageAtIndex(index: number) {
+        if (this.imagePreviews[index]?.startsWith('blob:')) {
+            URL.revokeObjectURL(this.imagePreviews[index]);
+        }
+        // Determine if this index refers to an existing server image or a new file
+        const existingCount = this.uploadedImages.length;
+        if (index < existingCount) {
+            // Remove from existing server images
+            this.uploadedImages.splice(index, 1);
+        } else {
+            // Remove from newly selected files
+            this.selectedFiles.splice(index - existingCount, 1);
+        }
+        this.imagePreviews.splice(index, 1);
+        if (this.imagePreviews.length === 0) {
+            this.imagePreview = null;
+        } else {
+            this.imagePreview = this.imagePreviews[0];
+        }
+        this.cdr.detectChanges();
     }
 
     submitEvent() {
@@ -465,26 +520,36 @@ export class EventsAdminManagementComponent implements OnInit {
 
         this.loading = true;
 
-        if (this.selectedFile) {
-            const formData = new FormData();
-            formData.append('file', this.selectedFile);
-
-            this.http.post<any>(this.uploadUrl, formData).subscribe({
-                next: (res) => {
-                    this.newEvent.picture = res.data.fileName;
-                    this.selectedFile = null;
-                    this.proceedWithSubmit(finalEventType, finalCategory);
-                },
-                error: (err) => {
-                    console.error('Upload failed:', err);
-                    this.modalErrorMessage = 'Échec du chargement de l\'image.';
-                    this.loading = false;
-                    this.cdr.detectChanges();
-                }
-            });
+        if (this.selectedFiles.length > 0) {
+            this.uploadFilesBeforeSubmit(0, [], finalEventType, finalCategory);
         } else {
             this.proceedWithSubmit(finalEventType, finalCategory);
         }
+    }
+
+    private uploadFilesBeforeSubmit(index: number, uploaded: string[], finalEventType: string, finalCategory: string): void {
+        if (index >= this.selectedFiles.length) {
+            // Merge: keep existing server images + add newly uploaded ones
+            this.uploadedImages = [...this.uploadedImages, ...uploaded];
+            this.proceedWithSubmit(finalEventType, finalCategory);
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', this.selectedFiles[index]);
+        this.http.post<any>(this.uploadUrl, formData).subscribe({
+            next: (res) => {
+                if (res?.data?.fileName) {
+                    uploaded.push(res.data.fileName);
+                }
+                this.uploadFilesBeforeSubmit(index + 1, uploaded, finalEventType, finalCategory);
+            },
+            error: (err) => {
+                console.error('Upload failed:', err);
+                this.modalErrorMessage = 'Échec du chargement des images.';
+                this.loading = false;
+                this.cdr.detectChanges();
+            }
+        });
     }
 
     private proceedWithSubmit(finalEventType: string, finalCategory: string) {
@@ -523,7 +588,9 @@ export class EventsAdminManagementComponent implements OnInit {
             (this.newEvent.endDate.length === 16 ? this.newEvent.endDate + ':00' : this.newEvent.endDate) :
             this.newEvent.endDate;
 
-        const normalizedThumbnail = this.normalizeStoredImagePath(this.newEvent.picture);
+        const normalizedImages = (this.uploadedImages.length ? this.uploadedImages : (this.newEvent.picture ? [this.newEvent.picture] : []))
+            .map((path) => this.normalizeStoredImagePath(path))
+            .filter((path) => !!path);
         const payload: any = {
             title: this.newEvent.title,
             description: this.newEvent.description,
@@ -535,8 +602,7 @@ export class EventsAdminManagementComponent implements OnInit {
             maxParticipants: this.newEvent.maxParticipants,
             price: this.newEvent.price,
             isFree: this.newEvent.isFree,
-            thumbnail: normalizedThumbnail,
-            images: normalizedThumbnail ? [normalizedThumbnail] : [],
+            images: normalizedImages,
             status: this.newEvent.status,
             organizerId: this.newEvent.organizerId || 1
         };
@@ -593,6 +659,10 @@ export class EventsAdminManagementComponent implements OnInit {
         switch (status) {
             case 'Published': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'Draft': return 'bg-slate-100 text-slate-700 border-slate-200';
+            case 'Completed': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'Cancelled': return 'bg-rose-100 text-rose-700 border-rose-200';
+            case 'Ongoing': return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'Postponed': return 'bg-orange-100 text-orange-700 border-orange-200';
             default: return 'bg-gray-100 text-gray-700';
         }
     }
@@ -686,6 +756,11 @@ export class EventsAdminManagementComponent implements OnInit {
                     this.selectedBadgeIds = new Set(this.newEvent.gamificationIds);
                     this.cdr.detectChanges();
                 }
+                if (fullEvent?.images?.length) {
+                    this.uploadedImages = [...fullEvent.images];
+                    this.imagePreviews = fullEvent.images.map((img: string) => this.resolveStoredImageUrl(img));
+                    this.imagePreview = this.imagePreviews[0] || null;
+                }
             }
         });
 
@@ -732,6 +807,22 @@ export class EventsAdminManagementComponent implements OnInit {
             // but the UI will show the warning about selecting from list.
         }
         this.cdr.detectChanges();
+    }
+
+    toggleEventStatus(event: AdminEvent) {
+        const newStatus = event.status === 'Published' ? 'DRAFT' : 'PUBLISHED';
+        this.http.patch(`${this.apiUrl}/${event.id}/status`, null, {
+            params: { status: newStatus }
+        }).subscribe({
+            next: () => {
+                this.loadEvents();
+                this.closeActionMenu();
+            },
+            error: (err) => {
+                console.error('Status toggle failed:', err);
+                alert('Échec du changement de statut.');
+            }
+        });
     }
 
     deleteSingleEvent(eventId: number) {
@@ -809,5 +900,21 @@ export class EventsAdminManagementComponent implements OnInit {
         }
 
         return path.replace(/^\/+/, '');
+    }
+
+    resolveBadgeIcon(icon?: string): string {
+        const clean = (icon || '').trim();
+        if (!clean) {
+            return 'assets/images/Badge/placeholder.png';
+        }
+        if (
+            clean.startsWith('http://') ||
+            clean.startsWith('https://') ||
+            clean.startsWith('/') ||
+            clean.startsWith('assets/')
+        ) {
+            return clean;
+        }
+        return `assets/images/Badge/${clean}`;
     }
 }

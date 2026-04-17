@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { catchError, map, of } from 'rxjs';
 import { EventDetailComponent, Event } from '../event-detail/event-detail.component';
 import { environment } from '../../../environments/environment';
@@ -28,7 +28,8 @@ type EventResponse = {
   price?: number;
   isFree?: boolean;
   images?: string[];
-  thumbnail?: string;
+  likesCount?: number;
+  dislikesCount?: number;
   organizerName?: string;
   status?: string;
   gamifications?: any[];
@@ -37,7 +38,7 @@ type EventResponse = {
 @Component({
   selector: 'app-events-management',
   standalone: true,
-  imports: [CommonModule, EventDetailComponent, HttpClientModule],
+  imports: [CommonModule, EventDetailComponent],
   templateUrl: './events-management.component.html',
   styleUrls: ['./events-management.component.css'],
 })
@@ -76,7 +77,7 @@ export class EventsManagementComponent implements OnInit {
             throw new Error(res?.message || 'Failed to load events');
           }
           return (res.data ?? [])
-            .filter((e) => (e.status ?? '').toUpperCase() === 'PUBLISHED')
+            .filter((e) => this.isVisibleEventStatus(e.status))
             .map((e) => this.toUiEvent(e));
         }),
         catchError((err) => {
@@ -98,9 +99,17 @@ export class EventsManagementComponent implements OnInit {
       });
   }
 
+  private isVisibleEventStatus(status?: string): boolean {
+    const normalized = (status ?? '').toUpperCase();
+    // Public list should hide cancelled/draft items but keep published and completed ones.
+    if (!normalized) return true;
+    if (normalized === 'CANCELLED' || normalized === 'DRAFT') return false;
+    return normalized === 'PUBLISHED' || normalized === 'COMPLETED';
+  }
+
   private toUiEvent(e: EventResponse): Event {
     const start = e.startDate ? new Date(e.startDate) : null;
-    const primaryImage = e.thumbnail || e.images?.find((img) => !!img);
+    const primaryImage = e.images?.find((img) => !!img);
 
     const type: 'workshop' | 'trip' | 'festival' = this.normalizeEventType(
       e.eventType ?? e.category
@@ -118,6 +127,8 @@ export class EventsManagementComponent implements OnInit {
       maxParticipants: e.maxParticipants ?? 1,
       price: e.isFree ? 0 : e.price ?? 0,
       organizer: e.organizerName || 'Organizer',
+      likesCount: e.likesCount ?? 0,
+      dislikesCount: e.dislikesCount ?? 0,
       images: (e.images ?? []).map((img) => this.resolveMediaUrl(img)),
       gamifications: e.gamifications || [],
     };

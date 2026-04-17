@@ -550,9 +550,8 @@
                             class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-xl group-hover:scale-110 transition-transform shadow-inner">
                             {{ badge.icon }}
                         </div>
-                        <div class="min-w-0">
+                        <div class="min-w-0 text-center">
                             <p class="text-[11px] font-black text-[#1a2e1a] truncate">{{ badge.name }}</p>
-                            <p class="text-[9px] text-gray-400 font-bold truncate">{{ badge.pointsValue }} pts</p>
                         </div>
                         @if (selectedBadgeIds.has(badge.id!)) {
                         <div class="ml-auto text-[#2C4A3C] font-black text-xs">✓</div>

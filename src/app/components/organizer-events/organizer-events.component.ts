@@ -8,7 +8,8 @@ import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../models/api.models';
 import { Site } from '../../models/camping.models';
 import { SiteService } from '../../services/site.service';
-import { GamificationService, Gamification } from '../../services/gamification.service';
+import { GamificationService } from '../../services/gamification.service';
+import { Badge } from '../../models/gamification.models';
 
 interface AdminEvent {
     id: number;
@@ -92,7 +93,7 @@ export class OrganizerEventsComponent implements OnInit {
     otherEventType = '';
     otherCategory = '';
     myOrganizerId: number | null = null;
-    availableBadges: Gamification[] = [];
+    availableBadges: Badge[] = [];
     selectedBadgeIds = new Set<number>();
     availableSites: Site[] = [];
 
@@ -276,12 +277,12 @@ export class OrganizerEventsComponent implements OnInit {
     }
 
     loadAvailableBadges() {
-        this.gamificationService.getAll().subscribe({
-            next: (data) => {
+        this.gamificationService.getBadges().subscribe({
+            next: (data: Badge[]) => {
                 this.availableBadges = data;
                 this.cdr.detectChanges();
             },
-            error: (err) => console.error('Failed to load badges:', err)
+            error: (err: any) => console.error('Failed to load badges:', err)
         });
     }
 

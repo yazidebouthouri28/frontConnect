@@ -54,7 +54,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   /** True only for organizer role (not admin). */
   get showManageMyEvents(): boolean {
-    return this.authService.getCurrentUser()?.role === 'ORGANIZER';
+    return this.authService.hasOrganizerAccess();
   }
 
   get isAdmin(): boolean {

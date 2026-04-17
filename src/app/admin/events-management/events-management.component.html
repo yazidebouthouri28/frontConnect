@@ -215,6 +215,10 @@
                                     <button (click)="editEvent(event)"
                                         class="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-[#2C4A3C]/5">✏️
                                         Edit Event</button>
+                                    <button (click)="toggleEventStatus(event)"
+                                        class="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-[#2C4A3C]/5">
+                                        {{ event.status === 'Published' ? '📄 Set as Draft' : '🚀 Set as Published' }}
+                                    </button>
                                     <button (click)="deleteSingleEvent(event.id)"
                                         class="w-full text-left px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50">🗑️
                                         Delete</button>
@@ -283,6 +287,12 @@
                             maxlength="200" type="text"
                             class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/20 focus:border-[#2C4A3C]/40 transition-all"
                             [ngClass]="{'border-red-500 bg-red-50': name.invalid && (name.touched || eventForm.submitted)}">
+                        @if (name.invalid && (name.touched || eventForm.submitted)) {
+                        <p class="text-red-500 text-[10px] font-bold mt-1">
+                            @if (name.errors?.['required']) { Le nom est obligatoire }
+                            @if (name.errors?.['minlength']) { Minimum 3 caractères }
+                        </p>
+                        }
                     </div>
 
                     <div>
@@ -292,6 +302,12 @@
                             minlength="10" rows="3"
                             class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2C4A3C]/20 focus:border-[#2C4A3C]/40 transition-all resize-none"
                             [ngClass]="{'border-red-500 bg-red-50': description.invalid && (description.touched || eventForm.submitted)}"></textarea>
+                        @if (description.invalid && (description.touched || eventForm.submitted)) {
+                        <p class="text-red-500 text-[10px] font-bold mt-1">
+                            @if (description.errors?.['required']) { La description est obligatoire }
+                            @if (description.errors?.['minlength']) { Minimum 10 caractères }
+                        </p>
+                        }
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -302,6 +318,15 @@
                                 class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white cursor-pointer">
                                 @for (type of eventTypes; track type) { <option [value]="type">{{ type }}</option> }
                             </select>
+                            @if (newEvent.eventType === 'Other') {
+                            <input [(ngModel)]="otherEventType" name="otherEventType" #otherType="ngModel" type="text"
+                                placeholder="Specify event type..." required
+                                class="w-full mt-2 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20"
+                                [ngClass]="{'border-red-500 bg-red-50': otherType.invalid && (otherType.touched || eventForm.submitted)}">
+                            @if (otherType.invalid && (otherType.touched || eventForm.submitted)) {
+                            <p class="text-red-500 text-[10px] font-bold mt-1">Specify custom type</p>
+                            }
+                            }
                         </div>
                         <div>
                             <label
@@ -310,6 +335,15 @@
                                 class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white cursor-pointer">
                                 @for (cat of categories; track cat) { <option [value]="cat">{{ cat }}</option> }
                             </select>
+                            @if (newEvent.category === 'Other') {
+                            <input [(ngModel)]="otherCategory" name="otherCategory" #otherCat="ngModel" type="text"
+                                placeholder="Specify category..." required
+                                class="w-full mt-2 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20"
+                                [ngClass]="{'border-red-500 bg-red-50': otherCat.invalid && (otherCat.touched || eventForm.submitted)}">
+                            @if (otherCat.invalid && (otherCat.touched || eventForm.submitted)) {
+                            <p class="text-red-500 text-[10px] font-bold mt-1">Specify custom category</p>
+                            }
+                            }
                         </div>
                     </div>
 
@@ -317,28 +351,42 @@
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Start
                                 Date</label>
-                            <input [(ngModel)]="newEvent.startDate" name="startDate" required type="datetime-local"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
+                            <input [(ngModel)]="newEvent.startDate" name="startDate" #startDate="ngModel" required
+                                type="datetime-local" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm"
+                                [ngClass]="{'border-red-500 bg-red-50': startDate.invalid && (startDate.touched || eventForm.submitted)}">
+                            @if (startDate.invalid && (startDate.touched || eventForm.submitted)) {
+                            <p class="text-red-500 text-[10px] font-bold mt-1">Date de début obligatoire</p>
+                            }
                         </div>
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">End
                                 Date</label>
-                            <input [(ngModel)]="newEvent.endDate" name="endDate" required type="datetime-local"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
+                            <input [(ngModel)]="newEvent.endDate" name="endDate" #endDate="ngModel" required
+                                type="datetime-local" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm"
+                                [ngClass]="{'border-red-500 bg-red-50': (endDate.invalid || (newEvent.startDate && newEvent.endDate && newEvent.startDate >= newEvent.endDate)) && (endDate.touched || eventForm.submitted)}">
+                            @if ((endDate.invalid || (newEvent.startDate && newEvent.endDate && newEvent.startDate >=
+                            newEvent.endDate)) && (endDate.touched || eventForm.submitted)) {
+                            <p class="text-red-500 text-[10px] font-bold mt-1">
+                                {{ (newEvent.startDate && newEvent.endDate && newEvent.startDate >= newEvent.endDate) ?
+                                'Doit être après le début' : 'Date de fin obligatoire' }}
+                            </p>
+                            }
                         </div>
                     </div>
 
                     <div>
-                        <label
-                            class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Location</label>
-                        <input [(ngModel)]="newEvent.location" name="location" type="text" list="campsites-options"
-                            (ngModelChange)="onLocationComboboxChange($event)"
+                        <input [(ngModel)]="newEvent.location" name="location" #location="ngModel" type="text"
+                            list="campsites-options" (ngModelChange)="onLocationComboboxChange($event)" required
                             class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm"
-                            placeholder="Search or type location...">
+                            placeholder="Search or type location..."
+                            [ngClass]="{'border-red-500 bg-red-50': location.invalid && (location.touched || eventForm.submitted)}">
                         <datalist id="campsites-options">
                             @for (site of availableSites; track site.id) { <option [value]="formatSiteLabel(site)">
                             </option> }
                         </datalist>
+                        @if (location.invalid && (location.touched || eventForm.submitted)) {
+                        <p class="text-red-500 text-[10px] font-bold mt-1">Location is required</p>
+                        }
                         @if (!newEvent.siteId && newEvent.location && newEvent.eventType === 'CAMPING') {
                         <p class="text-[10px] text-orange-500 font-bold mt-1">⚠️ Veuillez choisir un campsite de la
                             liste pour valider le lieu.</p>
@@ -349,40 +397,63 @@
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Max
                                 Participants</label>
-                            <input [(ngModel)]="newEvent.maxParticipants" name="maxParticipants" required type="number"
-                                min="1" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm">
+                            <input [(ngModel)]="newEvent.maxParticipants" name="maxParticipants"
+                                #maxParticipants="ngModel" required type="number" min="1"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm"
+                                [ngClass]="{'border-red-500 bg-red-50': (maxParticipants.invalid && (maxParticipants.touched || eventForm.submitted)) || (newEvent.maxParticipants !== null && newEvent.maxParticipants < 1)}">
+                            @if ((maxParticipants.invalid && (maxParticipants.touched || eventForm.submitted)) ||
+                            (newEvent.maxParticipants !== null && newEvent.maxParticipants < 1)) { <p
+                                class="text-red-500 text-[10px] font-bold mt-1">Minimum 1 participant</p>
+                                }
                         </div>
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Price
                                 (DT)</label>
-                            <input [(ngModel)]="newEvent.price" name="price" type="number" min="0"
+                            <input [(ngModel)]="newEvent.price" name="price" #price="ngModel" type="number" min="0"
                                 [disabled]="newEvent.isFree"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm disabled:bg-gray-100">
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm disabled:bg-gray-100"
+                                [ngClass]="{'border-red-500 bg-red-50': !newEvent.isFree && (price.invalid && (price.touched || eventForm.submitted) || (newEvent.price !== null && newEvent.price < 0))}">
+                            @if (!newEvent.isFree && ((price.invalid && (price.touched || eventForm.submitted)) ||
+                            (newEvent.price !== null && newEvent.price < 0))) { <p
+                                class="text-red-500 text-[10px] font-bold mt-1">Le prix ne peut pas être négatif</p>
+                                }
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Event
                             Picture</label>
-                        <input type="file" accept="image/*" (change)="onFileSelected($event)" #fileInput class="hidden">
+                        <input type="file" accept="image/*" multiple (change)="onFileSelected($event)" #fileInput
+                            class="hidden">
                         @if (!imagePreview) {
                         <div (click)="fileInput.click()"
                             class="w-full border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-50">
                             <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-2xl">📷
                             </div>
-                            <p class="text-sm font-bold text-[#1a2e1a]">Click to upload a picture</p>
+                            <p class="text-sm font-bold text-[#1a2e1a]">Click to upload one or more pictures</p>
                         </div>
                         } @else {
-                        <div class="relative rounded-xl overflow-hidden border border-gray-200 group">
-                            <img [src]="imagePreview" alt="Preview" class="w-full h-48 object-cover">
-                            <div
-                                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3">
-                                <button type="button" (click)="fileInput.click()"
-                                    class="px-4 py-2 bg-white rounded-lg text-xs font-black">Change</button>
-                                <button type="button" (click)="removeImage()"
-                                    class="px-4 py-2 bg-red-500 rounded-lg text-xs font-black text-white">Remove</button>
+                        <div class="grid grid-cols-2 gap-3">
+                            @for (preview of imagePreviews; track preview; let i = $index) {
+                            <div class="relative rounded-xl overflow-hidden border border-gray-200 group h-32">
+                                <img [src]="preview" alt="Preview" class="w-full h-full object-cover">
+                                <div
+                                    class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                                    <button type="button" (click)="removeImageAtIndex(i)"
+                                        class="p-2 bg-red-500 rounded-lg text-white text-xs">🗑️</button>
+                                </div>
+                            </div>
+                            }
+                            <div (click)="fileInput.click()"
+                                class="border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-gray-50 h-32">
+                                <span class="text-xl">+</span>
+                                <span class="text-[10px] font-bold">Add More</span>
                             </div>
                         </div>
+                        @if (imagePreviews.length > 0) {
+                        <p class="text-xs text-gray-500 mt-2 font-semibold">{{ imagePreviews.length }} images selected
+                        </p>
+                        }
                         }
                     </div>
 
@@ -391,16 +462,32 @@
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Event
                             Badges (Gamification)</label>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="px-3 py-1.5 rounded-full text-[10px] font-black border"
+                                [ngClass]="selectedBadgeMedalFilter === 'ALL' ? 'bg-[#2C4A3C] text-white border-[#2C4A3C]' : 'bg-white text-gray-600 border-gray-200'"
+                                (click)="setBadgeMedalFilter('ALL')">All Medals</button>
+                            <button type="button" class="px-3 py-1.5 rounded-full text-[10px] font-black border"
+                                [ngClass]="selectedBadgeMedalFilter === 'COMMUNITY' ? 'bg-[#2C4A3C] text-white border-[#2C4A3C]' : 'bg-white text-gray-600 border-gray-200'"
+                                (click)="setBadgeMedalFilter('COMMUNITY')">Community Leadership Medal</button>
+                            <button type="button" class="px-3 py-1.5 rounded-full text-[10px] font-black border"
+                                [ngClass]="selectedBadgeMedalFilter === 'SCIENCE' ? 'bg-[#2C4A3C] text-white border-[#2C4A3C]' : 'bg-white text-gray-600 border-gray-200'"
+                                (click)="setBadgeMedalFilter('SCIENCE')">Science and Arts</button>
+                            <button type="button" class="px-3 py-1.5 rounded-full text-[10px] font-black border"
+                                [ngClass]="selectedBadgeMedalFilter === 'SCOUT' ? 'bg-[#2C4A3C] text-white border-[#2C4A3C]' : 'bg-white text-gray-600 border-gray-200'"
+                                (click)="setBadgeMedalFilter('SCOUT')">Scout Leadership</button>
+                        </div>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            @for (badge of availableBadges; track badge.id) {
+                            @for (badge of filteredAvailableBadges; track badge.id) {
                             <div (click)="toggleBadgeSelection(badge.id!)"
                                 class="flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer"
                                 [ngClass]="selectedBadgeIds.has(badge.id!) ? 'bg-[#2C4A3C]/5 border-[#2C4A3C]' : 'bg-white border-gray-100 hover:border-gray-200'">
-                                <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-lg">{{
-                                    badge.icon }}</div>
-                                <div class="min-w-0">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden">
+                                    <img [src]="resolveBadgeIcon(badge.icon)" [alt]="badge.name"
+                                        class="w-7 h-7 object-contain">
+                                </div>
+                                <div class="min-w-0 text-center">
                                     <p class="text-[10px] font-black text-[#1a2e1a] truncate">{{ badge.name }}</p>
-                                    <p class="text-[8px] text-gray-400 font-bold">{{ badge.pointsValue }} pts</p>
                                 </div>
                             </div>
                             }

@@ -74,8 +74,8 @@ export class AuthService {
       map(raw => this.extractAuthResponse(raw)),
       tap(auth => {
         this.handleAuthSuccess(auth);
-        // If user is an organizer, fetch their organizerId and update the stored user
-        if (auth.user.role === 'ORGANIZER' && auth.user.id && auth.user.organizerId == null) {
+        // Try resolving organizer profile for any authenticated account.
+        if (auth.user.id && auth.user.organizerId == null) {
           this.http.get<ApiResponse<number>>(`${environment.apiUrl}/api/organizers/by-user/${auth.user.id}`)
             .subscribe({
               next: (res) => {
@@ -157,7 +157,7 @@ export class AuthService {
     const p = (raw?.data && raw?.success !== undefined) ? raw.data : raw;
     if (!p?.token) throw new Error('Invalid server response: token missing.');
 
-    const rawRole = String(p.role ?? 'CLIENT').toUpperCase();
+    const rawRole = this.resolveRawRole(p, p.token);
     const roleMap: Record<string, UserRole> = { 'USER': 'CLIENT' };
     const role: UserRole = roleMap[rawRole]
       ?? (VALID_ROLES.includes(rawRole as UserRole) ? (rawRole as UserRole) : 'CLIENT');
@@ -335,4 +335,33 @@ export class AuthService {
   isOrganizer(): boolean { return this.hasRole('ORGANIZER'); }
   isCamper(): boolean { return this.hasRole('CAMPER'); }
   isSponsor(): boolean { return this.hasRole('SPONSOR'); }
+
+  hasOrganizerAccess(): boolean {
+    const user = this.getCurrentUser();
+    return this.hasRole('ORGANIZER') || (!!user?.organizerId && Number(user.organizerId) > 0);
+  }
+
+  private resolveRawRole(payload: any, token?: string): string {
+    const directRole = String(payload?.role ?? payload?.user?.role ?? '').toUpperCase();
+    if (directRole) return directRole;
+
+    const authorities = payload?.authorities ?? payload?.roles ?? payload?.user?.authorities;
+    if (Array.isArray(authorities) && authorities.length) {
+      const first = String(authorities[0]).toUpperCase().replace('ROLE_', '');
+      if (first) return first;
+    }
+
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        const tokenRole = String(decoded?.role ?? '').toUpperCase().replace('ROLE_', '');
+        if (tokenRole) return tokenRole;
+        if (Array.isArray(decoded?.authorities) && decoded.authorities.length) {
+          return String(decoded.authorities[0]).toUpperCase().replace('ROLE_', '');
+        }
+      } catch { }
+    }
+
+    return 'CLIENT';
+  }
 }
